@@ -68,9 +68,7 @@
 
         toolbox: {
             iconStyle: {
-                normal: {
-                    borderColor: colorPalette[0]
-                }
+                borderColor: colorPalette[0]
             }
         },
 
@@ -131,8 +129,12 @@
                 color : '#008acd'
             },
             controlStyle : {
-                normal : { color : '#008acd'},
-                emphasis : { color : '#008acd'}
+                color : '#008acd'
+            },
+            emphasis : {
+                controlStyle: {
+                    color : '#008acd'
+                }
             },
             symbol : 'emptyCircle',
             symbolSize : 3

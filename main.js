@@ -1,9 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
-const fs = require('fs')
+const path = require('path')
 const { execSync } = require('child_process');
 const papaparse = require('papaparse')
 const moment = require('moment');
-const {parseHLedgerVal} = require('./hledger')
+const { parseHLedgerVal } = require('./hledger')
+const settings = require('settings-store')
 
 class Posting {
   constructor(date, accounts, amount, currency, merchant, type) {
@@ -16,6 +17,13 @@ class Posting {
   }
 }
 
+// ── Settings-store initialisation (now in main process) ──────
+settings.init({
+  appName: "Ledgerble",
+  publisherName: "sgb",
+  reverseDNS: "com.github.sbridges"
+})
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
@@ -26,7 +34,10 @@ function createWindow() {
     width: 1500,
     height: 1150,
     webPreferences: {
-      nodeIntegration: true
+      // ── Modern Electron security ──────────────────────────
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     }
   })
 
@@ -67,14 +78,15 @@ app.on('activate', () => {
 
 //https://github.com/electron/electron/issues/10451
 //not supported on all os's
-if(app.setAboutPanelOptions) {
+if (app.setAboutPanelOptions) {
   app.setAboutPanelOptions({
     applicationName: "Ledgerble",
-    version: "0.1",
+    version: "0.2",
     copyright: "Sean Bridges"
   });
 }
 
+// ── IPC: Ledger parsing ─────────────────────────────────────
 
 ipcMain.on("parse", function (event, command, hledger, file) {
   parse(event, command, hledger, file);
@@ -133,10 +145,6 @@ function parseLedger(command, file) {
   }
   
   return postings;
-
- 
-
-
 }
 
 function parseHLedger(command, file) {
@@ -146,7 +154,7 @@ function parseHLedger(command, file) {
     delimiter: ',',
     header: true,
     escapeChar: '"',
-    skipEmptyLines : true
+    skipEmptyLines: true
   })
 
   if (res.errors.length > 0) {
@@ -163,14 +171,14 @@ function parseHLedger(command, file) {
       //from the end and start, then trim and combine
       //them to get the currency
       let match = valAndCurr.match(/([^0-9.,-]*)([0-9.,-]+)([^0-9.,-]*)/)
-      if(!match) {
+      if (!match) {
         console.log(valAndCurr)
       }
 
       let currVal = parseHLedgerVal(match[2])
-      
+
       curr = match[1].trim() + match[3].trim()
-      if(curr === '') {
+      if (curr === '') {
         curr = '??'
       }
 
@@ -184,10 +192,47 @@ function parseHLedger(command, file) {
         )
       )
     }
-
-    
   }
-  
-  return postings
 
+  return postings
 }
+
+// ── IPC: Settings (settings-store now lives in main) ────────
+
+ipcMain.handle('settings:get', (_event, key, defaultVal) => {
+  return settings.value(key, defaultVal);
+});
+
+ipcMain.handle('settings:set', (_event, key, value) => {
+  settings.setValue(key, value);
+});
+
+ipcMain.handle('settings:getAll', (_event) => {
+  // settings-store doesn't have a "getAll" method, so we read
+  // every key we know about and return an object.
+  const knownKeys = [
+    'options.ledger.command',
+    'options.hledger',
+    'options.expenses.regex',
+    'options.income.regex',
+    'options.assets.regex',
+    'options.liabilities.regex',
+    'options.equity.regex',
+    'dateUnits',
+    'files.list',
+  ];
+  const result = {};
+  for (const key of knownKeys) {
+    const val = settings.value(key, undefined);
+    if (val !== undefined) {
+      result[key] = val;
+    }
+  }
+  return result;
+});
+
+// ── IPC: Path utilities ─────────────────────────────────────
+
+ipcMain.handle('path:basename', (_event, filePath) => {
+  return path.basename(filePath);
+});

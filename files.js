@@ -1,18 +1,27 @@
 /**
  * Maintains the file selection
+ *
+ * Modernised: uses window.api (preload bridge) instead of
+ * require('electron').ipcRenderer and require('settings-store').
+ * Globals window.state, window.update, window.escapeHtml are
+ * set by ui.js before any of these functions are called.
  */
 
+const { getSetting } = require('./options')
+
 const input = document.getElementById("fileSelector")
-const settings = require("settings-store")
-const { basename } = require('path')
-const {getSetting} = require('./options')
 
 let fileNumber = 1;
 
 function filesInit() {
     input.addEventListener('change', () => {
-        addFile(input.files[0].path)
-        saveFilesList()
+        const fileObj = input.files[0];
+        if (!fileObj) return;
+        const filePath = window.api.webUtils.getPathForFile(fileObj) || fileObj.path;
+        if (filePath) {
+            addFile(filePath)
+            saveFilesList()
+        }
     });
 
     //https://stackoverflow.com/questions/1163667/how-to-rename-html-browse-button-of-an-input-type-file
@@ -25,30 +34,34 @@ function filesInit() {
         reloadFiles();
     });
 
-    for (f of settings.value("files.list", [])) {
-        addFile(f)
-    }
-    
-    if(getCurrentPaths().length == 0) {
-        $(`<div class="alert  alert-dismissible fade show alert-warning" role="alert">
-        Use the Files menu to select one or more journal files.
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>`).prependTo('body')
-    }
+    // Load stored file list directly from main process
+    window.api.settings.get('files.list', []).then(filesList => {
+        if (!Array.isArray(filesList)) filesList = [];
+        for (const f of filesList) {
+            addFile(f)
+        }
+
+        if (getCurrentPaths().length == 0) {
+            $(`<div class="alert  alert-dismissible fade show alert-warning" role="alert">
+            Use the Files menu to select one or more journal files.
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>`).prependTo('body')
+        }
+    });
 }
 
 function reloadFiles() {
     for (path of getCurrentPaths()) {
-        ipc.send("parse", getSetting("options.ledger.command"), getSetting('options.hledger'), path)
+        window.api.parse(getSetting("options.ledger.command"), getSetting('options.hledger'), path)
     }
 }
 
 
 
 function saveFilesList() {
-    settings.setValue("files.list", getCurrentPaths())
+    window.api.settings.set("files.list", getCurrentPaths())
 }
 
 function getCurrentPaths() {
@@ -68,7 +81,7 @@ function alertCantparse(file, error) {
         }
     }
     $(`<div class="alert  alert-dismissible fade show alert-danger" role="alert">
-    can't parse ${escapeHtml(file)} <br>${escapeHtml(error)}
+    can't parse ${window.escapeHtml(file)} <br>${window.escapeHtml(error)}
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
       <span aria-hidden="true">&times;</span>
     </button>
@@ -82,10 +95,14 @@ function addFile(path) {
     }
     const id = `fileRow${fileNumber++}`
     const newItem = document.createElement('a')
+
+    // Get basename asynchronously, update UI when ready
+    const displayName = path ? (path.split('/').pop() || path.split('\\').pop() || path) : 'Unknown File';
+
     newItem.innerHTML =
         `<div style='display:flex;  justify-content:space-between; align-items:center; '>
         <label><input id='enable${id}' type="checkbox" value="" checked )>
-        ${escapeHtml(basename(path))}&nbsp;&nbsp;&nbsp;&nbsp; </label>
+        ${window.escapeHtml(displayName)}&nbsp;&nbsp;&nbsp;&nbsp; </label>
         <button class="btn btn-warning" id="remove${id}">Close</button> 
         </div>`
     newItem.classList.add('dropdown-item');
@@ -104,7 +121,7 @@ function addFile(path) {
         removeFileById(id)
     });
 
-    ipc.send("parse", getSetting("options.ledger.command"), getSetting('options.hledger'), path)
+    window.api.parse(getSetting("options.ledger.command"), getSetting('options.hledger'), path)
 
 
 }
@@ -114,8 +131,8 @@ function removeFileById(id) {
     const path = element.path
     element.remove();
     saveFilesList()
-    state.files.delete(path)
-    update()
+    window.state.files.delete(path)
+    window.update()
 
 }
 
@@ -124,10 +141,10 @@ function enableFileById(id) {
     const path = element.path
     enabled = document.getElementById('enable' + id).checked
     if (enabled) {
-        ipc.send("parse", getSetting("options.ledger.command"), getSetting('options.hledger'), path)
+        window.api.parse(getSetting("options.ledger.command"), getSetting('options.hledger'), path)
     } else {
-        state.files.delete(path)
-        update()
+        window.state.files.delete(path)
+        window.update()
     }
 
 }

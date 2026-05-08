@@ -17,16 +17,16 @@ function updatePostings(postings, formatter, postingsTable, paging) {
             i++
             rows.push([
                 p1.date.getFullYear() + '/' + (1 + p1.date.getMonth()) + '/' + p1.date.getDate() + "<br>&nbsp",
-                escapeHtml(p1.accounts.join(':')) + "<br>" + escapeHtml(p2.accounts.join(':')),
-                escapeHtml(p1.merchant) + "<br>&nbsp",
+                window.escapeHtml(p1.accounts.join(':')) + "<br>" + window.escapeHtml(p2.accounts.join(':')),
+                window.escapeHtml(p1.merchant) + "<br>&nbsp",
                 formatter(p1.amount) + "<br>&nbsp",
                 p1.type
             ])
         } else {
             rows.push([
                 p1.date.getFullYear() + '/' + (1 + p1.date.getMonth()) + '/' + p1.date.getDate(),
-                escapeHtml(p1.accounts.join(':')),
-                escapeHtml(p1.merchant),
+                window.escapeHtml(p1.accounts.join(':')),
+                window.escapeHtml(p1.merchant),
                 formatter(p1.amount),
                 p1.type
             ])

@@ -1,9 +1,19 @@
 /**
  * options settings
+ *
+ * Modernised: settings are stored in the main process via IPC.
+ * A local cache is loaded at startup for synchronous reads.
  */
 
+// ── Settings cache (loaded once from main at startup) ───────
+let settingsCache = {};
 
-const settings = require("settings-store")
+async function loadSettingsCache() {
+    settingsCache = await window.api.settings.getAll();
+    if (!settingsCache || typeof settingsCache !== 'object') {
+        settingsCache = {};
+    }
+}
 
 
 function validateRegex(val) {
@@ -163,7 +173,9 @@ function initSettings(updateTypeExtractor) {
         let save = () => {
             let newVal = extract()
             if (s.validate(newVal)) {
-                settings.setValue(s.propName, newVal)
+                // Update local cache and persist to main process
+                settingsCache[s.propName] = newVal;
+                window.api.settings.set(s.propName, newVal);
                 s.onChange()
             } else {
                 alert('invalid value!')
@@ -224,10 +236,11 @@ function initSettings(updateTypeExtractor) {
 function getSetting(setting) {
     for (s of allSettings) {
         if (setting === s.propName) {
-            return settings.value(setting, s.def)
+            const cached = settingsCache[setting];
+            return cached !== undefined ? cached : s.def;
         }
     }
     throw "no setting:" + setting
 }
 
-module.exports = { initSettings, getSetting }
+module.exports = { initSettings, getSetting, loadSettingsCache }

@@ -53,7 +53,7 @@ function updateAssets(myChart, balances, intervals, startIndex, endIndex, format
     )
 
     function formatToolTip(params, formatter) {
-        return params.name + "<br>" + params.marker + escapeHtml(params.seriesName) + ' ' + formatter(params.data)
+        return params.name + "<br>" + params.marker + window.escapeHtml(params.seriesName) + ' ' + formatter(params.data)
     }
 
     myChart.setOption(option = {

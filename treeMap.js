@@ -10,26 +10,22 @@ function getLevelOption() {
     return [
         {
             itemStyle: {
-                normal: {
-                    borderColor: '#777',
-                    borderWidth: 0,
-                    gapWidth: 1
-                }
+                borderColor: '#777',
+                borderWidth: 0,
+                gapWidth: 1
             },
             upperLabel: {
-                normal: {
-                    show: false
-                }
+                show: false
             }
         },
         {
             itemStyle: {
-                normal: {
-                    borderColor: '#555',
-                    borderWidth: 5,
-                    gapWidth: 1
-                },
-                emphasis: {
+                borderColor: '#555',
+                borderWidth: 5,
+                gapWidth: 1
+            },
+            emphasis: {
+                itemStyle: {
                     borderColor: '#ddd'
                 }
             }
@@ -37,11 +33,9 @@ function getLevelOption() {
         {
             colorSaturation: [0.35, 0.5],
             itemStyle: {
-                normal: {
-                    borderWidth: 5,
-                    gapWidth: 1,
-                    borderColorSaturation: 0.6
-                }
+                borderWidth: 5,
+                gapWidth: 1,
+                borderColorSaturation: 0.6
             }
         }
     ];
@@ -81,7 +75,7 @@ function updateTreeMap(myChart, table, postings, flip, formatter) {
 
     const accountToValNoRoot = new Map(accountToVal)
     accountToValNoRoot.forEach((value, key) => {
-        if (key.toUpperCase() === 'EXPENSES' || key.toUpperCase() === 'INCOME') {
+        if (key.toUpperCase() === 'EXPENSES' || key.toUpperCase() === 'INCOME' || key.toUpperCase() === 'AUSGABEN' || key.toUpperCase() === 'EINNAHMEN') {
             accountToValNoRoot.delete(key)
         }
     })
@@ -161,7 +155,7 @@ function updateTreeMap(myChart, table, postings, flip, formatter) {
                 }
 
                 return [
-                    '<div class="tooltip-title">' + escapeHtml('Expenses:' + escapeHtml(formatNoValues(treePath))) + '</div>',
+                    '<div class="tooltip-title">' + window.escapeHtml('Expenses:' + window.escapeHtml(formatNoValues(treePath))) + '</div>',
                     formatter(value),
                 ].join('');
             }
@@ -178,15 +172,11 @@ function updateTreeMap(myChart, table, postings, flip, formatter) {
                     formatter: '{b}'
                 },
                 upperLabel: {
-                    normal: {
-                        show: true,
-                        height: 15
-                    }
+                    show: true,
+                    height: 15
                 },
                 itemStyle: {
-                    normal: {
-                        borderColor: '#fff'
-                    }
+                    borderColor: '#fff'
                 },
                 levels: getLevelOption(),
                 data: root.children

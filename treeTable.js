@@ -8,7 +8,7 @@ const { updatePostings } = require('./postings')
 const modalDetails = new Map()
 
 function showModal(key) {
-    updatePostings(modalDetails.get(key), state.formatter, $('#modalPostings'), false);
+    updatePostings(modalDetails.get(key), window.state.formatter, $('#modalPostings'), false);
 
 
 
@@ -91,7 +91,7 @@ function makeTreeTable(amounts, node, formatter, sortByName, details) {
             parentAtt = `data-tt-parent-id="${parentId}"`
         }
         html.push(`<tr data-tt-id="${ids.get(key)}" ${parentAtt}>`);
-        html.push(`<td>${escapeHtml(key)}</td>`)
+        html.push(`<td>${window.escapeHtml(key)}</td>`)
         html.push(`<td  align="right">${formatter(value)}</td>`)
         if (details) {
             html.push(`<td  align="right"><a href="javascript:showModal('${key}')">postings...</td>`)
