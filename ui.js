@@ -1,11 +1,14 @@
 /**
  * UI code
+ *
+ * Modernised: uses window.api (preload bridge) instead of
+ * require('electron').ipcRenderer and require('settings-store').
  */
 
-const ipc = require('electron').ipcRenderer;
 const Stream = require('streamjs');
 
 const updateIncomeExpenses = require('./incomeExpenses')
+const { buildAccountTree, filterPostings, renderFilter } = require('./accountFilter');
 const echarts = require('echarts');
 //https://stackoverflow.com/questions/51369979/bootstrap-uncaught-typeerror-cannot-read-property-fn-of-undefined 
 //https://github.com/understrap/understrap/issues/449 
@@ -13,7 +16,6 @@ window.$ = window.jQuery = require('jquery');
 window.Bootstrap = require('bootstrap');
 require('./vendor/jquery-ui/1.12.1/jquery-ui')
 require("./vendor/echarts/macaron.js")
-const settings = require("settings-store")
 const { dateInit, dateUpdate, setDate } = require('./dateRangeSelector')
 const { filesInit, alertCantparse, reloadFiles } = require('./files')
 const updateAssets = require('./assets')
@@ -26,20 +28,26 @@ const { updateCurrencies, initCurrencies } = require('./currency')
 
 const CurrencyFormatter = require('currencyformatter.js')
 const currencyToSymbolMap = require('currency-symbol-map/map')
-const { initSettings, getSetting } = require('./options')
+const { initSettings, getSetting, loadSettingsCache } = require('./options')
 const setupToggle = require('./toggle')
 const updateTreeMap = require('./treeMap')
 //showModal isn't used explicitly, but its called from
 //an href so it must be included here
 const { showModal } = require('./treeTable')
+// Make showModal available globally for href="javascript:showModal(...)"
+window.showModal = showModal;
 
-require('datatables.net-dt')();
-require('datatables.net-buttons-dt')();
-require('datatables.net-buttons/js/buttons.colVis.js')();
-require('datatables.net-colreorder-dt')();
-require('datatables.net-fixedheader-dt')();
-require('datatables.net-responsive-dt')();
-require('datatables.net-scroller-dt')();
+const { escapeHtml } = require('./shared')
+// Make escapeHtml globally available for modules that reference it
+window.escapeHtml = escapeHtml;
+
+require('datatables.net-dt');
+require('datatables.net-buttons-dt')(window, window.$);
+require('datatables.net-buttons/js/buttons.colVis.js')(window, window.$);
+require('datatables.net-colreorder-dt');
+require('datatables.net-fixedheader-dt');
+require('datatables.net-responsive-dt');
+require('datatables.net-scroller-dt');
 
 //state of a single file
 //either parsed and a list of Postings,
@@ -51,30 +59,21 @@ class FileState {
     }
 }
 
-function escapeHtml(unsafe) {
-    return echarts.format.encodeHTML(unsafe)
-}
-
 
 //state of the app
 class State {
     constructor() {
         this.files = new Map() //maps string->FileState
+        this.deselectedAccounts = new Set();
+        this.expandedNodes = new Set();
     }
 }
-
-
-//Initializing is optional when using Electron
-settings.init({
-    appName: "Ledgerble", //required,
-    publisherName: "sgb", //optional
-    reverseDNS: "com.github.sbridges" //required for macOS
-})
 
 $('#cantParseAlert').hide()
 
 const state = new State();
-dateInit(state)
+// Expose state globally for modules that need it (files.js, treeTable.js)
+window.state = state;
 
 setupToggle(
     document.getElementById('expensesDisplayGraph'),
@@ -125,13 +124,30 @@ function updateTypeExtractor() {
         return 'unknown'
     }
 }
-initSettings(() => {
-    updateTypeExtractor()
-    reloadFiles()
-})
-updateTypeExtractor()
 
-ipc.on('parsed', function (event, file, postings, error) {
+// ── Async initialisation ────────────────────────────────────
+// Settings now live in the main process. We load them once at
+// startup and cache them in the renderer for synchronous access.
+
+async function initApp() {
+    // Load all settings from main process into the local cache
+    // used by options.js / getSetting()
+    await loadSettingsCache();
+
+    dateInit(state);
+    updateTypeExtractor();
+
+    initSettings(() => {
+        updateTypeExtractor()
+        reloadFiles()
+    })
+    updateTypeExtractor()
+}
+
+initApp();
+
+// ── IPC: receive parsed results via preload bridge ──────────
+window.api.onParsed(function (file, postings, error) {
     if (error) {
         alertCantparse(file, error)
     }
@@ -170,6 +186,8 @@ $('document').ready(() => filesInit());
 
 initCurrencies(update)
 
+// Expose update globally for modules that need it (files.js, dateRangeSelector.js)
+window.update = update;
 
 function update() {
 
@@ -252,9 +270,22 @@ function update() {
         .toList();
     updateTreeMap(incomeTreeMap, document.getElementById('incomeTable'), incomePostings, true, state.formatter);
 
+    const relevantAccounts = new Set();
+    for (const p of state.postings) {
+        if (p.type === 'income' || p.type === 'expenses') {
+            relevantAccounts.add(p.accountsFmtd());
+        }
+    }
+    const accountTree = buildAccountTree(Array.from(relevantAccounts));
+    renderFilter('accountFilterContainer', accountTree, state.deselectedAccounts, state.expandedNodes, () => {
+        update();
+    });
+
+    const filteredPostingsForIE = filterPostings(state.postings, state.deselectedAccounts);
+
     updateIncomeExpenses(
         incomeExpenses,
-        state.postings,
+        filteredPostingsForIE,
         state.dateFormat,
         state.intervals.slice(sliderValues[0], sliderValues[1] + 1),
         state.formatter,
@@ -362,9 +393,3 @@ $(window).on('resize', function () {
         chart.resize();
     }
 });
-
-
-
-
-
-

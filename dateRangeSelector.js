@@ -2,6 +2,9 @@ const moment = require('moment');
 
 /**
  * Code for managing date selections
+ *
+ * Modernised: uses window.api.settings and window.update
+ * instead of leaked globals.
  */
 
 const dateUnitsSelector = $("#dateUnitsSelector")
@@ -27,12 +30,19 @@ function updateDateUnits(select, state) {
 }
 
 function dateInit(state) {
-    dateUnitsSelector.get()[0].value = settings.value('dateUnits', 'Monthly')
-    updateDateUnits(dateUnitsSelector.get()[0], state)
+    // Read stored date unit from settings via IPC (async, with fallback)
+    window.api.settings.get('dateUnits', 'Monthly').then(val => {
+        dateUnitsSelector.get()[0].value = val || 'Monthly';
+        updateDateUnits(dateUnitsSelector.get()[0], state);
+    });
+
+    // Initialise with default synchronously so the app doesn't break
+    updateDateUnits(dateUnitsSelector.get()[0], state);
+
     dateUnitsSelector.on('change', function () {
-        settings.setValue('dateUnits', this.value)
-        updateDateUnits(this, state)
-        update();
+        window.api.settings.set('dateUnits', this.value);
+        updateDateUnits(this, state);
+        window.update();
     });
 
     //slider from jquery-ui
@@ -44,7 +54,7 @@ function dateInit(state) {
             step: 1,
             stop: () => {
                 updateDateRangeSliderLabels(state)
-                update()
+                window.update()
             }
         });
     });
@@ -86,7 +96,7 @@ function updateSliderFromInput(state) {
             endIndex != sliderValues[1]) {
             dateSliderSelector.slider("option", "values", [startIndex, endIndex]);
         }
-        update()
+        window.update()
     }
 }
 
