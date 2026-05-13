@@ -230,17 +230,20 @@ function update() {
         let current = new Date(dates[0].getTime())
         let currStr = state.dateFormat(current)
         state.intervals.push(currStr)
+        state.intervalDates = [new Date(current.getTime())]
         while (currStr < endStr) {
             current.setDate(current.getDate() + 1)
             let newCurrStr = state.dateFormat(current)
             if (newCurrStr !== currStr) {
                 state.intervals.push(newCurrStr)
+                state.intervalDates.push(new Date(current.getTime()))
                 currStr = newCurrStr
             }
 
         }
         if (endStr !== currStr) {
             state.intervals.push(endStr)
+            state.intervalDates.push(new Date(current.getTime()))
         }
     }
 

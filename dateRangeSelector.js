@@ -11,6 +11,13 @@ const dateUnitsSelector = $("#dateUnitsSelector")
 const dateSliderSelector = $("#date-range-slider")
 
 function updateDateUnits(select, state) {
+    if (state.intervals && state.intervalDates) {
+        let sliderValues = dateSliderSelector.slider("option", "values");
+        if (sliderValues && sliderValues.length === 2) {
+            state.savedStartDate = state.intervalDates[sliderValues[0]];
+            state.savedEndDate = state.intervalDates[sliderValues[1]];
+        }
+    }
     state.dateUnitsChanged = true
     
     if (select.value == 'Daily') {
@@ -110,7 +117,20 @@ function dateUpdate(state) {
 
     let sliderValues = dateSliderSelector.slider("option", "values");
 
-    if (sliderValues[0] > state.intervals.length ||
+    if (state.dateUnitsChanged && state.savedStartDate && state.savedEndDate) {
+        let startIdx = 0;
+        let endIdx = state.intervals.length - 1;
+        for (let i = 0; i < state.intervalDates.length; i++) {
+            if (state.intervalDates[i] <= state.savedStartDate) startIdx = i;
+            if (state.intervalDates[i] <= state.savedEndDate) endIdx = i;
+        }
+        if (endIdx < startIdx) endIdx = startIdx;
+        dateSliderSelector.slider("option", "values", [startIdx, endIdx]);
+        sliderValues[0] = startIdx;
+        sliderValues[1] = endIdx;
+        state.savedStartDate = null;
+        state.savedEndDate = null;
+    } else if (sliderValues[0] > state.intervals.length ||
         sliderValues[1] >= state.intervals.length ||
         state.dateUnitsChanged ||
         //if we added new postings, and increased the date range
