@@ -37,6 +37,8 @@ const { showModal } = require('./treeTable')
 // Make showModal available globally for href="javascript:showModal(...)"
 window.showModal = showModal;
 
+const { updateFilterVisibility } = require('./tabVisibility');
+
 const { escapeHtml } = require('./shared')
 // Make escapeHtml globally available for modules that reference it
 window.escapeHtml = escapeHtml;
@@ -181,6 +183,8 @@ charts.push(assetsChart)
 //https://stackoverflow.com/questions/30468111/bootstrap-shown-bs-tab-event-not-working
 //update the graphs when tab changes
 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    const target = $(e.target).attr("href");
+    updateFilterVisibility(target, $('#accountFilterContainer'));
     update();
 })
 
@@ -247,7 +251,7 @@ function update() {
         }
     }
 
-    state.balances = calculateBalances(state.rawPostings,
+    state.balances = calculateBalances(filterPostings(state.rawPostings, state.deselectedAccounts),
         state.intervals,
         state.dateFormat)
 
@@ -266,16 +270,6 @@ function update() {
     }
 
 
-    const expensesPostings = Stream(state.postings)
-        .filter(t => t.type === 'expenses')
-        .toList();
-    updateTreeMap(expensesTreeMap, document.getElementById('expensesTable'), expensesPostings, false, state.formatter);
-
-    const incomePostings = Stream(state.postings)
-        .filter(t => t.type === 'income')
-        .toList();
-    updateTreeMap(incomeTreeMap, document.getElementById('incomeTable'), incomePostings, true, state.formatter);
-
     const relevantAccounts = new Set();
     for (const p of state.postings) {
         if (p.type === 'income' || p.type === 'expenses') {
@@ -287,11 +281,21 @@ function update() {
         update();
     });
 
-    const filteredPostingsForIE = filterPostings(state.postings, state.deselectedAccounts);
+    const filteredPostings = filterPostings(state.postings, state.deselectedAccounts);
+
+    const expensesPostings = Stream(filteredPostings)
+        .filter(t => t.type === 'expenses')
+        .toList();
+    updateTreeMap(expensesTreeMap, document.getElementById('expensesTable'), expensesPostings, false, state.formatter);
+
+    const incomePostings = Stream(filteredPostings)
+        .filter(t => t.type === 'income')
+        .toList();
+    updateTreeMap(incomeTreeMap, document.getElementById('incomeTable'), incomePostings, true, state.formatter);
 
     updateIncomeExpenses(
         incomeExpenses,
-        filteredPostingsForIE,
+        filteredPostings,
         state.dateFormat,
         state.intervals.slice(sliderValues[0], sliderValues[1] + 1),
         state.formatter,
@@ -305,7 +309,7 @@ function update() {
 
     updateBalance($("#balanceTable").get()[0], state.balances, sliderValues[1], state.formatter)
     updateAssets(assetsChart, state.balances, state.intervals, sliderValues[0], sliderValues[1], state.formatter)
-    updatePostings(state.postings, state.formatter, $('#postingsTable'), true);
+    updatePostings(filteredPostings, state.formatter, $('#postingsTable'), true);
 }
 
 function createValueFormatter(currentCurrency) {
