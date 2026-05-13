@@ -78,4 +78,23 @@ describe('Print Header Generation', () => {
 
         expect(mockHeader.innerHTML).toContain('All categories active');
     });
+
+    it('should summarize deselected categories by showing only the highest completely deselected node', () => {
+        state.deselectedAccounts = new Set([
+            'Expenses:Home',
+            'Expenses:Work',
+            'Expenses:Work:travel',
+            'Expenses:Work:suits',
+            'Income:Salary:Bonus'
+        ]);
+        setupPrintHeader(state);
+
+        global.window.dispatchEvent(new Event('beforeprint'));
+
+        // Should contain Expenses:Home, Expenses:Work, and Income:Salary:Bonus
+        // But should NOT contain :travel or :suits
+        expect(mockHeader.innerHTML).toContain('Deselected: Expenses:Home, Expenses:Work, Income:Salary:Bonus');
+        expect(mockHeader.innerHTML).not.toContain(':travel');
+        expect(mockHeader.innerHTML).not.toContain(':suits');
+    });
 });

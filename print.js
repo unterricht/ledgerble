@@ -13,7 +13,17 @@ function setupPrintHeader(state) {
         const dateRangeTo = document.getElementById('dateRangeTo') ? document.getElementById('dateRangeTo').value : '';
         const dateUnit = document.getElementById('dateUnitsSelector') ? document.getElementById('dateUnitsSelector').value : '';
         
-        const deselected = state.deselectedAccounts ? Array.from(state.deselectedAccounts).join(', ') : '';
+        let deselected = '';
+        if (state.deselectedAccounts && state.deselectedAccounts.size > 0) {
+            const arr = Array.from(state.deselectedAccounts).sort();
+            const summaryArr = [];
+            for (const acc of arr) {
+                if (!summaryArr.some(parent => acc.startsWith(parent + ':'))) {
+                    summaryArr.push(acc);
+                }
+            }
+            deselected = summaryArr.join(', ');
+        }
         const accountStr = deselected.length > 0 ? `Deselected: ${deselected}` : `All categories active`;
 
         const headerHtml = `
