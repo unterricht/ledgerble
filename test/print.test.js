@@ -67,7 +67,7 @@ describe('Print Header Generation', () => {
         // Check filter values
         expect(mockHeader.innerHTML).toContain('2023-01-01 to 2023-12-31');
         expect(mockHeader.innerHTML).toContain('(Monthly)');
-        expect(mockHeader.innerHTML).toContain('Deselected: Expenses:Dining, Expenses:Entertainment');
+        expect(mockHeader.innerHTML).toContain('excluded Categories:</strong> Expenses:Dining, Expenses:Entertainment');
     });
 
     it('should show "All categories active" when no accounts are deselected', () => {
@@ -93,7 +93,7 @@ describe('Print Header Generation', () => {
 
         // Should contain Expenses:Home, Expenses:Work, and Income:Salary:Bonus
         // But should NOT contain :travel or :suits
-        expect(mockHeader.innerHTML).toContain('Deselected: Expenses:Home, Expenses:Work, Income:Salary:Bonus');
+        expect(mockHeader.innerHTML).toContain('excluded Categories:</strong> Expenses:Home, Expenses:Work, Income:Salary:Bonus');
         expect(mockHeader.innerHTML).not.toContain(':travel');
         expect(mockHeader.innerHTML).not.toContain(':suits');
     });

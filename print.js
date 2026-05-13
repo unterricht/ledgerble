@@ -24,13 +24,13 @@ function setupPrintHeader(state) {
             }
             deselected = summaryArr.join(', ');
         }
-        const accountStr = deselected.length > 0 ? `Deselected: ${deselected}` : `All categories active`;
+        const accountStr = deselected.length > 0 ? deselected : `All categories active`;
 
         const headerHtml = `
             <h3>${escapeHtml(filesString)} - ${escapeHtml(date)}</h3>
             <p>
                 <strong>Period:</strong> ${escapeHtml(dateRangeFrom)} to ${escapeHtml(dateRangeTo)} (${escapeHtml(dateUnit)})<br>
-                <strong>Categories:</strong> ${escapeHtml(accountStr)}
+                <strong>${deselected.length > 0 ? 'excluded Categories:' : 'Categories:'}</strong> ${escapeHtml(accountStr)}
             </p>
         `;
         header.innerHTML = headerHtml;
