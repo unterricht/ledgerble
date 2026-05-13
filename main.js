@@ -43,6 +43,11 @@ function createWindow() {
 
   // and load the index.html of the app.
   win.loadFile('index.html')
+  
+  // Initialize the native application menu
+  const { setupAppMenu } = require('./menu')
+  setupAppMenu(win)
+
   //win.webContents.openDevTools()
 
   // Emitted when the window is closed.

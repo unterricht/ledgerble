@@ -47,6 +47,62 @@
   .bold-cell {
     font-weight: bold;
   }
+
+  /* --- Print Styling --- */
+  @media print {
+    /* Show print header */
+    #printHeader {
+      display: block !important;
+    }
+
+    /* Hide navigation, filters, and other fixed UI elements */
+    .r_flex_fixed_child, 
+    #accountFilterContainer,
+    .nav {
+      display: none !important;
+    }
+    
+    /* Remove fixed heights and flex layouts that clip content */
+    html, body, .r_flex_container, .r_flex_expand_child, .tab-content {
+      height: auto !important;
+      display: block !important;
+      overflow: visible !important;
+    }
+
+    /* Hide inactive tabs, ensure active tab takes full width */
+    .tab-pane {
+      display: none !important;
+    }
+    .tab-pane.active {
+      display: block !important;
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    /* Scale charts (ECharts canvas) and tables to fit page width */
+    canvas, svg, img {
+      max-width: 100% !important;
+      height: auto !important;
+      page-break-inside: avoid;
+    }
+    
+    /* Ensure ECharts wrappers don't force a wider width */
+    [_echarts_instance_], [_echarts_instance_] > div {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    table {
+      width: 100% !important;
+      max-width: 100% !important;
+      page-break-inside: auto;
+    }
+    
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+  }
 </style>
 
 <body>
@@ -126,6 +182,10 @@
     </div>
     <!-- main content-->
     <div class="r_flex_expand_child" style=" padding-left: 50px; padding-right: 50px; padding-bottom: 50px;">
+      
+      <!-- PRINT HEADER -->
+      <div id="printHeader" style="display: none; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;"></div>
+      
       <div class="tab-content" id="tab-content" style="height:100%">
 
         <div class="tab-pane fade show active" id="net" role="tabpanel" aria-labelledby="net-tab"

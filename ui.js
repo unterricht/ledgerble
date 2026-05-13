@@ -144,6 +144,9 @@ async function initApp() {
     updateTypeExtractor()
 }
 
+const { setupPrintHeader } = require('./print');
+setupPrintHeader(state);
+
 initApp();
 
 // ── IPC: receive parsed results via preload bridge ──────────
