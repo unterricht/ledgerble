@@ -1,6 +1,10 @@
 /**
  * i18n – Internationalization module for Ledgerble
  *
+ * Works in both the Electron renderer (browser bundle via esbuild) and the
+ * main process (Node.js). No fs/path usage – locale data is embedded via
+ * require() so esbuild can inline it at bundle time.
+ *
  * Usage:
  *   const { t, loadLocale, getCurrentLocale, getAvailableLocales } = require('./i18n');
  *   loadLocale('de');        // switch language
@@ -10,13 +14,11 @@
  *
  * Community translations:
  *   Place a JSON file matching the key schema into the locales/ directory
- *   (e.g. locales/fr.json) and it will be discoverable via getAvailableLocales().
+ *   (e.g. locales/fr.json) and inject it at runtime via _injectLocale().
+ *   In the renderer, injection happens through IPC from the main process.
  */
 
-const path = require('path');
-const fs   = require('fs');
-
-// ── Built-in locales (loaded synchronously – no IPC needed) ──
+// ── Built-in locales (inlined by esbuild at bundle time) ─────
 
 const BUILT_IN = {
     en: require('./locales/en.json'),
@@ -28,7 +30,7 @@ const BUILT_IN = {
 let currentLocale   = 'en';
 let currentStrings  = BUILT_IN['en'];
 
-// Extra locales injected at runtime (used by tests and external files)
+// Extra locales injected at runtime (tests, IPC-loaded community files)
 const runtimeLocales = {};
 
 // ── Public API ────────────────────────────────────────────────
@@ -54,61 +56,30 @@ function t(key) {
 
 /**
  * Switch the active locale.
- * Accepts built-in codes ('en', 'de'), runtime-injected codes, or an absolute
- * path to a JSON file.
+ * Accepts built-in codes ('en', 'de') or runtime-injected codes.
  *
- * @param {string} localeOrPath  e.g. 'de', 'fr', '/path/to/fr.json'
+ * @param {string} localeCode  e.g. 'de', 'en', 'fr'
  */
-function loadLocale(localeOrPath) {
+function loadLocale(localeCode) {
     // 1. Built-in?
-    if (BUILT_IN[localeOrPath]) {
-        currentLocale  = localeOrPath;
-        currentStrings = BUILT_IN[localeOrPath];
+    if (BUILT_IN[localeCode]) {
+        currentLocale  = localeCode;
+        currentStrings = BUILT_IN[localeCode];
         return;
     }
 
-    // 2. Runtime-injected (test helper)?
-    if (runtimeLocales[localeOrPath]) {
-        currentLocale  = localeOrPath;
-        currentStrings = runtimeLocales[localeOrPath];
+    // 2. Runtime-injected (test helper or IPC-loaded community locale)?
+    if (runtimeLocales[localeCode]) {
+        currentLocale  = localeCode;
+        currentStrings = runtimeLocales[localeCode];
         return;
     }
 
-    // 3. Absolute file path?
-    if (path.isAbsolute(localeOrPath) || localeOrPath.endsWith('.json')) {
-        try {
-            const raw = fs.readFileSync(localeOrPath, 'utf8');
-            const strings = JSON.parse(raw);
-            const code = path.basename(localeOrPath, '.json');
-            runtimeLocales[code] = strings;
-            currentLocale  = code;
-            currentStrings = strings;
-            return;
-        } catch (err) {
-            console.warn(`[i18n] Could not load locale file "${localeOrPath}":`, err.message);
-        }
-    }
-
-    // 4. Try locales/<code>.json next to this file
-    const candidate = path.join(__dirname, 'locales', `${localeOrPath}.json`);
-    if (fs.existsSync(candidate)) {
-        try {
-            const raw = fs.readFileSync(candidate, 'utf8');
-            const strings = JSON.parse(raw);
-            runtimeLocales[localeOrPath] = strings;
-            currentLocale  = localeOrPath;
-            currentStrings = strings;
-            return;
-        } catch (err) {
-            console.warn(`[i18n] Could not load locale file "${candidate}":`, err.message);
-        }
-    }
-
-    console.warn(`[i18n] Unknown locale "${localeOrPath}", keeping current (${currentLocale}).`);
+    console.warn(`[i18n] Unknown locale "${localeCode}", keeping current (${currentLocale}).`);
 }
 
 /**
- * Detect the best locale from an Electron app.getLocale() string.
+ * Detect the best locale from an Electron app.getLocale() or navigator.language string.
  * Returns the first two characters (language code), validated against
  * available locales. Falls back to 'en'.
  *
@@ -130,24 +101,14 @@ function getCurrentLocale() {
 }
 
 /**
- * Returns all available locale codes (built-in + any JSON files in locales/).
+ * Returns all available locale codes (built-in + runtime-injected).
  * @returns {string[]}
  */
 function getAvailableLocales() {
-    const codes = new Set(Object.keys(BUILT_IN));
-
-    // Also scan the locales/ directory for community files
-    const localesDir = path.join(__dirname, 'locales');
-    try {
-        for (const file of fs.readdirSync(localesDir)) {
-            if (file.endsWith('.json')) {
-                codes.add(path.basename(file, '.json'));
-            }
-        }
-    } catch (_) {
-        // locales/ might not exist in some environments – that's fine
-    }
-
+    const codes = new Set([
+        ...Object.keys(BUILT_IN),
+        ...Object.keys(runtimeLocales),
+    ]);
     return Array.from(codes).sort();
 }
 
@@ -155,9 +116,9 @@ function getAvailableLocales() {
  * Translate all DOM elements that have a [data-i18n] attribute.
  * Call this once after the DOM is ready and after loadLocale().
  *
- * Elements with data-i18n set their textContent.
- * Elements with data-i18n-placeholder set their placeholder attribute.
- * Elements with data-i18n-html set their innerHTML (use with care).
+ * Elements with data-i18n        → textContent
+ * Elements with data-i18n-html   → innerHTML  (use with care)
+ * Elements with data-i18n-placeholder → placeholder attribute
  */
 function translatePage() {
     if (typeof document === 'undefined') return;
@@ -173,11 +134,12 @@ function translatePage() {
     });
 }
 
-// ── Test helper (not for production use) ─────────────────────
+// ── Test / IPC helper ─────────────────────────────────────────
 
 /**
- * Inject a locale at runtime. Used by unit tests to simulate incomplete
- * locale files without touching the filesystem.
+ * Inject a locale at runtime. Used by:
+ * - Unit tests (simulate incomplete locale files without filesystem)
+ * - Main process IPC (load community locale files and push to renderer)
  *
  * @param {string} code
  * @param {Object} strings
