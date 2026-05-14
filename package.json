@@ -37,10 +37,12 @@
       "main.js",
       "preload.js",
       "hledger.js",
+      "i18n.js",
       "index.html",
       "dist/**",
       "vendor/**",
       "icons/**",
+      "locales/**",
       "node_modules/**",
       "package.json"
     ]

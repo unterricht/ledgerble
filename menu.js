@@ -1,4 +1,5 @@
 const { Menu, app } = require('electron');
+const { t } = require('./i18n');
 
 function setupAppMenu(mainWindow) {
     const isMac = process.platform === 'darwin';
@@ -21,10 +22,10 @@ function setupAppMenu(mainWindow) {
         }] : []),
         // { role: 'fileMenu' }
         {
-            label: 'File',
+            label: t('menu.file'),
             submenu: [
                 {
-                    label: 'Print',
+                    label: t('menu.print'),
                     accelerator: 'CmdOrCtrl+P',
                     click: () => {
                         if (mainWindow && mainWindow.webContents) {
@@ -37,7 +38,7 @@ function setupAppMenu(mainWindow) {
         },
         // { role: 'editMenu' }
         {
-            label: 'Edit',
+            label: t('menu.edit'),
             submenu: [
                 { role: 'undo' },
                 { role: 'redo' },
@@ -51,7 +52,7 @@ function setupAppMenu(mainWindow) {
                     { role: 'selectAll' },
                     { type: 'separator' },
                     {
-                        label: 'Speech',
+                        label: t('menu.speech'),
                         submenu: [
                             { role: 'startSpeaking' },
                             { role: 'stopSpeaking' }
@@ -66,7 +67,7 @@ function setupAppMenu(mainWindow) {
         },
         // { role: 'viewMenu' }
         {
-            label: 'View',
+            label: t('menu.view'),
             submenu: [
                 { role: 'reload' },
                 { role: 'forceReload' },
@@ -81,7 +82,7 @@ function setupAppMenu(mainWindow) {
         },
         // { role: 'windowMenu' }
         {
-            label: 'Window',
+            label: t('menu.window'),
             submenu: [
                 { role: 'minimize' },
                 { role: 'zoom' },

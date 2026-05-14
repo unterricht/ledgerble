@@ -8,6 +8,7 @@
  */
 
 const { getSetting } = require('./options')
+const { t } = require('./i18n')
 
 const input = document.getElementById("fileSelector")
 
@@ -43,7 +44,7 @@ function filesInit() {
 
         if (getCurrentPaths().length == 0) {
             $(`<div class="alert  alert-dismissible fade show alert-warning" role="alert">
-            Use the Files menu to select one or more journal files.
+            ${t('files.no_files_alert')}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -81,7 +82,7 @@ function alertCantparse(file, error) {
         }
     }
     $(`<div class="alert  alert-dismissible fade show alert-danger" role="alert">
-    can't parse ${window.escapeHtml(file)} <br>${window.escapeHtml(error)}
+    ${t('files.cant_parse')} ${window.escapeHtml(file)} <br>${window.escapeHtml(error)}
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
       <span aria-hidden="true">&times;</span>
     </button>
@@ -97,13 +98,13 @@ function addFile(path) {
     const newItem = document.createElement('a')
 
     // Get basename asynchronously, update UI when ready
-    const displayName = path ? (path.split('/').pop() || path.split('\\').pop() || path) : 'Unknown File';
+    const displayName = path ? (path.split('/').pop() || path.split('\\').pop() || path) : t('files.unknown');
 
     newItem.innerHTML =
         `<div style='display:flex;  justify-content:space-between; align-items:center; '>
         <label><input id='enable${id}' type="checkbox" value="" checked )>
         ${window.escapeHtml(displayName)}&nbsp;&nbsp;&nbsp;&nbsp; </label>
-        <button class="btn btn-warning" id="remove${id}">Close</button> 
+        <button class="btn btn-warning" id="remove${id}">${t('btn.close')}</button> 
         </div>`
     newItem.classList.add('dropdown-item');
     newItem.href = '#'

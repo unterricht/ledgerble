@@ -43,6 +43,10 @@ const { escapeHtml } = require('./shared')
 // Make escapeHtml globally available for modules that reference it
 window.escapeHtml = escapeHtml;
 
+const { t, loadLocale, detectLocale, translatePage } = require('./i18n')
+// Expose translatePage globally so the options onChange callback can call it
+window.i18nTranslatePage = translatePage;
+
 require('datatables.net-dt');
 require('datatables.net-buttons-dt')(window, window.$);
 require('datatables.net-buttons/js/buttons.colVis.js')(window, window.$);
@@ -135,6 +139,16 @@ async function initApp() {
     // Load all settings from main process into the local cache
     // used by options.js / getSetting()
     await loadSettingsCache();
+
+    // ── i18n: detect and apply locale ────────────────────────
+    const savedLocale = settingsCache['options.locale'];
+    const effectiveLocale = (!savedLocale || savedLocale === 'auto')
+        ? detectLocale(navigator.language || 'en')
+        : savedLocale;
+    loadLocale(effectiveLocale);
+    translatePage();
+    // Update <html lang> attribute for accessibility
+    document.getElementById('html-root').lang = effectiveLocale;
 
     dateInit(state);
     updateTypeExtractor();

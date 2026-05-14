@@ -8,6 +8,8 @@
 // ── Settings cache (loaded once from main at startup) ───────
 let settingsCache = {};
 
+const { t, loadLocale, getAvailableLocales, detectLocale } = require('./i18n');
+
 async function loadSettingsCache() {
     settingsCache = await window.api.settings.getAll();
     if (!settingsCache || typeof settingsCache !== 'object') {
@@ -52,59 +54,74 @@ const allSettings = [
     new Setting(
         "options.ledger.command",
         "ledger",
-        "The command to use to parse your journal files<br>This must be an absolute path, or on the PATH",
-        "Ledger command",
+        () => t('settings.ledger_command.help'),
+        () => t('settings.ledger_command'),
         FILE,
         null,
         null),
     new Setting(
         "options.hledger",
         false,
-        "HLedger or ledger",
-        "Ledger command is HLedger",
+        () => t('settings.hledger.help'),
+        () => t('settings.hledger'),
         BOOL,
         null,
         null),
     new Setting(
         "options.expenses.regex",
         "^expenses?(:|$)",
-        "Regex to match accounts which are considered expenses",
-        "Expenses Regex",
+        () => t('settings.expenses_regex.help'),
+        () => t('settings.expenses_regex'),
         STRING,
         validateRegex,
         updateTypeExtractor),
     new Setting(
         "options.income.regex",
         "^(income|revenue)s?(:|$)",
-        "Regex to match accounts which are considered income",
-        "Income Regex",
+        () => t('settings.income_regex.help'),
+        () => t('settings.income_regex'),
         STRING,
         validateRegex,
         updateTypeExtractor),
     new Setting(
         "options.assets.regex",
         "^assets?(:|$)",
-        "Regex to match accounts which are considered assets",
-        "Assets Regex",
+        () => t('settings.assets_regex.help'),
+        () => t('settings.assets_regex'),
         STRING,
         validateRegex,
         updateTypeExtractor),
     new Setting(
         "options.liabilities.regex",
         "^(debts?|liabilit(y|ies))(:|$)",
-        "Regex to match accounts which are considered liabilities",
-        "Liabilities Regex",
+        () => t('settings.liabilities_regex.help'),
+        () => t('settings.liabilities_regex'),
         STRING,
         validateRegex,
         updateTypeExtractor),
     new Setting(
         "options.equity.regex",
         "^equity(:|$)",
-        "Regex to match accounts which are considered equity",
-        "Equity Regex",
+        () => t('settings.equity_regex.help'),
+        () => t('settings.equity_regex'),
         STRING,
         validateRegex,
         updateTypeExtractor),
+    new Setting(
+        "options.locale",
+        "auto",
+        () => t('settings.language.help'),
+        () => t('settings.language'),
+        STRING,
+        val => val === 'auto' || getAvailableLocales().includes(val),
+        () => {
+            const newLocale = getSetting('options.locale');
+            const effectiveLocale = newLocale === 'auto'
+                ? detectLocale(navigator.language || 'en')
+                : newLocale;
+            loadLocale(effectiveLocale);
+            if (typeof window !== 'undefined' && window.i18nTranslatePage) window.i18nTranslatePage();
+        }),
 ]
 
 function initSettings(updateTypeExtractor) {
@@ -137,16 +154,16 @@ function initSettings(updateTypeExtractor) {
           
         </style>
     `)
-    htmlSettings.push("<table id='settings-table'><th>Setting</th><th >Value</th><th >Description</th><th></th></tr>");
+    htmlSettings.push(`<table id='settings-table'><th>${t('settings.title.setting')}</th><th>${t('settings.title.value')}</th><th>${t('settings.title.description')}</th><th></th></tr>`);
 
     for (s of allSettings) {
         htmlSettings.push("<tr>")
-        htmlSettings.push(`<td>${s.displayName}</td>`)
+        htmlSettings.push(`<td>${typeof s.displayName === 'function' ? s.displayName() : s.displayName}</td>`)
         if (s.type === FILE) {
             htmlSettings.push(`<td>
             <input type="text" id="${s.domId}" size="25">
             <input type="file" id="${s.domId}_file" style="display: none;" />
-            <input type="button" id="${s.domId}_browse" value="Browse..." />
+            <input type="button" id="${s.domId}_browse" value="${t('btn.browse')}" />
             </td>`  )
         } else if (s.type === STRING) {
             htmlSettings.push(`<td>
@@ -159,8 +176,8 @@ function initSettings(updateTypeExtractor) {
         } else {
             throw 'fail'
         }
-        htmlSettings.push(`<td>${s.help}</td>`);
-        htmlSettings.push(`<td><input type="button" id="${s.domId}_reset" value="Use Default" /></td>`)
+        htmlSettings.push(`<td>${typeof s.help === 'function' ? s.help() : s.help}</td>`);
+        htmlSettings.push(`<td><input type="button" id="${s.domId}_reset" value="${t('btn.use_default')}" /></td>`)
         htmlSettings.push("</tr>")
     }
 
@@ -178,7 +195,7 @@ function initSettings(updateTypeExtractor) {
                 window.api.settings.set(s.propName, newVal);
                 s.onChange()
             } else {
-                alert('invalid value!')
+                alert(t('settings.invalid_value'))
             }
         };
         let val = getSetting(s.propName)

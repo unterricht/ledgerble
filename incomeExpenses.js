@@ -4,6 +4,7 @@
 
 
 const Stream = require('streamjs');
+const { t } = require('./i18n');
 
 function getSums(dateToPostings, keys, type, flip) {
     const answer = [];
@@ -68,7 +69,7 @@ function updateIncomeExpenses(myChart, postings, dateFormat, dateIntervals, form
         },
 
         legend: {
-            data: ['Expenses', 'Income', 'Net']
+            data: [t('chart.expenses'), t('chart.income'), t('chart.net')]
         },
         xAxis: [
             {
@@ -91,21 +92,21 @@ function updateIncomeExpenses(myChart, postings, dateFormat, dateIntervals, form
         series: [
 
             {
-                name: 'Income',
+                name: t('chart.income'),
                 type: 'bar',
                 stack: 'one',
                 color: 'rgba(75, 192, 192, 0.5)',
                 data: income,
             },
             {
-                name: 'Expenses',
+                name: t('chart.expenses'),
                 type: 'bar',
                 stack: 'one',
                 color: 'rgba(255, 99, 132, 0.5)',
                 data: expenses
             },
             {
-                name: 'Net',
+                name: t('chart.net'),
                 type: 'line',
                 color: 'rgb(54, 162, 235, 0.9)',
                 data: net,
@@ -118,9 +119,9 @@ function updateIncomeExpenses(myChart, postings, dateFormat, dateIntervals, form
     });
 
     const rows = []
-    rows.push(stats('Income', income, formatter))
-    rows.push(stats('Expenses', expenses.map(x => -x), formatter))
-    rows.push(stats('Net', net, formatter))
+    rows.push(stats(t('chart.income'), income, formatter))
+    rows.push(stats(t('chart.expenses'), expenses.map(x => -x), formatter))
+    rows.push(stats(t('chart.net'), net, formatter))
 
     if (icTable) {
         icTable.destroy();

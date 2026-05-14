@@ -4,6 +4,7 @@
 
 const treetable = require('./vendor/jquery-treetable/3.2.0/jquery.treetable')
 const { updatePostings } = require('./postings')
+const { t } = require('./i18n')
 
 const modalDetails = new Map()
 
@@ -30,9 +31,9 @@ function makeTreeTable(amounts, node, formatter, sortByName, details) {
     <table id=${node.id + 'tree'}>
     <thead>
         <tr>
-            <th>Account</th>
-            <th>Amount</th>
-            ${details ? '<th>Postings</th>' : ''}
+            <th>${t('table.account')}</th>
+            <th>${t('table.amount')}</th>
+            ${details ? `<th>${t('table.postings')}</th>` : ''}
         </tr>
       </thead>`)
     console.log(amounts)
@@ -94,7 +95,7 @@ function makeTreeTable(amounts, node, formatter, sortByName, details) {
         html.push(`<td>${window.escapeHtml(key)}</td>`)
         html.push(`<td  align="right">${formatter(value)}</td>`)
         if (details) {
-            html.push(`<td  align="right"><a href="javascript:showModal('${key}')">postings...</td>`)
+            html.push(`<td  align="right"><a href="javascript:showModal('${key}')">${t('table.postings')}</td>`)
         }
         html.push(`</tr>`)
     }

@@ -1,5 +1,9 @@
 const { setupPrintHeader } = require('../print');
 
+// Ensure i18n uses English for all print tests
+const i18n = require('../i18n');
+i18n.loadLocale('en');
+
 describe('Print Header Generation', () => {
     let state;
     let mockHeader;

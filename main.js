@@ -223,6 +223,7 @@ ipcMain.handle('settings:getAll', (_event) => {
     'options.assets.regex',
     'options.liabilities.regex',
     'options.equity.regex',
+    'options.locale',
     'dateUnits',
     'files.list',
   ];

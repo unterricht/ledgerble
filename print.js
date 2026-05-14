@@ -1,3 +1,5 @@
+const { t } = require('./i18n');
+
 function setupPrintHeader(state) {
     window.addEventListener('beforeprint', () => {
         const header = document.getElementById('printHeader');
@@ -24,13 +26,13 @@ function setupPrintHeader(state) {
             }
             deselected = summaryArr.join(', ');
         }
-        const accountStr = deselected.length > 0 ? deselected : `All categories active`;
+        const accountStr = deselected.length > 0 ? deselected : t('print.all_categories');
 
         const headerHtml = `
             <h3>${escapeHtml(filesString)} - ${escapeHtml(date)}</h3>
             <p>
-                <strong>Period:</strong> ${escapeHtml(dateRangeFrom)} to ${escapeHtml(dateRangeTo)} (${escapeHtml(dateUnit)})<br>
-                <strong>${deselected.length > 0 ? 'excluded Categories:' : 'Categories:'}</strong> ${escapeHtml(accountStr)}
+                <strong>${t('print.period')}</strong> ${escapeHtml(dateRangeFrom)} to ${escapeHtml(dateRangeTo)} (${escapeHtml(dateUnit)})<br>
+                <strong>${deselected.length > 0 ? t('print.excluded_categories') : t('print.categories')}</strong> ${escapeHtml(accountStr)}
             </p>
         `;
         header.innerHTML = headerHtml;

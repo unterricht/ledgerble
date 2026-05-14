@@ -1,3 +1,5 @@
+const { t } = require('./i18n');
+
 function buildAccountTree(accounts) {
     const tree = {};
     for (const account of accounts) {
@@ -73,8 +75,8 @@ function renderFilter(containerId, tree, deselected, expandedNodes, onChange) {
     
     const btnHtml = `
         <div style="margin-bottom: 10px;">
-            <button id="btn-select-all" class="btn btn-sm btn-outline-secondary">Select All</button>
-            <button id="btn-deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+            <button id="btn-select-all" class="btn btn-sm btn-outline-secondary">${t('btn.select_all')}</button>
+            <button id="btn-deselect-all" class="btn btn-sm btn-outline-secondary">${t('btn.deselect_all')}</button>
         </div>
     `;
     

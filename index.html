@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html-root">
 
 <head>
 
@@ -120,43 +120,43 @@
       <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
           <a class="nav-link active" id="net-tab" data-toggle="tab" href="#net" role="tab" aria-controls="net"
-            aria-selected="true">Income/Expenses</a>
+            aria-selected="true" data-i18n="tab.income_expenses">Income/Expenses</a>
         </li>
         <li class="nav-item">
           <a class="nav-link " id="balance-tab" data-toggle="tab" href="#balance" role="tab" aria-controls="balance"
-            aria-selected="false">Balance</a>
+            aria-selected="false" data-i18n="tab.balance">Balance</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="expenses-tab" data-toggle="tab" href="#expenses" role="tab" aria-controls="expenses"
-            aria-selected="false">Expenses</a>
+            aria-selected="false" data-i18n="tab.expenses">Expenses</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="income-tab" data-toggle="tab" href="#income" role="tab" aria-controls="income"
-            aria-selected="false">Income</a>
+            aria-selected="false" data-i18n="tab.income">Income</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="assets-tab" data-toggle="tab" href="#assets" role="tab" aria-controls="assets"
-            aria-selected="false">Assets/Liabilities</a>
+            aria-selected="false" data-i18n="tab.assets">Assets/Liabilities</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="postings-tab" data-toggle="tab" href="#postings" role="tab" aria-controls="postings"
-            aria-selected="false">Postings</a>
+            aria-selected="false" data-i18n="tab.postings">Postings</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="options-tab" data-toggle="tab" href="#options" role="tab" aria-controls="options"
-            aria-selected="false">Options</a>
+            aria-selected="false" data-i18n="tab.options">Options</a>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
-            aria-expanded="false">Files</a>
+            aria-expanded="false" data-i18n="tab.files">Files</a>
           <div class="dropdown-menu" id="filesListDropDown">
             <div class="dropdown-divider" id="filesDropDownDivider"></div>
             <a class="dropdown-item" href="#">
-              <button id="reloadFileButton" class="btn btn-link">Reload Files</button>
+              <button id="reloadFileButton" class="btn btn-link" data-i18n="btn.reload_files">Reload Files</button>
             </a>
             <a class="dropdown-item" href="#">
               <input type="file" id="fileSelector" style="display:none">
-              <button id="addFileButton" class="btn btn-link">Open File...</button>
+              <button id="addFileButton" class="btn btn-link" data-i18n="btn.open_file">Open File...</button>
             </a>
           </div>
         </li>
@@ -165,7 +165,7 @@
     <!-- filter -->
     <div class="r_flex_fixed_child">
       <div>
-        <label for="currSelector" style="padding-left: 25px; padding-top: 15px">Currency:</label>
+        <label for="currSelector" style="padding-left: 25px; padding-top: 15px" data-i18n="filter.currency">Currency:</label>
         <select id="currSelector">
 
         </select>
@@ -174,17 +174,17 @@
         style="display:flex; flex-direction:row; align-items:baseline; padding-left: 25px;padding-right: 25px;padding-top: 5px; padding-bottom: 25px;">
         <span>
           <select id="dateUnitsSelector">
-            <option value="Daily">Daily</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-            <option value="Quarterly">Quarterly</option>
-            <option value="Yearly">Yearly</option>
+            <option value="Daily" data-i18n="filter.daily">Daily</option>
+            <option value="Weekly" data-i18n="filter.weekly">Weekly</option>
+            <option value="Monthly" data-i18n="filter.monthly">Monthly</option>
+            <option value="Quarterly" data-i18n="filter.quarterly">Quarterly</option>
+            <option value="Yearly" data-i18n="filter.yearly">Yearly</option>
           </select>
         </span>
-        <label for="dateRangeFrom" style="padding-left: 5px;">From:</label><input id="dateRangeFrom" size="10" />
+        <label for="dateRangeFrom" style="padding-left: 5px;" data-i18n="filter.from">From:</label><input id="dateRangeFrom" size="10" />
         <span style="padding-left: 15px; "></span>
         <span id="date-range-slider" style="flex: auto;"></span>
-        <label for="dateRangeTo" style="padding-left: 15px; ">To:</label><input id="dateRangeTo" size="10" />
+        <label for="dateRangeTo" style="padding-left: 15px; " data-i18n="filter.to">To:</label><input id="dateRangeTo" size="10" />
       </div>
 
     </div>
@@ -213,10 +213,10 @@
                   <thead>
                     <tr>
                       <th></th>
-                      <th>Avg</th>
-                      <th>Max</th>
-                      <th>Min</th>
-                      <th>Total</th>
+                      <th data-i18n="table.avg">Avg</th>
+                      <th data-i18n="table.max">Max</th>
+                      <th data-i18n="table.min">Min</th>
+                      <th data-i18n="table.total">Total</th>
                     </tr>
                   </thead>
                 </table>
@@ -232,15 +232,15 @@
         </div>
         <div class="tab-pane fade" id="expenses" role="tabpanel" aria-labelledby="expenses-tab"
           style="width: 100%; height: 100%;">
-          <a href="#" id="expensesDisplayGraph">Graph</a>
-          <a href="#" id="expensesDisplayTree">Text</a>
+          <a href="#" id="expensesDisplayGraph" data-i18n="toggle.graph">Graph</a>
+          <a href="#" id="expensesDisplayTree" data-i18n="toggle.text">Text</a>
           <div id="expensesTreeMap" style="width: 100%; height: 100%;"></div>
           <div id="expensesTable" style="width: 100%; height: 100%;"></div>
         </div>
         <div class="tab-pane fade" id="income" role="tabpanel" aria-labelledby="income-tab"
           style="width: 100%; height: 100%;">
-          <a href="#" id="incomeDisplayGraph">Graph</a>
-          <a href="#" id="incomeDisplayTree">Text</a>
+          <a href="#" id="incomeDisplayGraph" data-i18n="toggle.graph">Graph</a>
+          <a href="#" id="incomeDisplayTree" data-i18n="toggle.text">Text</a>
           <div id="incomeTreeMap" style="width: 100%; height: 100%;"></div>
           <div id="incomeTable" style="width: 100%; height: 100%;"></div>
         </div>
@@ -253,11 +253,11 @@
           <table id="postingsTable" class="cell-border compact stripe">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Accounts</th>
-                <th>Payee</th>
-                <th>Amount</th>
-                <th>Type</th>
+                <th data-i18n="table.date">Date</th>
+                <th data-i18n="table.accounts">Accounts</th>
+                <th data-i18n="table.payee">Payee</th>
+                <th data-i18n="table.amount">Amount</th>
+                <th data-i18n="table.type">Type</th>
               </tr>
             </thead>
           </table>
@@ -283,17 +283,17 @@
           <table id="modalPostings" class="cell-border compact stripe">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Accounts</th>
-                <th>Payee</th>
-                <th>Amount</th>
+                <th data-i18n="table.date">Date</th>
+                <th data-i18n="table.accounts">Accounts</th>
+                <th data-i18n="table.payee">Payee</th>
+                <th data-i18n="table.amount">Amount</th>
               </tr>
             </thead>
           </table>
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" data-i18n="btn.close">Close</button>
         </div>
       </div>
     </div>
