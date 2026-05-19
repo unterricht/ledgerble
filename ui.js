@@ -185,7 +185,7 @@ window.api.onParsed(function (file, postings, error) {
 });
 
 charts = [];
-const chartOpts = { width: 800, height: 400 };
+const chartOpts = { height: 400 };
 const expensesTreeMap = echarts.init(document.getElementById('expensesTreeMap'), 'macarons', chartOpts)
 charts.push(expensesTreeMap)
 const incomeTreeMap = echarts.init(document.getElementById('incomeTreeMap'), 'macarons', chartOpts)

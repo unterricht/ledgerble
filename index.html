@@ -33,6 +33,13 @@
     flex-flow: column nowrap;
   }
 
+  /* Padding for affected tabs to ensure normal spacing left and right to filter & window border */
+  #net, #expenses, #income, #assets {
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+
   .r_flex_fixed_child {
     flex: none;
 
@@ -209,7 +216,7 @@
                 <div id="incomeExpenses" style="width: 100%; height: 100%;"></div>
               </div>
               <div style="display:flex; justify-content: center; max-height: 40%; overflow: auto;">
-                <table id="incomeExpensesTable" class="cell-border compact stripe ">
+                <table id="incomeExpensesTable" class="cell-border compact stripe" style="width: 100%;">
                   <thead>
                     <tr>
                       <th></th>

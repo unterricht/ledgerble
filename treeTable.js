@@ -27,8 +27,9 @@ function makeTreeTable(amounts, node, formatter, sortByName, details) {
         })
     }
     const html = []
+    const widthStyle = node.id === 'balanceTable' ? '' : ' style="width: 100%;"';
     html.push(`
-    <table id=${node.id + 'tree'}>
+    <table id="${node.id}tree"${widthStyle}>
     <thead>
         <tr>
             <th>${t('table.account')}</th>
