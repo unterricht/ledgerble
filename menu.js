@@ -9,15 +9,15 @@ function setupAppMenu(mainWindow) {
         ...(isMac ? [{
             label: app.name || 'Ledgerble',
             submenu: [
-                { role: 'about' },
+                { role: 'about', label: t('menu.about') },
                 { type: 'separator' },
-                { role: 'services' },
+                { role: 'services', label: t('menu.services') },
                 { type: 'separator' },
-                { role: 'hide' },
-                { role: 'hideOthers' },
-                { role: 'unhide' },
+                { role: 'hide', label: t('menu.hide') },
+                { role: 'hideOthers', label: t('menu.hideOthers') },
+                { role: 'unhide', label: t('menu.unhide') },
                 { type: 'separator' },
-                { role: 'quit' }
+                { role: 'quit', label: t('menu.quit') }
             ]
         }] : []),
         // { role: 'fileMenu' }
@@ -33,35 +33,35 @@ function setupAppMenu(mainWindow) {
                         }
                     }
                 },
-                isMac ? { role: 'close' } : { role: 'quit' }
+                isMac ? { role: 'close', label: t('menu.close') } : { role: 'quit', label: t('menu.quit') }
             ]
         },
         // { role: 'editMenu' }
         {
             label: t('menu.edit'),
             submenu: [
-                { role: 'undo' },
-                { role: 'redo' },
+                { role: 'undo', label: t('menu.undo') },
+                { role: 'redo', label: t('menu.redo') },
                 { type: 'separator' },
-                { role: 'cut' },
-                { role: 'copy' },
-                { role: 'paste' },
+                { role: 'cut', label: t('menu.cut') },
+                { role: 'copy', label: t('menu.copy') },
+                { role: 'paste', label: t('menu.paste') },
                 ...(isMac ? [
-                    { role: 'pasteAndMatchStyle' },
-                    { role: 'delete' },
-                    { role: 'selectAll' },
+                    { role: 'pasteAndMatchStyle', label: t('menu.pasteAndMatchStyle') },
+                    { role: 'delete', label: t('menu.delete') },
+                    { role: 'selectAll', label: t('menu.selectAll') },
                     { type: 'separator' },
                     {
                         label: t('menu.speech'),
                         submenu: [
-                            { role: 'startSpeaking' },
-                            { role: 'stopSpeaking' }
+                            { role: 'startSpeaking', label: t('menu.startSpeaking') },
+                            { role: 'stopSpeaking', label: t('menu.stopSpeaking') }
                         ]
                     }
                 ] : [
-                    { role: 'delete' },
+                    { role: 'delete', label: t('menu.delete') },
                     { type: 'separator' },
-                    { role: 'selectAll' }
+                    { role: 'selectAll', label: t('menu.selectAll') }
                 ])
             ]
         },
@@ -69,30 +69,30 @@ function setupAppMenu(mainWindow) {
         {
             label: t('menu.view'),
             submenu: [
-                { role: 'reload' },
-                { role: 'forceReload' },
-                { role: 'toggleDevTools' },
+                { role: 'reload', label: t('menu.reload') },
+                { role: 'forceReload', label: t('menu.forceReload') },
+                { role: 'toggleDevTools', label: t('menu.toggleDevTools') },
                 { type: 'separator' },
-                { role: 'resetZoom' },
-                { role: 'zoomIn' },
-                { role: 'zoomOut' },
+                { role: 'resetZoom', label: t('menu.resetZoom') },
+                { role: 'zoomIn', label: t('menu.zoomIn') },
+                { role: 'zoomOut', label: t('menu.zoomOut') },
                 { type: 'separator' },
-                { role: 'togglefullscreen' }
+                { role: 'togglefullscreen', label: t('menu.togglefullscreen') }
             ]
         },
         // { role: 'windowMenu' }
         {
             label: t('menu.window'),
             submenu: [
-                { role: 'minimize' },
-                { role: 'zoom' },
+                { role: 'minimize', label: t('menu.minimize') },
+                { role: 'zoom', label: t('menu.zoom') },
                 ...(isMac ? [
                     { type: 'separator' },
-                    { role: 'front' },
+                    { role: 'front', label: t('menu.front') },
                     { type: 'separator' },
-                    { role: 'window' }
+                    { role: 'window', label: t('menu.window') }
                 ] : [
-                    { role: 'close' }
+                    { role: 'close', label: t('menu.close') }
                 ])
             ]
         }
