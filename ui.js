@@ -141,7 +141,7 @@ async function initApp() {
     await loadSettingsCache();
 
     // ── i18n: detect and apply locale ────────────────────────
-    const savedLocale = settingsCache['options.locale'];
+    const savedLocale = getSetting('options.locale');
     const effectiveLocale = (!savedLocale || savedLocale === 'auto')
         ? detectLocale(navigator.language || 'en')
         : savedLocale;
@@ -185,13 +185,14 @@ window.api.onParsed(function (file, postings, error) {
 });
 
 charts = [];
-const expensesTreeMap = echarts.init(document.getElementById('expensesTreeMap'), 'macarons')
+const chartOpts = { width: 800, height: 400 };
+const expensesTreeMap = echarts.init(document.getElementById('expensesTreeMap'), 'macarons', chartOpts)
 charts.push(expensesTreeMap)
-const incomeTreeMap = echarts.init(document.getElementById('incomeTreeMap'), 'macarons')
+const incomeTreeMap = echarts.init(document.getElementById('incomeTreeMap'), 'macarons', chartOpts)
 charts.push(incomeTreeMap)
-const incomeExpenses = echarts.init(document.getElementById('incomeExpenses'), 'macarons')
+const incomeExpenses = echarts.init(document.getElementById('incomeExpenses'), 'macarons', chartOpts)
 charts.push(incomeExpenses)
-const assetsChart = echarts.init(document.getElementById('assetsChart'), 'macarons')
+const assetsChart = echarts.init(document.getElementById('assetsChart'), 'macarons', chartOpts)
 charts.push(assetsChart)
 
 //https://stackoverflow.com/questions/30468111/bootstrap-shown-bs-tab-event-not-working
