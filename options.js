@@ -126,6 +126,8 @@ const allSettings = [
             if (window.api && window.api.menu && window.api.menu.rebuild) {
                 window.api.menu.rebuild();
             }
+            // Re-render settings table in the newly selected language
+            initSettings(realTypeExtractor);
         },
         () => ['auto', ...getAvailableLocales()]
     ),

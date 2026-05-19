@@ -67,21 +67,26 @@ test('getAvailableLocales() includes "en" and "de"', () => {
 
 // ── Completeness Safeguard ────────────────────────────────────
 
-test('en.json and de.json have exactly the same set of keys', () => {
-    const enPath = path.join(__dirname, '..', 'locales', 'en.json');
-    const dePath = path.join(__dirname, '..', 'locales', 'de.json');
-
+test('all locale JSON files have exactly the same set of keys as en.json', () => {
+    const localesDir = path.join(__dirname, '..', 'locales');
+    const enPath = path.join(localesDir, 'en.json');
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
-    const de = JSON.parse(fs.readFileSync(dePath, 'utf8'));
-
     const enKeys = Object.keys(en).sort();
-    const deKeys = Object.keys(de).sort();
 
-    const missingInDe = enKeys.filter(k => !deKeys.includes(k));
-    const extraInDe   = deKeys.filter(k => !enKeys.includes(k));
+    const files = fs.readdirSync(localesDir).filter(f => f.endsWith('.json'));
 
-    expect(missingInDe).toEqual([]);
-    expect(extraInDe).toEqual([]);
+    for (const file of files) {
+        if (file === 'en.json') continue;
+        const filePath = path.join(localesDir, file);
+        const locale = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        const localeKeys = Object.keys(locale).sort();
+
+        const missing = enKeys.filter(k => !localeKeys.includes(k));
+        const extra   = localeKeys.filter(k => !enKeys.includes(k));
+
+        expect({ file, missing }).toEqual({ file, missing: [] });
+        expect({ file, extra }).toEqual({ file, extra: [] });
+    }
 });
 
 test('en.json has no empty string values', () => {

@@ -1,6 +1,6 @@
 {
   "name": "ledgerble",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Gui for Ledger CLI",
   "main": "main.js",
   "scripts": {
@@ -29,7 +29,17 @@
       "extendInfo": {
         "CFBundleLocalizations": [
           "en",
-          "de"
+          "de",
+          "es",
+          "fr",
+          "zh-CN",
+          "ja",
+          "ru",
+          "pt",
+          "it",
+          "nl",
+          "ko",
+          "pl"
         ]
       }
     },

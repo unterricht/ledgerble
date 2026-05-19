@@ -21,8 +21,18 @@
 // ── Built-in locales (inlined by esbuild at bundle time) ─────
 
 const BUILT_IN = {
-    en: require('./locales/en.json'),
     de: require('./locales/de.json'),
+    en: require('./locales/en.json'),
+    es: require('./locales/es.json'),
+    fr: require('./locales/fr.json'),
+    it: require('./locales/it.json'),
+    ja: require('./locales/ja.json'),
+    ko: require('./locales/ko.json'),
+    nl: require('./locales/nl.json'),
+    pl: require('./locales/pl.json'),
+    pt: require('./locales/pt.json'),
+    ru: require('./locales/ru.json'),
+    'zh-CN': require('./locales/zh-CN.json'),
 };
 
 // ── Module state ──────────────────────────────────────────────

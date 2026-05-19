@@ -64,7 +64,7 @@
   "settings.equity_regex": "Eigenkapital-Regex",
   "settings.equity_regex.help": "Regex für Konten, die als Eigenkapital gelten",
   "settings.language": "Sprache",
-  "settings.language.help": "Sprache der Benutzeroberfläche. App neu starten zum Übernehmen.",
+  "settings.language.help": "Sprache der Benutzeroberfläche. Language selection.",
   "settings.invalid_value": "Ungültiger Wert!",
 
   "files.no_files_alert": "Verwende das Dateien-Menü, um eine oder mehrere Journal-Dateien zu öffnen.",

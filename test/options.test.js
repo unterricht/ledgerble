@@ -44,4 +44,40 @@ describe('options.js UI', () => {
             expect(global.lastHtml).toContain(`<option value="${loc}">${loc}</option>`);
         }
     });
+
+    it('should re-render options table in the new language when locale changes', () => {
+        let changeCallback = null;
+        let htmlCalls = [];
+        
+        global.$ = jest.fn().mockImplementation((selector) => {
+            return {
+                html: jest.fn(htmlStr => {
+                    htmlCalls.push(htmlStr);
+                    global.lastHtml = htmlStr;
+                }),
+                val: jest.fn().mockReturnValue('de'),
+                change: jest.fn(cb => {
+                    if (selector === '#options_locale') {
+                        changeCallback = cb;
+                    }
+                }),
+                click: jest.fn(),
+                prop: jest.fn()
+            };
+        });
+
+        initSettings(() => 'test');
+        
+        // Initial render should contain English heading
+        expect(global.lastHtml).toContain('<th>Setting</th>');
+        expect(global.lastHtml).not.toContain('<th>Sprache</th>');
+
+        // Trigger locale change
+        if (changeCallback) {
+            changeCallback();
+        }
+
+        // After change, it should have updated global.lastHtml with the German heading "Einstellung"
+        expect(global.lastHtml).toContain('<th>Einstellung</th>');
+    });
 });

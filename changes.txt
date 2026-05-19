@@ -1,3 +1,6 @@
+0.3.0
+- Added localization for 10 common languages (es, fr, zh-CN, ja, ru, pt, it, nl, ko, pl)
+
 0.2.0
 - Modernized Electron to v35+ with Apple Silicon (ARM64) support
 - Hardened security with contextIsolation and secure IPC (preload.js)

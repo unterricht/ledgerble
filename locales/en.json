@@ -64,7 +64,7 @@
   "settings.equity_regex": "Equity Regex",
   "settings.equity_regex.help": "Regex to match accounts which are considered equity",
   "settings.language": "Language",
-  "settings.language.help": "UI language. Restart the app to apply.",
+  "settings.language.help": "UI language. Language selection.",
   "settings.invalid_value": "invalid value!",
 
   "files.no_files_alert": "Use the Files menu to select one or more journal files.",
