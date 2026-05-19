@@ -31,7 +31,13 @@
           "arch": ["arm64"]
         }
       ],
-      "category": "public.app-category.finance"
+      "category": "public.app-category.finance",
+      "extendInfo": {
+        "CFBundleLocalizations": [
+          "en",
+          "de"
+        ]
+      }
     },
     "files": [
       "main.js",
