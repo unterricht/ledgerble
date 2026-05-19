@@ -38,4 +38,22 @@ describe('App Menu', () => {
         printOption.click();
         expect(mockWin.webContents.executeJavaScript).toHaveBeenCalledWith('window.print()');
     });
+
+    it('should translate menu items according to locale', () => {
+        const { loadLocale } = require('../i18n');
+        loadLocale('de');
+        
+        const template = setupAppMenu({});
+        
+        // Find the "Datei" menu (File in German)
+        const fileMenu = template.find(item => item.label === 'Datei');
+        expect(fileMenu).toBeDefined();
+
+        // Find "Drucken" in the "Datei" submenu
+        const printOption = fileMenu.submenu.find(item => item.label === 'Drucken');
+        expect(printOption).toBeDefined();
+        
+        // Revert to English for other tests
+        loadLocale('en');
+    });
 });

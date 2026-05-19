@@ -44,6 +44,13 @@ contextBridge.exposeInMainWorld('api', {
     },
   },
 
+  // ── Menu ──────────────────────────────────────────────────────
+  menu: {
+    rebuild: () => {
+      ipcRenderer.send('menu:rebuild');
+    }
+  },
+
   // ── Utilities ─────────────────────────────────────────────────
   pathBasename: (filePath) => {
     return ipcRenderer.invoke('path:basename', filePath);

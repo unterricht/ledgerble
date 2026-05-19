@@ -30,15 +30,16 @@ function validateRegex(val) {
 
 
 class Setting {
-    constructor(propName, def, help, displayName, type, validate, onChange) {
+    constructor(propName, def, help, displayName, type, validate, onChange, getOptions) {
         this.propName = propName;
         this.def = def;
         this.help = help;
         this.displayName = displayName;
         this.type = type;
         this.domId = propName.replace(/\./g, '_');
-        this.validate = validate ? validate : _ => true
-        this.onChange = onChange ? onChange : () => { }
+        this.validate = validate ? validate : _ => true;
+        this.onChange = onChange ? onChange : () => {};
+        this.getOptions = getOptions ? getOptions : () => [];
     }
 
 }
@@ -46,6 +47,7 @@ class Setting {
 const FILE = 'file'
 const STRING = 'string'
 const BOOL = 'bool'
+const DROPDOWN = 'dropdown'
 
 let realTypeExtractor = null;
 let updateTypeExtractor = () => realTypeExtractor()
@@ -112,7 +114,7 @@ const allSettings = [
         "auto",
         () => t('settings.language.help'),
         () => t('settings.language'),
-        STRING,
+        DROPDOWN,
         val => val === 'auto' || getAvailableLocales().includes(val),
         () => {
             const newLocale = getSetting('options.locale');
@@ -121,7 +123,12 @@ const allSettings = [
                 : newLocale;
             loadLocale(effectiveLocale);
             if (typeof window !== 'undefined' && window.i18nTranslatePage) window.i18nTranslatePage();
-        }),
+            if (window.api && window.api.menu && window.api.menu.rebuild) {
+                window.api.menu.rebuild();
+            }
+        },
+        () => ['auto', ...getAvailableLocales()]
+    ),
 ]
 
 function initSettings(updateTypeExtractor) {
@@ -169,6 +176,13 @@ function initSettings(updateTypeExtractor) {
             htmlSettings.push(`<td>
             <input type="text" id="${s.domId}" size="25">
             </td>`  )
+        } else if (s.type === DROPDOWN) {
+            let optionsHtml = s.getOptions().map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            htmlSettings.push(`<td>
+            <select id="${s.domId}">
+                ${optionsHtml}
+            </select>
+            </td>`  )
         }
         else if (s.type == BOOL) {
             htmlSettings.push(`
@@ -213,7 +227,7 @@ function initSettings(updateTypeExtractor) {
             $(`#${s.domId}`).change(() => {
                 save()
             })
-        } else if (s.type === STRING) {
+        } else if (s.type === STRING || s.type === DROPDOWN) {
             extract = () => $(`#${s.domId}`).val()
             $(`#${s.domId}`).val(val)
 
@@ -234,7 +248,7 @@ function initSettings(updateTypeExtractor) {
 
 
         $(`#${s.domId}_reset`).click(() => {
-            if (s.type === FILE  || s.type == STRING) {
+            if (s.type === FILE  || s.type == STRING || s.type === DROPDOWN) {
                 $(`#${s.domId}`).val(s.def)
             } else if (s.type == BOOL) {
                 $(`#${s.domId}`).prop('checked', s.def)

@@ -46,7 +46,20 @@ function createWindow() {
   
   // Initialize the native application menu
   const { setupAppMenu } = require('./menu')
+  const { loadLocale, detectLocale } = require('./i18n')
+  const localeSetting = settings.value('options.locale', 'auto')
+  const effectiveLocale = localeSetting === 'auto' ? detectLocale(app.getLocale()) : localeSetting
+  loadLocale(effectiveLocale)
+
   setupAppMenu(win)
+
+  ipcMain.removeAllListeners('menu:rebuild')
+  ipcMain.on('menu:rebuild', () => {
+    const newLocaleSetting = settings.value('options.locale', 'auto')
+    const newEffectiveLocale = newLocaleSetting === 'auto' ? detectLocale(app.getLocale()) : newLocaleSetting
+    loadLocale(newEffectiveLocale)
+    setupAppMenu(win)
+  })
 
   //win.webContents.openDevTools()
 
