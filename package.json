@@ -37,6 +37,7 @@
       "main.js",
       "preload.js",
       "hledger.js",
+      "menu.js",
       "i18n.js",
       "index.html",
       "dist/**",
