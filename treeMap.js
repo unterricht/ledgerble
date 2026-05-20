@@ -5,6 +5,7 @@
 
 const echarts = require('echarts');
 const { makeTreeTable } = require('./treeTable')
+const { t } = require('./i18n');
 
 function getLevelOption() {
     return [
@@ -123,6 +124,30 @@ function updateTreeMap(myChart, table, postings, flip, formatter) {
             "path": "emtpy",
             "children": []
         }
+    } else {
+        function addDirectNodes(node) {
+            if (node.children && node.children.length > 0) {
+                let childrenSum = 0;
+                for (let child of node.children) {
+                    childrenSum += child.value;
+                    addDirectNodes(child);
+                }
+                let diff = node.value - childrenSum;
+                if (diff > 0.01) {
+                    const nodeNameParts = node.path.split('/');
+                    const shortName = nodeNameParts[nodeNameParts.length - 1];
+                    const localizedSuffix = t('treeMap.withoutSubcategory');
+                    
+                    node.children.push({
+                        "value": diff,
+                        "name": `${shortName} ${localizedSuffix} ${formatter(diff)}`,
+                        "path": node.path + '/' + shortName + '_direct',
+                        "children": []
+                    });
+                }
+            }
+        }
+        addDirectNodes(root);
     }
 
 
@@ -145,6 +170,10 @@ function updateTreeMap(myChart, table, postings, flip, formatter) {
         },
 
         tooltip: {
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            textStyle: {
+                color: '#333'
+            },
             formatter: function (info) {
                 var value = info.value;
                 var treePathInfo = info.treePathInfo;
