@@ -61,10 +61,7 @@ function updateAssets(myChart, balances, intervals, startIndex, endIndex, format
 
         },
         tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            textStyle: {
-                color: '#333'
-            },
+            className: 'echarts-tooltip',
             //trigger: 'axis',
             axisPointer: {
                 type: 'cross',

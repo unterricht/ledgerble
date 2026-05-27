@@ -54,11 +54,8 @@ function updateIncomeExpenses(myChart, postings, dateFormat, dateIntervals, form
 
     myChart.setOption(option = {
         tooltip: {
+            className: 'echarts-tooltip',
             trigger: 'axis',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            textStyle: {
-                color: '#333'
-            },
             axisPointer: {
                 type: 'cross',
                 crossStyle: {

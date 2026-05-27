@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { execSync } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(require('child_process').exec);
 const papaparse = require('papaparse')
 const moment = require('moment');
 const { parseHLedgerVal } = require('./hledger')
@@ -111,19 +113,20 @@ ipcMain.on("parse", function (event, command, hledger, file) {
 });
 
 
-function parse(event, command, hledger, file) {
+async function parse(event, command, hledger, file) {
 
   try {
-    let postings;
+    let result;
     if (hledger) {
-      postings = parseHLedger(command, file)
+      const postings = parseHLedger(command, file);
+      result = { postings, postingsCost: postings.map(p => ({ quantity: p.amount, commodity: p.currency })), prices: [] };
     } else {
-      postings = parseLedger(command, file)
+      result = await parseLedgerAsync(command, file)
     }
     event.reply(
       'parsed',
       file,
-      postings,
+      result,
       null);
   } catch (t) {
     console.log('couldnt parse', file, t)
@@ -135,34 +138,84 @@ function parse(event, command, hledger, file) {
   }
 }
 
-function parseLedger(command, file) {
+async function parseLedgerAsync(command, file) {
+  const baseCmd = '"' + command + '" -f "' + file + '"';
+  
+  const [outCsv, outCsvCost, outPrices] = await Promise.all([
+    execPromise(`${baseCmd} csv --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }),
+    execPromise(`${baseCmd} csv -B --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }),
+    execPromise(`${baseCmd} prices --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }).catch(e => ({ stdout: '' }))
+  ]);
 
-  out = execSync('"' + command + '" -f "' + file + '" csv --no-pager --no-color', { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 })
-  res = papaparse.parse(out, {
+  const resCsv = papaparse.parse(outCsv.stdout, {
     delimiter: ',',
     header: false,
     escapeChar: '\\',
   })
 
-  if (res.errors.length > 0) {
-    throw res.errors[0].message
+  if (resCsv.errors.length > 0) {
+    throw resCsv.errors[0].message
   }
+
+  const resCost = papaparse.parse(outCsvCost.stdout, {
+    delimiter: ',',
+    header: false,
+    escapeChar: '\\',
+  })
+
+  if (resCost.errors.length > 0) {
+    throw resCost.errors[0].message
+  }
+
   let postings = []
-  for (r of res.data) {
+  for (const r of resCsv.data) {
     if (r.length != 1) {
+      // Parse date safely as UTC YYYY-MM-DD string to avoid timezone issues
+      const isoDate = moment.utc(r[0], "YYYY/MM/DD").format("YYYY-MM-DD");
       postings.push(
         new Posting(
-          new Date(moment(r[0], "YYYY/MM/DD").format()),
+          isoDate,
           r[3].split(":"),
           parseFloat(r[5]),
-          r[4] === '' ? "??" : r[4],
+          r[4] === '' ? "??" : r[4].replace(/^"|"$/g, ''),
           r[2]
         )
       )
     }
   }
-  
-  return postings;
+
+  let postingsCost = []
+  for (const r of resCost.data) {
+    if (r.length != 1) {
+      postingsCost.push({
+        date: moment.utc(r[0], "YYYY/MM/DD").format("YYYY-MM-DD"),
+        account: r[3],
+        quantity: parseFloat(r[5]),
+        commodity: r[4] === '' ? "??" : r[4].replace(/^"|"$/g, '')
+      });
+    }
+  }
+
+  const prices = [];
+  if (outPrices.stdout) {
+    const lines = outPrices.stdout.split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(\d{4}[-/]\d{2}[-/]\d{2})\s+(\S+)\s+(.+)$/);
+      if (match) {
+         let date = match[1].replace(/\//g, '-');
+         let commodity = match[2].replace(/^"|"$/g, '');
+         let valStr = match[3].trim();
+         let valMatch = valStr.match(/([^0-9.-]*)([0-9.-]+)(.*)/);
+         if (valMatch) {
+            let price = parseFloat(valMatch[2]);
+            let priceCommodity = (valMatch[1] + valMatch[3]).trim() || 'EUR';
+            prices.push({ date, commodity, price, priceCommodity });
+         }
+      }
+    }
+  }
+
+  return { postings, postingsCost, prices };
 }
 
 function parseHLedger(command, file) {

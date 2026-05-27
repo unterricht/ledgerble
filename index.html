@@ -55,6 +55,14 @@
     font-weight: bold;
   }
 
+  /* Consolidated Tooltip for ECharts */
+  .echarts-tooltip {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  }
+
   /* --- Print Styling --- */
   @media print {
     /* Show print header */
@@ -72,6 +80,7 @@
     #incomeDisplayTree {
       display: none !important;
     }
+
     
     /* Remove fixed heights and flex layouts that clip content */
     html, body, .r_flex_container, .r_flex_expand_child, .tab-content {
@@ -144,6 +153,10 @@
         <li class="nav-item">
           <a class="nav-link" id="assets-tab" data-toggle="tab" href="#assets" role="tab" aria-controls="assets"
             aria-selected="false" data-i18n="tab.assets">Assets/Liabilities</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="portfolio-tab" data-toggle="tab" href="#portfolio" role="tab" aria-controls="portfolio"
+            aria-selected="false" data-i18n="tab.portfolio">Portfolio</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="postings-tab" data-toggle="tab" href="#postings" role="tab" aria-controls="postings"
@@ -254,6 +267,25 @@
         <div class="tab-pane fade" id="assets" role="tabpanel" aria-labelledby="assets-tab"
           style="width: 100%; height: 100%;">
           <div id="assetsChart" style="width: 100%; height: 100%;"></div>
+        </div>
+        <div class="tab-pane fade" id="portfolio" role="tabpanel" aria-labelledby="portfolio-tab"
+          style="width: 100%; height: 100%;">
+          <div id="portfolioChart" style="width: 100%; height: 60%;"></div>
+          <div id="portfolioTableContainer" style="width: 100%; height: 40%; overflow: auto; margin-top: 10px;">
+             <table id="portfolioTable" class="cell-border compact stripe" style="width: 100%;">
+                <thead>
+                   <tr>
+                      <th data-i18n="table.account">Account</th>
+                      <th data-i18n="table.asset">Asset</th>
+                      <th data-i18n="table.quantity">Quantity</th>
+                      <th data-i18n="table.cost_basis">Cost Basis</th>
+                      <th data-i18n="table.market_value">Market Value</th>
+                      <th data-i18n="table.unrealized">Unrealized Gain</th>
+                   </tr>
+                </thead>
+                <tbody id="portfolioTableBody"></tbody>
+             </table>
+          </div>
         </div>
         <div class="tab-pane fade" id="postings" role="tabpanel" aria-labelledby="postings-tab"
           style="width: 100%; height: 100%;">

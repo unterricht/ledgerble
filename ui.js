@@ -6,6 +6,7 @@
  */
 
 const Stream = require('streamjs');
+const { ValuationService } = require('./valuation');
 
 const updateIncomeExpenses = require('./incomeExpenses')
 const { buildAccountTree, filterPostings, renderFilter } = require('./accountFilter');
@@ -20,6 +21,7 @@ const { dateInit, dateUpdate, setDate } = require('./dateRangeSelector')
 const { filesInit, alertCantparse, reloadFiles } = require('./files')
 const updateAssets = require('./assets')
 const updateBalance = require('./balance')
+const { updatePortfolio } = require('./portfolio')
 var bs = require("binary-search");
 const numeral = require('numeral')
 
@@ -59,9 +61,17 @@ require('datatables.net-scroller-dt');
 //either parsed and a list of Postings,
 //or an error
 class FileState {
-    constructor(error, postings) {
+    constructor(error, data) {
         this.error = error;
-        this.postings = postings;
+        if (data && data.postings) {
+            this.postings = data.postings;
+            this.postingsCost = data.postingsCost || [];
+            this.prices = data.prices || [];
+        } else {
+            this.postings = data || [];
+            this.postingsCost = [];
+            this.prices = [];
+        }
     }
 }
 
@@ -166,21 +176,22 @@ setupPrintHeader(state);
 initApp();
 
 // ── IPC: receive parsed results via preload bridge ──────────
-window.api.onParsed(function (file, postings, error) {
+window.api.onParsed(function (file, result, error) {
     if (error) {
         alertCantparse(file, error)
     }
-    else if (postings) {
-        //serialized as json strings, restore to a date
-        postings.forEach(t => {
-            t.date = new Date(t.date)
+    else if (result) {
+        let postingsToMap = result.postings || result;
+        postingsToMap.forEach(t => {
+            t.dateString = t.date; // Keep original YYYY-MM-DD
+            t.date = new Date(t.date + 'T00:00:00Z');
             t.accountsFmtd = accountsFmtd
-            t.dateFmtd = dateFmtd,
+            t.dateFmtd = dateFmtd;
             t.type = typeExtractor(t.accounts.join(':'))
         })
     }
 
-    state.files.set(file, new FileState(error, postings))
+    state.files.set(file, new FileState(error, result))
     update();
 });
 
@@ -201,6 +212,10 @@ $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
     const target = $(e.target).attr("href");
     updateFilterVisibility(target, $('#accountFilterContainer'));
     update();
+    // Resize all charts (including portfolio) when switching tabs
+    for (const chart of charts) {
+        chart.resize();
+    }
 })
 
 $('document').ready(() => filesInit());
@@ -213,21 +228,44 @@ window.update = update;
 
 function update() {
 
+    let allPostings = [];
+    let allPostingsCost = [];
+    let allPrices = [];
+
+    for (let f of state.files.values()) {
+        if (f && !f.error) {
+            allPostings = allPostings.concat(f.postings || []);
+            allPostingsCost = allPostingsCost.concat(f.postingsCost || []);
+            allPrices = allPrices.concat(f.prices || []);
+        }
+    }
+
+    const valuationService = new ValuationService();
+    valuationService.parsePrices(allPrices);
+    let valResult;
+    try {
+        valResult = valuationService.calculateRunningBalances(allPostings, allPostingsCost);
+    } catch(e) {
+        console.error(e);
+        valResult = { balances: {}, baseCurrency: 'EUR' };
+    }
+
     state.postingsBeforeCurrencySelected = Stream(state.files.values())
         .filter(t => t) //Stream gives an extra undefined for some reason
         .filter(t => !t.error)
         .flatMap(t => t.postings)
         .toList()
 
-    let currencies = new Set()
-    for (p of state.postingsBeforeCurrencySelected) {
-        currencies.add(p.currency)
-    }
+    let currencies = valuationService.detectBaseCurrencies(state.postingsBeforeCurrencySelected, valuationService.prices);
 
     currentCurrency = updateCurrencies(currencies)
 
-
-
+    // Ensure the default selection aligns with the base currency if available
+    if (currencies.has(valResult.baseCurrency) && !state.hasAutoSelectedCurrency) {
+        currentCurrency = valResult.baseCurrency;
+        $('#currencySelect').val(currentCurrency);
+        state.hasAutoSelectedCurrency = true;
+    }
 
     createValueFormatter(currentCurrency);
 
@@ -270,7 +308,48 @@ function update() {
         state.intervals,
         state.dateFormat)
 
+    // --- MARKET VALUE SUBSTITUTION ---
+    // For each account and interval, add the market value of non-base currency assets
+    for (let [keyStr, amounts] of state.balances.entries()) {
+        const accountMatches = Array.from(state.deselectedAccounts).some(deselected => keyStr.account && keyStr.account.startsWith(deselected));
+        if (accountMatches) continue;
+
+        let accountName = keyStr.account;
+        // valResult.balances[accountName] contains all commodities
+        if (valResult.balances[accountName]) {
+            for (let i = 0; i < state.intervals.length; i++) {
+                let intervalDateStr = state.intervals[i];
+                let additionalValue = 0;
+                for (const commodity of Object.keys(valResult.balances[accountName])) {
+                    // Only add if it's NOT the current selected currency, because those are already in rawPostings!
+                    if (commodity !== currentCurrency) {
+                        const val = valuationService.getAccountValueAtDate(valResult.balances, currentCurrency, accountName, commodity, state.intervalDates[i]);
+                        additionalValue += val.marketValue;
+                    }
+                }
+                amounts[i] += additionalValue;
+            }
+        }
+    }
+    // ---------------------------------
+
     const sliderValues = dateUpdate(state)
+
+    const portfolioChart = updatePortfolio(
+        document.getElementById('portfolioChart'),
+        document.getElementById('portfolioTableBody'),
+        state,
+        valResult,
+        valuationService,
+        currentCurrency,
+        state.intervals,
+        state.intervalDates,
+        sliderValues
+    );
+    // Track portfolio chart for resize handling
+    if (portfolioChart && !charts.includes(portfolioChart)) {
+        charts.push(portfolioChart);
+    }
 
     dateFilter = p => {
         formattedDate = state.dateFormat(p.date)
