@@ -1,345 +1,68 @@
 <!doctype html>
-<html lang="en" id="html-root">
-
+<html lang="en">
 <head>
-
-  <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <link rel="stylesheet" href="vendor/bootstrap/4.3.1/bootstrap.min.css">
-  <link rel="stylesheet" href="vendor/jquery-ui/1.12.1/jquery-ui.css">
-  <link rel="stylesheet" href="vendor/datatables/style/datatables.css">
-  <link rel="stylesheet" href="vendor/jquery-treetable/3.2.0/css/jquery.treetable.css">
-  <link rel="stylesheet" href="vendor/jquery-treetable/3.2.0/css/jquery.treetable.theme.default.css">
-
   <title>Ledgerble</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    :root {
+      --rd-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      --rd-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, "Cascadia Code", monospace;
+    }
+    body {
+      font-family: var(--rd-sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      height: 100vh; overflow: hidden;
+      background:
+        radial-gradient(120% 90% at 50% -10%, #EFF1F5 0%, rgba(239,241,245,0) 55%),
+        linear-gradient(180deg, #E7EAEF 0%, #DCE0E7 100%);
+    }
+    #root { width: 100vw; height: 100vh; }
+
+    /* hover states (calm) */
+    .rd-row:hover { background: #F7F8FA; }
+    .rd-nav:hover { background: #E7E9ED; }
+    .rd-acct:hover { background: #F2F3F6; }
+    .rd-menu:hover { background: rgba(16,18,22,0.07); }
+
+    /* focus ring */
+    input:focus, select:focus {
+      border-color: #2E6E5D !important;
+      box-shadow: 0 0 0 3px rgba(46,110,93,0.18);
+    }
+    input::placeholder { color: #AFB3BB; }
+
+    /* slim scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D2D6DD; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #B9BEC7; background-clip: content-box; }
+
+    button { font-family: inherit; }
+
+    /* ── print: drop all chrome, let the active report flow onto paper ── */
+    @media print {
+      @page { margin: 14mm; }
+      html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+      body { display: block !important; }
+      .app-root { height: auto !important; display: block !important; }
+      .app-stage { padding: 0 !important; display: block !important; height: auto !important; overflow: visible !important; }
+      .print-card { box-shadow: none !important; border: none !important; border-radius: 0 !important; max-height: none !important; height: auto !important; width: 100% !important; }
+      .card-body, .main-pane, .pane-region, .pane-content { height: auto !important; overflow: visible !important; display: block !important; }
+      .pane-content * { height: auto !important; max-height: none !important; overflow: visible !important; }
+      .chrome-print-hide, [data-omelette-chrome] { display: none !important; }
+      #printHeader { display: block !important; }
+      table, .rd-row { break-inside: avoid; }
+      ::-webkit-scrollbar { display: none; }
+    }
+  </style>
 </head>
-
-<!-- https://stackoverflow.com/questions/25098042/fill-remaining-vertical-space-with-css-using-displayflex/25098486-->
-<style>
-  html,
-  body,
-  .r_flex_container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-  }
-
-  .r_flex_container {
-    display: flex;
-    flex-flow: column nowrap;
-  }
-
-  /* Padding for affected tabs to ensure normal spacing left and right to filter & window border */
-  #net, #expenses, #income, #assets {
-    padding-left: 20px;
-    padding-right: 20px;
-    box-sizing: border-box;
-  }
-
-  .r_flex_fixed_child {
-    flex: none;
-
-  }
-
-  .r_flex_expand_child {
-    flex: auto;
-
-  }
-
-  /** bolds the income/expenses cell, see incomeExpenses.js */
-  .bold-cell {
-    font-weight: bold;
-  }
-
-  /* Consolidated Tooltip for ECharts */
-  .echarts-tooltip {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    color: #333 !important;
-    border: 1px solid #ccc !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-  }
-
-  /* --- Print Styling --- */
-  @media print {
-    /* Show print header */
-    #printHeader {
-      display: block !important;
-    }
-
-    /* Hide navigation, filters, and other fixed UI elements */
-    .r_flex_fixed_child, 
-    #accountFilterContainer,
-    .nav,
-    #expensesDisplayGraph,
-    #expensesDisplayTree,
-    #incomeDisplayGraph,
-    #incomeDisplayTree {
-      display: none !important;
-    }
-
-    
-    /* Remove fixed heights and flex layouts that clip content */
-    html, body, .r_flex_container, .r_flex_expand_child, .tab-content {
-      height: auto !important;
-      display: block !important;
-      overflow: visible !important;
-    }
-
-    /* Hide inactive tabs, ensure active tab takes full width */
-    .tab-pane {
-      display: none !important;
-    }
-    .tab-pane.active {
-      display: block !important;
-      width: 100% !important;
-      height: auto !important;
-    }
-
-    /* Scale charts (ECharts canvas) and tables to fit page width */
-    canvas, svg, img {
-      max-width: 100% !important;
-      height: auto !important;
-      page-break-inside: avoid;
-    }
-    
-    /* Ensure ECharts wrappers don't force a wider width */
-    [_echarts_instance_], [_echarts_instance_] > div {
-      max-width: 100% !important;
-      height: auto !important;
-    }
-
-    [_echarts_instance_] canvas {
-      position: static !important;
-    }
-
-    table {
-      width: 100% !important;
-      max-width: 100% !important;
-      page-break-inside: auto;
-    }
-    
-    tr {
-      page-break-inside: avoid;
-      page-break-after: auto;
-    }
-  }
-</style>
-
 <body>
-  <div class="r_flex_container">
-    <!-- navbar-->
-    <div class="r_flex_fixed_child">
-      <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item">
-          <a class="nav-link active" id="net-tab" data-toggle="tab" href="#net" role="tab" aria-controls="net"
-            aria-selected="true" data-i18n="tab.income_expenses">Income/Expenses</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link " id="balance-tab" data-toggle="tab" href="#balance" role="tab" aria-controls="balance"
-            aria-selected="false" data-i18n="tab.balance">Balance</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="expenses-tab" data-toggle="tab" href="#expenses" role="tab" aria-controls="expenses"
-            aria-selected="false" data-i18n="tab.expenses">Expenses</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="income-tab" data-toggle="tab" href="#income" role="tab" aria-controls="income"
-            aria-selected="false" data-i18n="tab.income">Income</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="assets-tab" data-toggle="tab" href="#assets" role="tab" aria-controls="assets"
-            aria-selected="false" data-i18n="tab.assets">Assets/Liabilities</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="portfolio-tab" data-toggle="tab" href="#portfolio" role="tab" aria-controls="portfolio"
-            aria-selected="false" data-i18n="tab.portfolio">Portfolio</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="postings-tab" data-toggle="tab" href="#postings" role="tab" aria-controls="postings"
-            aria-selected="false" data-i18n="tab.postings">Postings</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="options-tab" data-toggle="tab" href="#options" role="tab" aria-controls="options"
-            aria-selected="false" data-i18n="tab.options">Options</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
-            aria-expanded="false" data-i18n="tab.files">Files</a>
-          <div class="dropdown-menu" id="filesListDropDown">
-            <div class="dropdown-divider" id="filesDropDownDivider"></div>
-            <a class="dropdown-item" href="#">
-              <button id="reloadFileButton" class="btn btn-link" data-i18n="btn.reload_files">Reload Files</button>
-            </a>
-            <a class="dropdown-item" href="#">
-              <input type="file" id="fileSelector" style="display:none">
-              <button id="addFileButton" class="btn btn-link" data-i18n="btn.open_file">Open File...</button>
-            </a>
-          </div>
-        </li>
-      </ul>
-    </div>
-    <!-- filter -->
-    <div class="r_flex_fixed_child">
-      <div>
-        <label for="currSelector" style="padding-left: 25px; padding-top: 15px" data-i18n="filter.currency">Currency:</label>
-        <select id="currSelector">
-
-        </select>
-      </div>
-      <div id="dateFilter"
-        style="display:flex; flex-direction:row; align-items:baseline; padding-left: 25px;padding-right: 25px;padding-top: 5px; padding-bottom: 25px;">
-        <span>
-          <select id="dateUnitsSelector">
-            <option value="Daily" data-i18n="filter.daily">Daily</option>
-            <option value="Weekly" data-i18n="filter.weekly">Weekly</option>
-            <option value="Monthly" data-i18n="filter.monthly">Monthly</option>
-            <option value="Quarterly" data-i18n="filter.quarterly">Quarterly</option>
-            <option value="Yearly" data-i18n="filter.yearly">Yearly</option>
-          </select>
-        </span>
-        <label for="dateRangeFrom" style="padding-left: 5px;" data-i18n="filter.from">From:</label><input id="dateRangeFrom" size="10" />
-        <span style="padding-left: 15px; "></span>
-        <span id="date-range-slider" style="flex: auto;"></span>
-        <label for="dateRangeTo" style="padding-left: 15px; " data-i18n="filter.to">To:</label><input id="dateRangeTo" size="10" />
-      </div>
-
-    </div>
-    <!-- main content-->
-    <div class="r_flex_expand_child" style=" padding-left: 50px; padding-right: 50px; padding-bottom: 50px;">
-      
-      <!-- PRINT HEADER -->
-      <div id="printHeader" style="display: none; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; text-align: center;"></div>
-      
-      <div class="r_flex_container" style="width: 100%; height: 100%; flex-direction: row;">
-        <!-- left column for global filter -->
-        <div id="accountFilterContainer" style="width: 250px; overflow-y: auto; padding: 10px; font-size: 0.9em; flex-shrink: 0; border-right: 1px solid #ddd;">
-        </div>
-        
-        <div class="tab-content" id="tab-content" style="height:100%; flex: 1; overflow: hidden;">
-
-          <div class="tab-pane fade show active" id="net" role="tabpanel" aria-labelledby="net-tab"
-            style="height: 100%; position: relative; width: 100%;">
-            <!-- right column for chart and table -->
-            <div class="r_flex_container" style="width: 100%; height: 100%; overflow: hidden;">
-              <div class="r_flex_expand_child">
-                <div id="incomeExpenses" style="width: 100%; height: 100%;"></div>
-              </div>
-              <div style="display:flex; justify-content: center; max-height: 40%; overflow: auto;">
-                <table id="incomeExpensesTable" class="cell-border compact stripe" style="width: 100%;">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th data-i18n="table.avg">Avg</th>
-                      <th data-i18n="table.max">Max</th>
-                      <th data-i18n="table.min">Min</th>
-                      <th data-i18n="table.total">Total</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        <div class="tab-pane fade " id="balance" role="tabpanel" aria-labelledby="balance-tab"
-          style="width: 100%; height: 100%;">
-          <div id="balance" style="width: 100%; height: 100%;">
-            <div id="balanceTable"></div>
-          </div>
-        </div>
-        <div class="tab-pane fade" id="expenses" role="tabpanel" aria-labelledby="expenses-tab"
-          style="width: 100%; height: 100%;">
-          <a href="#" id="expensesDisplayGraph" data-i18n="toggle.graph">Graph</a>
-          <a href="#" id="expensesDisplayTree" data-i18n="toggle.text">Text</a>
-          <div id="expensesTreeMap" style="width: 100%; height: 100%;"></div>
-          <div id="expensesTable" style="width: 100%; height: 100%;"></div>
-        </div>
-        <div class="tab-pane fade" id="income" role="tabpanel" aria-labelledby="income-tab"
-          style="width: 100%; height: 100%;">
-          <a href="#" id="incomeDisplayGraph" data-i18n="toggle.graph">Graph</a>
-          <a href="#" id="incomeDisplayTree" data-i18n="toggle.text">Text</a>
-          <div id="incomeTreeMap" style="width: 100%; height: 100%;"></div>
-          <div id="incomeTable" style="width: 100%; height: 100%;"></div>
-        </div>
-        <div class="tab-pane fade" id="assets" role="tabpanel" aria-labelledby="assets-tab"
-          style="width: 100%; height: 100%;">
-          <div id="assetsChart" style="width: 100%; height: 100%;"></div>
-        </div>
-        <div class="tab-pane fade" id="portfolio" role="tabpanel" aria-labelledby="portfolio-tab"
-          style="width: 100%; height: 100%;">
-          <div id="portfolioChart" style="width: 100%; height: 60%;"></div>
-          <div id="portfolioTableContainer" style="width: 100%; height: 40%; overflow: auto; margin-top: 10px;">
-             <table id="portfolioTable" class="cell-border compact stripe" style="width: 100%;">
-                <thead>
-                   <tr>
-                      <th data-i18n="table.account">Account</th>
-                      <th data-i18n="table.asset">Asset</th>
-                      <th data-i18n="table.quantity">Quantity</th>
-                      <th data-i18n="table.cost_basis">Cost Basis</th>
-                      <th data-i18n="table.market_value">Market Value</th>
-                      <th data-i18n="table.unrealized">Unrealized Gain</th>
-                   </tr>
-                </thead>
-                <tbody id="portfolioTableBody"></tbody>
-             </table>
-          </div>
-        </div>
-        <div class="tab-pane fade" id="postings" role="tabpanel" aria-labelledby="postings-tab"
-          style="width: 100%; height: 100%;">
-          <table id="postingsTable" class="cell-border compact stripe">
-            <thead>
-              <tr>
-                <th data-i18n="table.date">Date</th>
-                <th data-i18n="table.accounts">Accounts</th>
-                <th data-i18n="table.payee">Payee</th>
-                <th data-i18n="table.amount">Amount</th>
-                <th data-i18n="table.type">Type</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        <div class="tab-pane fade" id="options" role="tabpanel" aria-labelledby="options-tab"
-          style="width: 100%; height: 100%;">
-
-          <div id="settingsDiv"/>
-
-        </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal -->
-  <div id="detailsModal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog"
-    aria-labelledby="myLargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-
-        <div class="modal-body" id="detailsModalBody">
-          <table id="modalPostings" class="cell-border compact stripe">
-            <thead>
-              <tr>
-                <th data-i18n="table.date">Date</th>
-                <th data-i18n="table.accounts">Accounts</th>
-                <th data-i18n="table.payee">Payee</th>
-                <th data-i18n="table.amount">Amount</th>
-              </tr>
-            </thead>
-          </table>
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" data-i18n="btn.close">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <div id="root"></div>
+  <script src="dist/bundle.js"></script>
 </body>
-<script src="dist/bundle.js">
-</script>
-
 </html>
