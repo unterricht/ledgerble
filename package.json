@@ -18,7 +18,7 @@
     "appId": "com.github.sbridges.ledgerble",
     "productName": "Ledgerble",
     "mac": {
-      "icon": "icons/emblem_library.icns",
+      "icon": "icons/gerbil.icns",
       "target": [
         {
           "target": "dmg",
@@ -44,6 +44,13 @@
           "pl"
         ]
       }
+    },
+    "win": {
+      "icon": "icons/gerbil.ico",
+      "target": ["zip", "nsis"]
+    },
+    "linux": {
+      "icon": "icons/gerbil.png"
     },
     "files": [
       "main.js",

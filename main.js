@@ -33,10 +33,16 @@ settings.init({
 let win
 
 function createWindow() {
+  // Build runtime icon path for win/linux (macOS uses the .icns from the bundle)
+  const runtimeIcon = process.platform !== 'darwin'
+    ? path.join(__dirname, 'icons', process.platform === 'win32' ? 'gerbil.ico' : 'gerbil.png')
+    : undefined;
+
   // Create the browser window.
   win = new BrowserWindow({
     width: 1500,
     height: 1150,
+    ...(runtimeIcon ? { icon: runtimeIcon } : {}),
     ...windowOptionsFor(process.platform),
     webPreferences: {
       // ── Modern Electron security ──────────────────────────
