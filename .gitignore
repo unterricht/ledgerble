@@ -7,3 +7,6 @@ node_modules/
 
 dist
 dist/
+
+# Private design handoff (chats/mockups) — keep local, never push
+Entwicklung/redesign/
