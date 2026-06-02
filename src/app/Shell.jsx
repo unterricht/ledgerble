@@ -12,10 +12,11 @@ import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
-import { buildOverview, buildBreakdownTree, buildBalanceTree } from '../data/adapters';
+import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
 import { BalanceView } from '../views/BalanceView';
+import { AssetsView } from '../views/AssetsView';
 
 // ── Minimal settings defaults (mirrors allSettings in options.js) ────────────
 const SETTINGS_DEFAULTS = {
@@ -453,6 +454,8 @@ function Shell() {
                     : view === 'income' && s.files.size > 0
                     ? (() => { const tree = buildBreakdownTree(model.postings, 'income');
                         return <ExpensesIncomeView tree={tree} total={tree.reduce((a, n) => a + n.value, 0)} cur={model.currency || cur} kind="income" />; })()
+                    : view === 'assets' && s.files.size > 0
+                    ? <AssetsView vm={buildAssets(model)} cur={model.currency || cur} />
                     : <div data-view={view} />}
                 </div>
                 {showInsp && (() => {

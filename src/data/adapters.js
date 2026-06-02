@@ -316,4 +316,100 @@ function buildBalanceTree(balances, intervalIdx) {
   return { roots, netWorth };
 }
 
-module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree };
+/**
+ * buildAssets(model) → AssetsViewModel
+ *
+ * Transforms the compute() `balances` Map into a multi-series time-series view-model
+ * for the Assets & Liabilities view (AreaLineChart).
+ *
+ * Aggregation: one series per top-level account segment (first ':'-separated part)
+ * for accounts of type 'assets' or 'liabilities'. Sub-accounts all roll up into
+ * their top-level segment's series.
+ *
+ * Returns:
+ *   {
+ *     data:   [{ m, <topLevelKey>: value, … }]  — one entry per interval
+ *     series: [{ key, color, label }]            — one per top-level account
+ *     maxY:   number                             — max abs value across data (for chart scale)
+ *     grid:   number[]                           — suggested y-axis gridlines
+ *   }
+ */
+function buildAssets(model) {
+  const { balances, intervals } = model;
+
+  if (!balances || balances.size === 0 || !intervals || intervals.length === 0) {
+    return { data: [], series: [], maxY: 0, grid: [0] };
+  }
+
+  // ── Label helper (reuse same format as buildOverview) ─────────────────────
+  function labelFor(key) {
+    if (/^\d{4}-\d{2}$/.test(key)) {
+      return moment.utc(key, 'YYYY-MM').format('MMM');
+    }
+    return key;
+  }
+
+  // ── 1. Collect top-level accounts of type assets/liabilities ──────────────
+  // topKey → { type, perInterval: number[] (length = intervals.length, all zeros) }
+  const topMap = new Map(); // key = top-level segment string
+
+  for (const [balKey, arr] of balances) {
+    if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
+
+    const topSegment = balKey.account.split(':')[0];
+
+    if (!topMap.has(topSegment)) {
+      topMap.set(topSegment, new Array(intervals.length).fill(0));
+    }
+
+    const sums = topMap.get(topSegment);
+    for (let i = 0; i < intervals.length; i++) {
+      sums[i] += arr[i] || 0;
+    }
+  }
+
+  if (topMap.size === 0) {
+    return { data: [], series: [], maxY: 0, grid: [0] };
+  }
+
+  // ── 2. Build series array (one per top-level account, cycling T.chart) ────
+  const { T } = require('../ui/tokens');
+  const topKeys = Array.from(topMap.keys()).sort();
+  const series = topKeys.map((key, idx) => ({
+    key,
+    color: T.chart[idx % T.chart.length],
+    label: key,
+  }));
+
+  // ── 3. Build data array ────────────────────────────────────────────────────
+  const data = intervals.map((interval, i) => {
+    const entry = { m: labelFor(interval) };
+    for (const key of topKeys) {
+      entry[key] = topMap.get(key)[i];
+    }
+    return entry;
+  });
+
+  // ── 4. Compute maxY (max absolute value for chart scale) ──────────────────
+  let absMax = 0;
+  for (const entry of data) {
+    for (const key of topKeys) {
+      absMax = Math.max(absMax, Math.abs(entry[key]));
+    }
+  }
+  const maxY = absMax || 1;
+
+  // ── 5. Generate grid lines (5 evenly spaced from 0 to maxY) ───────────────
+  const step = Math.pow(10, Math.floor(Math.log10(maxY)));
+  const niceStep = step * (maxY / step <= 2 ? 0.5 : maxY / step <= 5 ? 1 : 2);
+  const niceMax = Math.ceil(maxY / niceStep) * niceStep;
+  const gridCount = 4;
+  const grid = [];
+  for (let g = 0; g <= gridCount; g++) {
+    grid.push(Math.round((niceMax / gridCount) * g));
+  }
+
+  return { data, series, maxY: niceMax, grid };
+}
+
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets };
