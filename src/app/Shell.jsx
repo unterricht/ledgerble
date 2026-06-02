@@ -12,9 +12,10 @@ import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
-import { buildOverview, buildBreakdownTree } from '../data/adapters';
+import { buildOverview, buildBreakdownTree, buildBalanceTree } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
+import { BalanceView } from '../views/BalanceView';
 
 // ── Minimal settings defaults (mirrors allSettings in options.js) ────────────
 const SETTINGS_DEFAULTS = {
@@ -440,6 +441,12 @@ function Shell() {
                 <div className="pane-content" style={{ flex: 1, overflow: 'hidden' }}>
                   {view === 'overview' && s.files.size > 0
                     ? <OverviewView vm={buildOverview(model)} cur={model.currency || cur} netColor={netColor} catRule={catRule} />
+                    : view === 'balance' && s.files.size > 0
+                    ? (() => {
+                        const idx = model.sliderValues ? model.sliderValues[1] : 0;
+                        const { roots, netWorth } = buildBalanceTree(model.balances, idx);
+                        return <BalanceView roots={roots} netWorth={netWorth} cur={model.currency || cur} />;
+                      })()
                     : view === 'expenses' && s.files.size > 0
                     ? (() => { const tree = buildBreakdownTree(model.postings, 'expenses');
                         return <ExpensesIncomeView tree={tree} total={tree.reduce((a, n) => a + n.value, 0)} cur={model.currency || cur} kind="expense" />; })()

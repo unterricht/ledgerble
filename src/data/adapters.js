@@ -220,4 +220,96 @@ function buildBreakdownTree(postings, kind) {
   return roots;
 }
 
-module.exports = { buildOverview, buildBreakdownTree };
+/**
+ * buildBalanceTree(balances, intervalIdx) → { roots, netWorth }
+ *
+ * Transforms the compute() `balances` Map (Map<BalanceKey, number[]>) into a
+ * nested account tree for the Balance view, plus a net-worth figure.
+ *
+ * Net-worth rule — sourced from balance.js (the legacy renderer):
+ *   balance.js aggregates ALL account types into the tree with no type filter.
+ *   Net worth is computed as: sum of balances for account types 'assets' and
+ *   'liabilities' only. This matches the mockup (rd-views.jsx BAL_DATA):
+ *     Assets 255920 + Liabilities -28000 = Net Worth 227920.
+ *   Income, Expenses, Equity are NOT included in net worth.
+ *
+ * @param {Map}    balances    — Map<BalanceKey, number[]> from compute()
+ * @param {number} intervalIdx — which interval index to use as the snapshot
+ *                               (model.sliderValues[1]); clamped to valid range.
+ * @returns {{ roots: Node[], netWorth: number }}
+ *   Node shape: { id, account, balance, type, children }
+ *     - id:       unique string (the full account path, e.g. 'Assets:Bank')
+ *     - account:  full account path at this node level
+ *     - balance:  sum of this node + all descendants at intervalIdx
+ *     - type:     account type string (from BalanceKey.type)
+ *     - children: Node[] (empty for leaves)
+ */
+function buildBalanceTree(balances, intervalIdx) {
+  if (!balances || balances.size === 0) {
+    return { roots: [], netWorth: 0 };
+  }
+
+  // nodeMap: full account path → node object
+  const nodeMap = new Map();
+
+  function getOrCreate(pathSegments, type) {
+    const fullPath = pathSegments.join(':');
+    if (!nodeMap.has(fullPath)) {
+      nodeMap.set(fullPath, {
+        id: fullPath,
+        account: fullPath,
+        balance: 0,
+        type,
+        children: [],
+        _parentKey: pathSegments.length > 1 ? pathSegments.slice(0, -1).join(':') : null,
+      });
+    }
+    return nodeMap.get(fullPath);
+  }
+
+  for (const [key, arr] of balances) {
+    if (!arr || arr.length === 0) continue;
+    // Clamp intervalIdx to valid range
+    const idx = Math.min(Math.max(0, intervalIdx), arr.length - 1);
+    const value = arr[idx];
+    if (value === 0) continue;
+
+    const segments = key.account.split(':');
+
+    // Accumulate value at EVERY ancestor level (same pattern as balance.js and buildBreakdownTree)
+    for (let depth = 1; depth <= segments.length; depth++) {
+      const node = getOrCreate(segments.slice(0, depth), key.type);
+      node.balance += value;
+    }
+  }
+
+  // Wire up children relationships
+  for (const [, node] of nodeMap) {
+    if (node._parentKey && nodeMap.has(node._parentKey)) {
+      const parent = nodeMap.get(node._parentKey);
+      if (!parent.children.includes(node)) {
+        parent.children.push(node);
+      }
+    }
+  }
+
+  // Collect root nodes (no parent in the map)
+  const roots = [];
+  for (const [, node] of nodeMap) {
+    if (node._parentKey === null) {
+      roots.push(node);
+    }
+  }
+
+  // Compute net worth: assets + liabilities only (see balance.js convention)
+  let netWorth = 0;
+  for (const node of roots) {
+    if (node.type === 'assets' || node.type === 'liabilities') {
+      netWorth += node.balance;
+    }
+  }
+
+  return { roots, netWorth };
+}
+
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree };
