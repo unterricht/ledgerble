@@ -405,4 +405,126 @@ function buildAssets(model) {
   return { data, series, maxY: niceMax, grid };
 }
 
-module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets };
+/**
+ * buildPortfolio(model) → PortfolioViewModel
+ *
+ * Transforms compute()'s `valResult` into a portfolio view-model with
+ * per-holding market values, cost bases, unrealised gains, and a time-series
+ * of total portfolio value across intervals.
+ *
+ * Input (from model):
+ *   valResult     — { balances: { [account]: { [commodity]: { [dateStr]: { quantity, costBasis, marketValue } } } }, baseCurrency }
+ *   intervals     — string[] of interval keys (e.g. ['2018-01', '2018-02'])
+ *   intervalDates — Date[] aligned with intervals
+ *   currency      — active display currency (= base currency)
+ *
+ * Output:
+ *   {
+ *     totals:      [{ m, value }]   — one entry per interval, portfolio market value
+ *     holdings:    [{ account, asset, qty, cost, market, gain }]
+ *     totalCost:   number
+ *     totalMarket: number
+ *     totalGain:   number           — always equals totalMarket - totalCost
+ *   }
+ *
+ * Only non-base-currency commodities are included (i.e., actual portfolio
+ * assets, not cash in the base currency). Replicates the math from portfolio.js
+ * (repo root) so numbers stay identical to the legacy view; ValuationService
+ * pre-computed market values are read directly from the stored per-date snapshots,
+ * so no ValuationService instance is required here.
+ */
+function buildPortfolio(model) {
+  const empty = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0 };
+
+  if (!model || !model.valResult || !model.valResult.balances) return empty;
+
+  const { valResult, intervals, intervalDates, currency } = model;
+  const { balances } = valResult;
+
+  // The base currency to exclude from holdings (same as 'currentCurrency' in portfolio.js)
+  const baseCurrency = currency || valResult.baseCurrency || 'EUR';
+
+  if (!intervals || intervals.length === 0) return empty;
+
+  // ── Helper: find the latest recorded snapshot on or before a given date ────
+  // valResult.balances[account][commodity] is a plain object keyed by YYYY-MM-DD.
+  // This mirrors the walk done by getAccountValueAtDate in valuation.js but reads
+  // the pre-computed marketValue directly, avoiding the need for a VS instance.
+  function snapshotAtDate(accountComm, dateStr) {
+    const sortedDates = Object.keys(accountComm).sort();
+    let lastDate = null;
+    for (const d of sortedDates) {
+      if (d <= dateStr) {
+        lastDate = d;
+      } else {
+        break;
+      }
+    }
+    if (!lastDate) return null;
+    return accountComm[lastDate];
+  }
+
+  // ── 1. Build holdings from latest available snapshot ─────────────────────
+  // Use the last intervalDate as the "latest" cutoff, matching portfolio.js's
+  // latestDate = displayIntervalDates[displayIntervalDates.length - 1].
+  const latestDate = intervalDates[intervalDates.length - 1];
+  const latestDateStr = latestDate instanceof Date
+    ? latestDate.toISOString().split('T')[0]
+    : latestDate;
+
+  const holdings = [];
+
+  for (const account of Object.keys(balances)) {
+    for (const commodity of Object.keys(balances[account])) {
+      if (commodity === baseCurrency) continue; // skip base-currency cash
+
+      const snap = snapshotAtDate(balances[account][commodity], latestDateStr);
+      if (!snap || snap.quantity === 0) continue;
+
+      const market = snap.marketValue;
+      const cost   = snap.costBasis;
+      const gain   = market - cost;
+
+      holdings.push({
+        account,
+        asset:  commodity,
+        qty:    snap.quantity,
+        cost,
+        market,
+        gain,
+      });
+    }
+  }
+
+  // ── 2. Compute per-interval total portfolio market value ──────────────────
+  // For each interval, sum getAccountValueAtDate across all non-base holdings,
+  // reading the pre-computed marketValue from the nearest prior snapshot.
+  const totals = intervals.map((intervalKey, i) => {
+    const date = intervalDates[i];
+    const dateStr = date instanceof Date
+      ? date.toISOString().split('T')[0]
+      : date;
+
+    let value = 0;
+    for (const account of Object.keys(balances)) {
+      for (const commodity of Object.keys(balances[account])) {
+        if (commodity === baseCurrency) continue;
+        const snap = snapshotAtDate(balances[account][commodity], dateStr);
+        if (snap) {
+          value += snap.marketValue;
+        }
+      }
+    }
+
+    return { m: labelFor(intervalKey), value };
+  });
+
+  // ── 3. Aggregate totals ───────────────────────────────────────────────────
+  const totalCost   = holdings.reduce((s, h) => s + h.cost,   0);
+  const totalMarket = holdings.reduce((s, h) => s + h.market, 0);
+  const totalGain   = totalMarket - totalCost; // guaranteed identity
+
+  return { totals, holdings, totalCost, totalMarket, totalGain };
+}
+
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio };
