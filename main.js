@@ -8,6 +8,7 @@ const papaparse = require('papaparse')
 const moment = require('moment');
 const { parseHLedgerVal } = require('./hledger')
 const settings = require('settings-store')
+const { KNOWN_KEYS } = require('./knownKeys')
 
 class Posting {
   constructor(date, accounts, amount, currency, merchant, type) {
@@ -283,20 +284,8 @@ ipcMain.handle('settings:set', (_event, key, value) => {
 ipcMain.handle('settings:getAll', (_event) => {
   // settings-store doesn't have a "getAll" method, so we read
   // every key we know about and return an object.
-  const knownKeys = [
-    'options.ledger.command',
-    'options.hledger',
-    'options.expenses.regex',
-    'options.income.regex',
-    'options.assets.regex',
-    'options.liabilities.regex',
-    'options.equity.regex',
-    'options.locale',
-    'dateUnits',
-    'files.list',
-  ];
   const result = {};
-  for (const key of knownKeys) {
+  for (const key of KNOWN_KEYS) {
     const val = settings.value(key, undefined);
     if (val !== undefined) {
       result[key] = val;

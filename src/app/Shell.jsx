@@ -29,6 +29,7 @@ const SETTINGS_DEFAULTS = {
   'options.assets.regex':    '^assets?(:|$)',
   'options.liabilities.regex': '^(debts?|liabilit(y|ies))(:|$)',
   'options.equity.regex':    '^equity(:|$)',
+  'options.overview.catRule': 'top5',
 };
 
 function makeGetSetting(cache) {
@@ -271,7 +272,6 @@ function MacMenuBar({ onPrint }) {
 function Shell() {
   const plat = (window.api && window.api.platform === 'win32') ? 'win' : 'mac';
   const netColor = '#7A47C2';
-  const catRule = 'top5';
 
   const s = useAppState();
   const { view, setView, currency: cur, setCurrency: setCur, period, setPeriod,
@@ -443,7 +443,7 @@ function Shell() {
               <div className="pane-region" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div className="pane-content" style={{ flex: 1, overflow: 'hidden' }}>
                   {view === 'overview' && s.files.size > 0
-                    ? <OverviewView vm={buildOverview(model)} cur={model.currency || cur} netColor={netColor} catRule={catRule} />
+                    ? <OverviewView vm={buildOverview(model)} cur={model.currency || cur} netColor={netColor} catRule={getSetting('options.overview.catRule') || 'top5'} />
                     : view === 'balance' && s.files.size > 0
                     ? (() => {
                         const idx = model.sliderValues ? model.sliderValues[1] : 0;

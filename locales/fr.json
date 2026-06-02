@@ -108,5 +108,7 @@
   "table.quantity": "Quantité",
   "table.cost_basis": "Prix de revient",
   "table.market_value": "Valeur de mercato",
-  "table.unrealized": "Plus-value latente"
+  "table.unrealized": "Plus-value latente",
+  "settings.overview_cat_rule": "Top-N Category Rule",
+  "settings.overview_cat_rule.help": "How many expense/income categories to show in the Overview chart"
 }

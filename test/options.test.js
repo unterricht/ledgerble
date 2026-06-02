@@ -1,4 +1,4 @@
-const { initSettings } = require('../options');
+const { initSettings, getSetting } = require('../options');
 const { getAvailableLocales } = require('../i18n');
 
 // Mock DOM
@@ -43,6 +43,20 @@ describe('options.js UI', () => {
         for (const loc of ['auto', ...locales]) {
             expect(global.lastHtml).toContain(`<option value="${loc}">${loc}</option>`);
         }
+    });
+
+    it('should render a select dropdown for options.overview.catRule with correct options', () => {
+        initSettings(() => 'test');
+        expect(global.lastHtml).toContain('<select id="options_overview_catRule">');
+        // All valid rule values must appear as options
+        for (const val of ['top3', 'top5', 'top8', 'p75', 'all']) {
+            expect(global.lastHtml).toContain(`value="${val}"`);
+        }
+    });
+
+    it('getSetting should return top5 as default for options.overview.catRule', () => {
+        // settingsCache is empty (no stored value), so default should be top5
+        expect(getSetting('options.overview.catRule')).toBe('top5');
     });
 
     it('should re-render options table in the new language when locale changes', () => {

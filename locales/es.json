@@ -108,5 +108,7 @@
   "table.quantity": "Cantidad",
   "table.cost_basis": "Base de coste",
   "table.market_value": "Valor de mercado",
-  "table.unrealized": "Ganancia no realizada"
+  "table.unrealized": "Ganancia no realizada",
+  "settings.overview_cat_rule": "Top-N Category Rule",
+  "settings.overview_cat_rule.help": "How many expense/income categories to show in the Overview chart"
 }

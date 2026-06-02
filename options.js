@@ -9,6 +9,7 @@
 let settingsCache = {};
 
 const { t, loadLocale, getAvailableLocales, detectLocale } = require('./i18n');
+const { RULE_LABEL } = require('./src/data/pickCats');
 
 async function loadSettingsCache() {
     settingsCache = await window.api.settings.getAll();
@@ -131,6 +132,18 @@ const allSettings = [
         },
         () => ['auto', ...getAvailableLocales()]
     ),
+    new Setting(
+        "options.overview.catRule",
+        "top5",
+        () => t('settings.overview_cat_rule.help'),
+        () => t('settings.overview_cat_rule'),
+        DROPDOWN,
+        val => Object.keys(RULE_LABEL).includes(val),
+        () => {
+            if (typeof window !== 'undefined' && window.update) window.update();
+        },
+        () => Object.keys(RULE_LABEL).map(val => ({ value: val, label: RULE_LABEL[val] }))
+    ),
 ]
 
 function initSettings(updateTypeExtractor) {
@@ -179,7 +192,11 @@ function initSettings(updateTypeExtractor) {
             <input type="text" id="${s.domId}" size="25">
             </td>`  )
         } else if (s.type === DROPDOWN) {
-            let optionsHtml = s.getOptions().map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            let optionsHtml = s.getOptions().map(opt => {
+                const val = (opt && typeof opt === 'object') ? opt.value : opt;
+                const lbl = (opt && typeof opt === 'object') ? opt.label : opt;
+                return `<option value="${val}">${lbl}</option>`;
+            }).join('');
             htmlSettings.push(`<td>
             <select id="${s.domId}">
                 ${optionsHtml}
