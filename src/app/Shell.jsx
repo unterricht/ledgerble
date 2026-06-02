@@ -3,13 +3,35 @@
 //   (a) platform from window.api.platform
 //   (b) no useTweaks / TweaksPanel
 //   (c) netColor hardcoded '#7A47C2', catRule hardcoded 'top5'
-//   (d) empty inspector account area (Phase 3 wires real tree)
-//   (e) placeholder <div data-view={view} /> content area
-import React, { useState, useEffect } from 'react';
+//   (d) inspector account tree wired to model.accountTree (Task 3.6)
+//   (e) OverviewView wired to live data via compute + buildOverview (Task 3.6)
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
 import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
+import { makeTypeExtractor } from '../data/typeExtractor';
+import { compute } from '../data/compute';
+import { buildOverview } from '../data/adapters';
+import { OverviewView } from '../views/OverviewView';
+
+// ── Minimal settings defaults (mirrors allSettings in options.js) ────────────
+const SETTINGS_DEFAULTS = {
+  'options.ledger.command':  'ledger',
+  'options.hledger':         false,
+  'options.expenses.regex':  '^expenses?(:|$)',
+  'options.income.regex':    '^(income|revenue)s?(:|$)',
+  'options.assets.regex':    '^assets?(:|$)',
+  'options.liabilities.regex': '^(debts?|liabilit(y|ies))(:|$)',
+  'options.equity.regex':    '^equity(:|$)',
+};
+
+function makeGetSetting(cache) {
+  return (key) => {
+    const val = cache[key];
+    return val !== undefined ? val : SETTINGS_DEFAULTS[key];
+  };
+}
 
 const FONT_STACK = {
   mac: {
@@ -82,11 +104,26 @@ function WinControls() {
   );
 }
 
+// Flatten a nested account-tree object into a sorted list of "Root:Child" strings.
+function flattenAccountTree(tree, prefix, out) {
+  if (!tree || typeof tree !== 'object') return;
+  for (const key of Object.keys(tree).sort()) {
+    const fullPath = prefix ? prefix + ':' + key : key;
+    out.push(fullPath);
+    flattenAccountTree(tree[key], fullPath, out);
+  }
+}
+
 // ── account filter tree (inspector) ──────────────────────────
-// Phase 3 will wire in the real account tree. For now render an empty placeholder.
-function Inspector({ desel, onToggle, onAll, onNone, onClose }) {
-  const active = 0;
-  const total = 0;
+function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
+  const flat = [];
+  if (accountTree && typeof accountTree === 'object' && !Array.isArray(accountTree)) {
+    flattenAccountTree(accountTree, '', flat);
+  } else if (Array.isArray(accountTree)) {
+    flat.push(...accountTree);
+  }
+  const total = flat.length;
+  const active = total - (desel ? desel.size : 0);
   const ghost = { fontFamily: T.sans, fontSize: 11.5, fontWeight: 500, padding: '4px 10px', borderRadius: 6, border: `1px solid ${T.line2}`, background: T.surface, color: T.ink2, cursor: 'pointer' };
   return (
     <div style={{ width: 248, flexShrink: 0, borderLeft: `1px solid ${T.line}`, background: T.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -113,7 +150,17 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose }) {
             <button style={ghost} onClick={onNone}>None</button>
           </div>
         </div>
-        {/* Account tree empty — Phase 3 wires model.accountTree */}
+        {flat.map(acc => {
+          const name = typeof acc === 'string' ? acc : acc.account;
+          const checked = !desel || !desel.has(name);
+          return (
+            <label key={name} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={checked} onChange={() => onToggle(name)}
+                style={{ accentColor: T.pine, width: 13, height: 13, flexShrink: 0 }} />
+              <span style={{ fontSize: 11.5, fontFamily: T.sans, color: T.ink2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+            </label>
+          );
+        })}
       </div>
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.line}`, fontSize: 11.5, color: T.ink3, fontFamily: T.sans }}>
         Showing <span style={{ color: T.ink2, fontWeight: 600 }}>{active}</span> of {total} accounts
@@ -227,6 +274,49 @@ function Shell() {
           inspectorOpen: insp, setInspectorOpen: setInsp,
           query, setQuery, postingType: typeF, setPostingType: setTypeF } = s;
 
+  // ── Settings cache ───────────────────────────────────────────────────────
+  const [settingsCache, setSettingsCache] = useState({});
+  useEffect(() => {
+    if (window.api && window.api.settings && window.api.settings.getAll) {
+      window.api.settings.getAll().then(cache => {
+        if (cache && typeof cache === 'object') setSettingsCache(cache);
+      }).catch(() => {});
+    }
+  }, []);
+
+  const getSetting = useMemo(() => makeGetSetting(settingsCache), [settingsCache]);
+  const typeExtractor = useMemo(() => makeTypeExtractor(getSetting), [getSetting]);
+
+  // ── Compute model ────────────────────────────────────────────────────────
+  const model = useMemo(
+    () => compute({
+      files: s.files,
+      currency: s.currency,
+      period: s.period,
+      deselectedAccounts: s.deselectedAccounts,
+      dateRange: s.dateRange,
+      typeExtractor,
+    }),
+    [s.files, s.currency, s.period, s.deselectedAccounts, s.dateRange, typeExtractor]
+  );
+
+  // ── Load persisted file list on mount ────────────────────────────────────
+  useEffect(() => {
+    if (!window.api || !window.api.settings || !window.api.settings.get) return;
+    window.api.settings.get('files.list', []).then(filesList => {
+      if (!Array.isArray(filesList)) return;
+      for (const path of filesList) {
+        if (window.api.parse) {
+          const cmd = getSetting('options.ledger.command');
+          const hledger = getSetting('options.hledger');
+          window.api.parse(cmd, hledger, path);
+        }
+      }
+    }).catch(() => {});
+  // Run once on mount — getSetting ref will be stable on first render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const showInsp = FILTER_TABS.has(view) && insp;
 
   const onSearch = v => { setQuery(v); };
@@ -332,7 +422,7 @@ function Shell() {
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                     {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
-                    <MenuSelect value={cur} onChange={setCur} options={['USD', 'EUR', 'GBP']} width={76} />
+                    <MenuSelect value={model.currency || cur} onChange={setCur} options={(model.currencies && model.currencies.length > 0) ? model.currencies : ['USD', 'EUR', 'GBP']} width={76} />
                     {FILTER_TABS.has(view) && (
                       <button onClick={() => setInsp(v => !v)} title="Toggle filters" style={{
                         display: 'flex', alignItems: 'center', gap: 6, fontFamily: T.sans, fontSize: 12.5, fontWeight: 500,
@@ -347,20 +437,26 @@ function Shell() {
               {/* content + inspector */}
               <div className="pane-region" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div className="pane-content" style={{ flex: 1, overflow: 'hidden' }}>
-                  {/* placeholder — real views land in later phases */}
-                  <div data-view={view} />
+                  {view === 'overview' && s.files.size > 0
+                    ? <OverviewView vm={buildOverview(model)} cur={model.currency || cur} netColor={netColor} catRule={catRule} />
+                    : <div data-view={view} />}
                 </div>
-                {showInsp && (
+                {showInsp && (() => {
+                  const allPaths = [];
+                  flattenAccountTree(model.accountTree, '', allPaths);
+                  return (
                   <div className="chrome-print-hide" style={{ display: 'flex' }}>
                     <Inspector
                       desel={desel}
                       onToggle={toggle}
                       onAll={() => setDeselected(new Set())}
-                      onNone={() => setDeselected(new Set())}
+                      onNone={() => setDeselected(new Set(allPaths))}
                       onClose={() => setInsp(false)}
+                      accountTree={model.accountTree}
                     />
                   </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
