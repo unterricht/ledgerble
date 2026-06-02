@@ -554,4 +554,48 @@ function buildPortfolio(model) {
   return { totals, holdings, totalCost, totalMarket, totalGain, maxY: niceMax, grid };
 }
 
-module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio };
+/**
+ * buildPostings(model) → [{date, payee, account, amount, type}]
+ *
+ * Maps model.postings (decorated postings from compute()) to flat row objects
+ * suitable for PostingsView / filterPostings / sortPostings.
+ *
+ * Field guarantees (CONTRACT from Task 6.1 review):
+ *   date    — non-null string 'YYYY-MM-DD'  (from dateString or formatted from Date)
+ *   payee   — non-null string               (from merchant, or '' if absent)
+ *   account — non-null string               (accounts.join(':'))
+ *   amount  — number passthrough
+ *   type    — string passthrough (real types from typeExtractor are plural: 'expenses'/'income')
+ */
+function buildPostings(model) {
+  if (!model || !model.postings) return [];
+  return model.postings.map((p) => {
+    // date: prefer dateString (already YYYY-MM-DD), else format from Date
+    let date = p.dateString || '';
+    if (!date && p.date instanceof Date) {
+      date =
+        p.date.getUTCFullYear() +
+        '-' +
+        String(p.date.getUTCMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(p.date.getUTCDate()).padStart(2, '0');
+    }
+    date = date || '';
+
+    // payee: from merchant field; fall back to '' if absent
+    const payee = typeof p.merchant === 'string' ? p.merchant : (p.payee != null ? String(p.payee) : '');
+
+    // account: join accounts array; fall back to '' if absent
+    const account = Array.isArray(p.accounts) ? p.accounts.join(':') : (p.account != null ? String(p.account) : '');
+
+    return {
+      date,
+      payee,
+      account,
+      amount: p.amount,
+      type: p.type,
+    };
+  });
+}
+
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings };

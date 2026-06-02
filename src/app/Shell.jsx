@@ -12,12 +12,13 @@ import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
-import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio } from '../data/adapters';
+import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
 import { BalanceView } from '../views/BalanceView';
 import { AssetsView } from '../views/AssetsView';
 import { PortfolioView } from '../views/PortfolioView';
+import { PostingsView } from '../views/PostingsView';
 
 // ── Minimal settings defaults (mirrors allSettings in options.js) ────────────
 const SETTINGS_DEFAULTS = {
@@ -459,6 +460,8 @@ function Shell() {
                     ? <AssetsView vm={buildAssets(model)} cur={model.currency || cur} />
                     : view === 'portfolio' && s.files.size > 0
                     ? <PortfolioView vm={buildPortfolio(model)} cur={model.currency || cur} />
+                    : view === 'postings' && s.files.size > 0
+                    ? <PostingsView rows={buildPostings(model)} query={s.query} typeFilter={s.postingType} cur={model.currency || cur} />
                     : <div data-view={view} />}
                 </div>
                 {showInsp && (() => {
