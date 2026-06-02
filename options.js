@@ -135,8 +135,8 @@ const allSettings = [
     new Setting(
         "options.overview.catRule",
         "top5",
-        () => t('settings.overview_cat_rule.help'),
-        () => t('settings.overview_cat_rule'),
+        () => t('settings.category_table.help'),
+        () => t('settings.category_table'),
         DROPDOWN,
         val => Object.keys(RULE_LABEL).includes(val),
         () => {

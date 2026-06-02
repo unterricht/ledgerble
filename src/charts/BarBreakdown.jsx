@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { T, money } from '../ui/tokens';
 import { Icon } from '../ui/Icon';
 import { Eyebrow, Num } from '../ui/controls';
+const { t } = require('../../i18n');
 
 // ─────────────────────────────────────────────────────────────
 // BAR BREAKDOWN (expenses / income) — ranked horizontal bars with
@@ -38,7 +39,7 @@ function BarNode({ node, depth, color, topMax, total, cur, openSet, toggle, path
           </span>
           <span style={{ width: 9, height: 9, borderRadius: 3, background: node.__direct ? 'transparent' : color, border: node.__direct ? `1.5px dashed ${color}` : 'none', flexShrink: 0 }} />
           <span style={{ fontSize: depth === 0 ? 13 : 12.5, color: labelColor, fontFamily: T.sans, fontWeight: depth === 0 ? 540 : 430, fontStyle: node.__direct ? 'italic' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {node.__direct ? `${node.label} · not itemised` : node.label}
+            {node.__direct ? `${node.label} · ${t('breakdown.not_itemised')}` : node.label}
           </span>
         </div>
         <div style={{ flex: 1, height: 13, background: T.sink, borderRadius: 4, overflow: 'hidden', minWidth: 60 }}>
@@ -63,15 +64,15 @@ export function BarBreakdown({ tree, total, cur }) {
   return (
     <div style={{ padding: '8px 0 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 22px 8px' }}>
-        <div style={{ width: 240, flexShrink: 0 }}><Eyebrow>Category</Eyebrow></div>
-        <div style={{ flex: 1 }}><Eyebrow>Share of total</Eyebrow></div>
-        <div style={{ width: 92, textAlign: 'right', flexShrink: 0 }}><Eyebrow>Amount</Eyebrow></div>
+        <div style={{ width: 240, flexShrink: 0 }}><Eyebrow>{t('breakdown.category')}</Eyebrow></div>
+        <div style={{ flex: 1 }}><Eyebrow>{t('breakdown.share_of_total')}</Eyebrow></div>
+        <div style={{ width: 92, textAlign: 'right', flexShrink: 0 }}><Eyebrow>{t('breakdown.amount')}</Eyebrow></div>
         <div style={{ width: 42 }} />
       </div>
       {sorted.map((n, i) => (
         <BarNode key={n.name} node={n} depth={0} color={T.chart[i % T.chart.length]} topMax={topMax} total={total} cur={cur} openSet={openSet} toggle={toggle} path={n.name} />
       ))}
-      {anyKids && <div style={{ padding: '12px 22px 0', fontSize: 11.5, color: T.ink4, fontFamily: T.sans }}>Click a category with a ▸ to break it down by sub-account.</div>}
+      {anyKids && <div style={{ padding: '12px 22px 0', fontSize: 11.5, color: T.ink4, fontFamily: T.sans }}>{t('breakdown.hint')}</div>}
     </div>
   );
 }

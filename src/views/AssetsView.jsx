@@ -7,6 +7,7 @@ import React from 'react';
 import { T, money } from '../ui/tokens';
 import { Eyebrow, Num } from '../ui/controls';
 import { AreaLineChart } from '../charts/AreaLineChart';
+const { t } = require('../../i18n');
 
 function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = 'USD' }) {
   const { data, series, maxY, grid } = vm;
@@ -22,7 +23,7 @@ function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = '
 
   // Summary strip: Total assets first, then one tile per series
   const stripItems = [
-    { label: 'Total assets', value: total, color: T.ink },
+    { label: t('assets.total_assets'), value: total, color: T.ink },
     ...series.map(s => ({
       label: s.label,
       value: last ? (last[s.key] || 0) : 0,

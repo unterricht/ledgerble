@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
+const { t } = require('../../i18n');
 import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
@@ -54,7 +55,7 @@ const FONT_STACK = {
 };
 
 const NAV = [
-  { group: 'Reports', items: [
+  { groupKey: 'nav.reports', group: 'Reports', items: [
     { id: 'overview',  label: 'Income & Expenses',  icon: 'overview'  },
     { id: 'balance',   label: 'Balance',             icon: 'balance'   },
     { id: 'expenses',  label: 'Expenses',            icon: 'expenses'  },
@@ -62,7 +63,7 @@ const NAV = [
     { id: 'assets',    label: 'Assets & Liabilities',icon: 'assets'    },
     { id: 'portfolio', label: 'Portfolio',           icon: 'portfolio' },
   ]},
-  { group: 'Ledger', items: [
+  { groupKey: 'nav.ledger', group: 'Ledger', items: [
     { id: 'postings',  label: 'Postings',            icon: 'postings'  },
   ]},
 ];
@@ -137,11 +138,11 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
   return (
     <div style={{ width: 248, flexShrink: 0, borderLeft: `1px solid ${T.line}`, background: T.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: `1px solid ${T.line}` }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, fontFamily: T.sans }}>Filters</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, fontFamily: T.sans }}>{t('filter.filters')}</span>
         <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: T.ink3, padding: 2, display: 'flex' }}><Icon name="sliders" size={15} /></button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
-        <Eyebrow style={{ marginBottom: 9 }}>Date range</Eyebrow>
+        <Eyebrow style={{ marginBottom: 9 }}>{t('filter.date_range')}</Eyebrow>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 11 }}>
           <input defaultValue="2018-01" style={{ width: 78, fontFamily: T.mono, fontSize: 12, padding: '5px 8px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none', textAlign: 'center' }} />
           <span style={{ color: T.ink4, fontSize: 12 }}>—</span>
@@ -153,10 +154,10 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
           {['2%', '98%'].map((l, i) => <div key={i} style={{ position: 'absolute', top: 1, left: l, transform: 'translateX(-50%)', width: 15, height: 15, borderRadius: '50%', background: T.surface, border: `1.5px solid ${T.pine}`, boxShadow: '0 1px 3px rgba(16,18,22,0.18)', cursor: 'grab' }} />)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-          <Eyebrow>Accounts</Eyebrow>
+          <Eyebrow>{t('filter.accounts')}</Eyebrow>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button style={ghost} onClick={onAll}>All</button>
-            <button style={ghost} onClick={onNone}>None</button>
+            <button style={ghost} onClick={onAll}>{t('filter.all')}</button>
+            <button style={ghost} onClick={onNone}>{t('filter.none')}</button>
           </div>
         </div>
         {flat.map(acc => {
@@ -172,7 +173,7 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
         })}
       </div>
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.line}`, fontSize: 11.5, color: T.ink3, fontFamily: T.sans }}>
-        Showing <span style={{ color: T.ink2, fontWeight: 600 }}>{active}</span> of {total} accounts
+        {t('filter.showing_x_of_y').replace('{active}', active).replace('{total}', total)}
       </div>
     </div>
   );
@@ -202,11 +203,11 @@ function JournalFooter() {
     <>
       <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
       <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, minWidth: 188, zIndex: 41, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: '5px', boxShadow: '0 12px 30px -8px rgba(16,18,22,0.30), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => { setFiles(['cody.journal']); setOpen(false); }}><Icon name="files" size={15} stroke={T.ink3} /> Open File…</div>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="reload" size={15} stroke={T.ink3} /> Reload Files</div>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="overview" size={15} stroke={T.ink3} /> Reveal in Finder</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => { setFiles(['cody.journal']); setOpen(false); }}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="reload" size={15} stroke={T.ink3} /> {t('file.reload')}</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="overview" size={15} stroke={T.ink3} /> {t('file.reveal')}</div>
         <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
-        <div className="rd-menu" style={{ ...item, borderRadius: 6, color: T.neg }} onClick={() => { setFiles([]); setOpen(false); }}>Remove from list</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6, color: T.neg }} onClick={() => { setFiles([]); setOpen(false); }}>{t('file.remove')}</div>
       </div>
     </>
   );
@@ -214,7 +215,7 @@ function JournalFooter() {
     <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 8, position: 'relative' }}>
       {files.length === 0 ? (
         <button className="rd-nav" onClick={() => setFiles(['cody.journal'])} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px dashed ${T.line2}`, background: 'transparent', cursor: 'pointer', fontFamily: T.sans, fontSize: 12.5, color: T.ink2 }}>
-          <Icon name="files" size={15} stroke={T.ink3} /> Open ledger file…
+          <Icon name="files" size={15} stroke={T.ink3} /> {t('file.open_ledger')}
         </button>
       ) : (
         <div className="rd-nav" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, cursor: 'pointer' }}>
@@ -235,16 +236,16 @@ function FileMenu({ mod, onPrint, itemStyle }) {
   const acc = { color: T.ink4, fontFamily: T.sans, fontSize: 12 };
   return (
     <span style={{ position: 'relative', display: 'inline-flex' }}>
-      <span className="rd-menu" style={{ ...itemStyle, background: open ? 'rgba(16,18,22,0.08)' : undefined }} onClick={() => setOpen(o => !o)}>File</span>
+      <span className="rd-menu" style={{ ...itemStyle, background: open ? 'rgba(16,18,22,0.08)' : undefined }} onClick={() => setOpen(o => !o)}>{t('menu.file')}</span>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, minWidth: 210, zIndex: 61, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: 5, boxShadow: '0 14px 34px -8px rgba(16,18,22,0.32), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
-            <div className="rd-menu" style={row} onClick={() => setOpen(false)}>Open File… <span style={acc}>{mod}O</span></div>
-            <div className="rd-menu" style={row} onClick={() => setOpen(false)}>Reload Files <span style={acc}>{mod}R</span></div>
+            <div className="rd-menu" style={row} onClick={() => setOpen(false)}>{t('file.open')} <span style={acc}>{mod}O</span></div>
+            <div className="rd-menu" style={row} onClick={() => setOpen(false)}>{t('file.reload')} <span style={acc}>{mod}R</span></div>
             <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
-            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>Print… <span style={acc}>{mod}P</span></div>
-            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>Print to PDF…</div>
+            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>{t('file.print')} <span style={acc}>{mod}P</span></div>
+            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>{t('file.print_pdf')}</div>
           </div>
         </>
       )}
@@ -254,7 +255,7 @@ function FileMenu({ mod, onPrint, itemStyle }) {
 
 // ── macOS global menu bar ────────────────────────────────────
 function MacMenuBar({ onPrint }) {
-  const menus = ['Edit', 'View', 'Window'];
+  const menus = [{ key: 'menu.edit', label: 'Edit' }, { key: 'menu.view', label: 'View' }, { key: 'menu.window', label: 'Window' }];
   const item = { padding: '2px 9px', borderRadius: 5, fontSize: 13, fontFamily: T.sans, color: T.ink, cursor: 'default', lineHeight: 1.2 };
   return (
     <div className="chrome-print-hide" style={{
@@ -264,7 +265,7 @@ function MacMenuBar({ onPrint }) {
     }}>
       <span className="rd-menu" style={{ ...item, fontWeight: 680, padding: '2px 10px' }}>Ledgerble</span>
       <FileMenu mod="⌘" onPrint={onPrint} itemStyle={item} />
-      {menus.map(m => <span key={m} className="rd-menu" style={item}>{m}</span>)}
+      {menus.map(m => <span key={m.key} className="rd-menu" style={item}>{t(m.key)}</span>)}
       <div style={{ flex: 1 }} />
       <span style={{ ...item, fontWeight: 500 }}>Sun 1 Jun&nbsp;&nbsp;9:41</span>
     </div>
@@ -389,7 +390,7 @@ function Shell() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', height: 34, background: T.surface, borderBottom: `1px solid ${T.line}`, paddingLeft: 8, paddingRight: 10, gap: 2 }}>
         <FileMenu mod="Ctrl+" onPrint={doPrint} itemStyle={winMenuItem} />
-        {['Edit', 'View', 'Help'].map(m => <span key={m} className="rd-menu" style={winMenuItem}>{m}</span>)}
+        {[{ key: 'menu.edit', label: 'Edit' }, { key: 'menu.view', label: 'View' }, { key: 'menu.help', label: 'Help' }].map(m => <span key={m.key} className="rd-menu" style={winMenuItem}>{t(m.key)}</span>)}
         <div style={{ flex: 1 }} />
         <SearchField query={query} onChange={onSearch} width={196} />
       </div>
@@ -414,7 +415,7 @@ function Shell() {
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {NAV.map(g => (
                   <div key={g.group} style={{ marginBottom: 14 }}>
-                    <div style={{ padding: '4px 10px 6px' }}><Eyebrow>{g.group}</Eyebrow></div>
+                    <div style={{ padding: '4px 10px 6px' }}><Eyebrow>{t(g.groupKey)}</Eyebrow></div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {g.items.map(it => <NavItem key={it.id} item={it} active={view === it.id} onClick={() => setView(it.id)} />)}
                     </div>
@@ -465,7 +466,7 @@ function Shell() {
                         display: 'flex', alignItems: 'center', gap: 6, fontFamily: T.sans, fontSize: 12.5, fontWeight: 500,
                         padding: '5px 11px', borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${showInsp ? T.pine : T.line2}`, background: showInsp ? T.pineSoft : T.surface, color: showInsp ? T.pineStrong : T.ink2,
-                      }}><Icon name="sliders" size={15} stroke={showInsp ? T.pine : T.ink3} /> Filters</button>
+                      }}><Icon name="sliders" size={15} stroke={showInsp ? T.pine : T.ink3} /> {t('filter.filters')}</button>
                     )}
                   </div>
                 )}

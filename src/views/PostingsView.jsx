@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { T, money } from '../ui/tokens';
 import { Num } from '../ui/controls';
+const { t } = require('../../i18n');
 
 // ── table style helpers (matching BalanceView pattern) ───────────────────────
 const thStyle = (align = 'left') => ({
@@ -51,11 +52,11 @@ function postAmt(p, cur) {
 const { filterPostings, sortPostings } = require('../data/postingsFilter');
 
 const COLUMNS = [
-  { key: 'date',    label: 'Date',    align: 'left'  },
-  { key: 'payee',   label: 'Payee',   align: 'left'  },
-  { key: 'account', label: 'Account', align: 'left'  },
-  { key: 'amount',  label: 'Amount',  align: 'right' },
-  { key: 'type',    label: 'Type',    align: 'left'  },
+  { key: 'date',    label: () => t('table.date'),    align: 'left'  },
+  { key: 'payee',   label: () => t('table.payee'),   align: 'left'  },
+  { key: 'account', label: () => t('table.account'), align: 'left'  },
+  { key: 'amount',  label: () => t('table.amount'),  align: 'right' },
+  { key: 'type',    label: () => t('table.type'),    align: 'left'  },
 ];
 
 function SortIndicator({ col, sortKey, sortDir }) {
@@ -90,7 +91,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
                 style={thStyle(col.align)}
                 onClick={() => handleHeaderClick(col.key)}
               >
-                {col.label}
+                {col.label()}
                 {col.key !== 'type' && (
                   <SortIndicator col={col.key} sortKey={sortKey} sortDir={sortDir} />
                 )}

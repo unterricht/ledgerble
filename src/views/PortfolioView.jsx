@@ -7,6 +7,7 @@ import React from 'react';
 import { T, money } from '../ui/tokens';
 import { Eyebrow, Num } from '../ui/controls';
 import { AreaLineChart } from '../charts/AreaLineChart';
+const { t } = require('../../i18n');
 
 // Shared table cell styles (matching rd-views2.jsx thStyle/tdStyle)
 function thStyle(align) {
@@ -44,9 +45,9 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
 
   // Summary strip: [Cost basis, Market value, Unrealised gain]
   const stripItems = [
-    { label: 'Cost basis',      value: totalCost,   color: T.ink2, sign: false },
-    { label: 'Market value',    value: totalMarket, color: T.ink,  sign: false },
-    { label: 'Unrealised gain', value: totalGain,   color: totalGain >= 0 ? T.pos : T.neg, sign: true },
+    { label: t('portfolio.cost_basis'),      value: totalCost,   color: T.ink2, sign: false },
+    { label: t('portfolio.market_value'),    value: totalMarket, color: T.ink,  sign: false },
+    { label: t('portfolio.unrealised_gain'), value: totalGain,   color: totalGain >= 0 ? T.pos : T.neg, sign: true },
   ];
 
   return (
@@ -82,12 +83,12 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              <th style={thStyle('left')}>Account</th>
-              <th style={thStyle('left')}>Asset</th>
-              <th style={thStyle('right')}>Qty</th>
-              <th style={thStyle('right')}>Cost basis</th>
-              <th style={thStyle('right')}>Market value</th>
-              <th style={thStyle('right')}>Unrealised gain</th>
+              <th style={thStyle('left')}>{t('table.account')}</th>
+              <th style={thStyle('left')}>{t('table.asset')}</th>
+              <th style={thStyle('right')}>{t('table.quantity')}</th>
+              <th style={thStyle('right')}>{t('portfolio.cost_basis')}</th>
+              <th style={thStyle('right')}>{t('portfolio.market_value')}</th>
+              <th style={thStyle('right')}>{t('portfolio.unrealised_gain')}</th>
             </tr>
           </thead>
           <tbody>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { BarBreakdown } from '../charts/BarBreakdown';
 import { Segmented, Eyebrow, Num } from '../ui/controls';
 import { T, money } from '../ui/tokens';
+const { t } = require('../../i18n');
 
 function ExpensesIncomeView({ tree, total, cur, kind }) {
   const [mode, setMode] = useState('bars');
@@ -30,7 +31,7 @@ function ExpensesIncomeView({ tree, total, cur, kind }) {
           </div>
         </div>
         <Segmented
-          options={[{ value: 'bars', label: 'Visual' }, { value: 'text', label: 'Text' }]}
+          options={[{ value: 'bars', label: t('toggle.visual') }, { value: 'text', label: t('toggle.text') }]}
           value={mode}
           onChange={setMode}
           size="sm"

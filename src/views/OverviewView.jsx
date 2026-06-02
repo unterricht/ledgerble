@@ -4,6 +4,7 @@ import { IncomeExpensesChart } from '../charts/IncomeExpensesChart';
 import { pickCats, RULE_LABEL } from '../data/pickCats';
 import { T, money, kfmt } from '../ui/tokens';
 import { Eyebrow, Num } from '../ui/controls';
+const { t } = require('../../i18n');
 
 // ── table style helpers ──────────────────────────────────────────────────────
 const thStyle = (align = 'left') => ({
@@ -21,10 +22,10 @@ const tdStyle = (align = 'left') => ({
 function StatStrip({ statStrip, categoryCount, cur }) {
   const { income, expenses, net, savingsRate } = statStrip;
   const stats = [
-    { label: 'Income',       value: money(income,   { cents: false, cur }), color: T.pos, sub: 'period total' },
-    { label: 'Expenses',     value: money(expenses, { cents: false, cur }), color: T.neg, sub: `across ${categoryCount} categories` },
-    { label: 'Net saved',    value: money(net,      { cents: false, sign: true, cur }), color: net < 0 ? T.neg : T.net, sub: 'income − expenses' },
-    { label: 'Savings rate', value: savingsRate + '%', color: net < 0 ? T.neg : T.net, sub: 'of income kept' },
+    { label: t('stat.income'),       value: money(income,   { cents: false, cur }), color: T.pos, sub: 'period total' },
+    { label: t('stat.expenses'),     value: money(expenses, { cents: false, cur }), color: T.neg, sub: `across ${categoryCount} categories` },
+    { label: t('stat.net_saved'),    value: money(net,      { cents: false, sign: true, cur }), color: net < 0 ? T.neg : T.net, sub: 'income − expenses' },
+    { label: t('stat.savings_rate'), value: savingsRate + '%', color: net < 0 ? T.neg : T.net, sub: 'of income kept' },
   ];
   return (
     <div style={{ display: 'flex', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
@@ -71,7 +72,7 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
           <IncomeExpensesChart monthly={vm.monthly} netColor={netColor} cur={cur} />
           {/* legend */}
           <div style={{ display: 'flex', gap: 22, justifyContent: 'center', marginTop: 4 }}>
-            {[['Income', T.pos, 'bar'], ['Expenses', T.neg, 'bar'], ['Net', netColor, 'line']].map(([l, c, k]) => (
+            {[[t('stat.income'), T.pos, 'bar'], [t('stat.expenses'), T.neg, 'bar'], [t('chart.net'), netColor, 'line']].map(([l, c, k]) => (
               <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span style={{ width: k === 'line' ? 16 : 10, height: k === 'line' ? 2.5 : 10, borderRadius: k === 'line' ? 2 : 3, background: c }} />
                 <span style={{ fontSize: 11.5, color: T.ink2, fontFamily: T.sans }}>{l}</span>
@@ -82,7 +83,7 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
         {/* summary table */}
         <div style={{ padding: '4px 6px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '0 16px 8px' }}>
-            <Eyebrow>Largest categories</Eyebrow>
+            <Eyebrow>{t('overview.largest_categories')}</Eyebrow>
             <span style={{ fontSize: 11, color: T.ink4, fontFamily: T.sans }}>
               {effRule === 'all'
                 ? `All ${vm.categoryCount} expense categories`
@@ -119,8 +120,8 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
                   <td style={tdStyle('left')}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ width: 7, height: 7, borderRadius: 2, background: T.ink4, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12.5, color: T.ink2, fontFamily: T.sans, fontWeight: 500 }}>Other</span>
-                      <span style={{ fontSize: 11, color: T.pine, fontFamily: T.sans }}>· show {rest.length} more</span>
+                      <span style={{ fontSize: 12.5, color: T.ink2, fontFamily: T.sans, fontWeight: 500 }}>{t('overview.other')}</span>
+                      <span style={{ fontSize: 11, color: T.pine, fontFamily: T.sans }}>· {t('overview.show_more').replace('{n}', rest.length)}</span>
                     </div>
                   </td>
                   <td style={tdStyle('right')}><Num color={T.ink4} size={12.5}>—</Num></td>
@@ -132,7 +133,7 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
               {showAll && catRule !== 'all' && (
                 <tr className="rd-row" onClick={() => setShowAll(false)} style={{ cursor: 'pointer' }}>
                   <td colSpan={5} style={{ ...tdStyle('left'), color: T.pine, fontFamily: T.sans, fontSize: 12, fontWeight: 500 }}>
-                    Collapse to {RULE_LABEL[catRule].toLowerCase()}
+                    {t('overview.collapse').replace('{rule}', RULE_LABEL[catRule].toLowerCase())}
                   </td>
                 </tr>
               )}

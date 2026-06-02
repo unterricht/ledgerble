@@ -24,6 +24,7 @@ beforeEach(() => {
 // ── Mock i18n (getAvailableLocales returns locale codes) ─────────────────────
 jest.mock('../i18n', () => ({
   getAvailableLocales: () => ['de', 'en', 'es', 'fr'],
+  t: (key) => key, // minimal stub — returns key; tests don't assert on translated strings
 }));
 
 // ── Mock pickCats (RULE_LABEL) ───────────────────────────────────────────────

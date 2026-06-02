@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import { T } from '../ui/tokens';
 import { Eyebrow } from '../ui/controls';
-import { getAvailableLocales } from '../../i18n';
+const { t, getAvailableLocales } = require('../../i18n');
 import { RULE_LABEL } from '../data/pickCats';
 
 // ── Regex defaults (mirrors options.js allSettings) ─────────────────────────
@@ -271,7 +271,7 @@ function OptionsView({ getSetting, setSetting }) {
               ))}
             </select>
           </Row>
-          <Row label="Category table (Top-N)" hint="How many expense categories to show in Overview" last>
+          <Row label={t('settings.category_table')} hint={t('settings.category_table.help')} last>
             <select
               data-testid="select-cat-rule"
               value={catRule}

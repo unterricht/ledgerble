@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { T, money } from '../ui/tokens';
 import { Num } from '../ui/controls';
 import { Icon } from '../ui/Icon';
+const { t } = require('../../i18n');
 
 // ── table style helpers ──────────────────────────────────────────────────────
 const thStyle = (align = 'left') => ({
@@ -98,8 +99,8 @@ function BalanceView({ roots = [], netWorth = 0, cur }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr>
-            <th style={thStyle('left')}>Account</th>
-            <th style={thStyle('right')}>Balance</th>
+            <th style={thStyle('left')}>{t('table.account')}</th>
+            <th style={thStyle('right')}>{t('tab.balance')}</th>
           </tr>
         </thead>
         <tbody>
