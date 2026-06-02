@@ -2,9 +2,10 @@
 // Adaptations applied:
 //   (a) platform from window.api.platform
 //   (b) no useTweaks / TweaksPanel
-//   (c) netColor hardcoded '#7A47C2', catRule hardcoded 'top5'
+//   (c) netColor hardcoded '#7A47C2'; catRule read from persisted settings via getSetting
 //   (d) inspector account tree wired to model.accountTree (Task 3.6)
 //   (e) OverviewView wired to live data via compute + buildOverview (Task 3.6)
+//   (f) OptionsView wired via setSetting which updates React state + persists (Task 6.4)
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
@@ -19,6 +20,7 @@ import { BalanceView } from '../views/BalanceView';
 import { AssetsView } from '../views/AssetsView';
 import { PortfolioView } from '../views/PortfolioView';
 import { PostingsView } from '../views/PostingsView';
+import { OptionsView } from '../views/OptionsView';
 
 // ── Minimal settings defaults (mirrors allSettings in options.js) ────────────
 const SETTINGS_DEFAULTS = {
@@ -292,6 +294,14 @@ function Shell() {
   const getSetting = useMemo(() => makeGetSetting(settingsCache), [settingsCache]);
   const typeExtractor = useMemo(() => makeTypeExtractor(getSetting), [getSetting]);
 
+  // setSetting: persists to main process AND updates React cache so all views re-render.
+  const setSetting = (key, value) => {
+    setSettingsCache(prev => ({ ...prev, [key]: value }));
+    if (window.api && window.api.settings && window.api.settings.set) {
+      window.api.settings.set(key, value);
+    }
+  };
+
   // ── Compute model ────────────────────────────────────────────────────────
   const model = useMemo(
     () => compute({
@@ -462,6 +472,8 @@ function Shell() {
                     ? <PortfolioView vm={buildPortfolio(model)} cur={model.currency || cur} />
                     : view === 'postings' && s.files.size > 0
                     ? <PostingsView rows={buildPostings(model)} query={s.query} typeFilter={s.postingType} cur={model.currency || cur} />
+                    : view === 'options'
+                    ? <OptionsView getSetting={getSetting} setSetting={setSetting} />
                     : <div data-view={view} />}
                 </div>
                 {showInsp && (() => {
