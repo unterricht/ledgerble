@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BalanceView } from '../src/views/BalanceView';
 
@@ -14,9 +14,12 @@ test('renders a parent row and expands to show children', async () => {
   expect(screen.getByText(/Bank/)).toBeInTheDocument();
 });
 
-test('shows net worth figure', () => {
-  render(<BalanceView roots={roots} netWorth={1000} cur="USD" />);
+test('shows net worth figure with formatted value', () => {
+  const { container } = render(<BalanceView roots={roots} netWorth={1000} cur="USD" />);
   expect(screen.getByText('Net Worth')).toBeInTheDocument();
+  // money(1000, { cur: 'USD' }) → '$1,000.00' — assert it appears in the tfoot row
+  const tfoot = container.querySelector('tfoot');
+  expect(within(tfoot).getByText(/1,000/)).toBeInTheDocument();
 });
 
 test('child row is not visible before expanding parent', () => {

@@ -276,7 +276,11 @@ function buildBalanceTree(balances, intervalIdx) {
 
     const segments = key.account.split(':');
 
-    // Accumulate value at EVERY ancestor level (same pattern as balance.js and buildBreakdownTree)
+    // Accumulate value at EVERY ancestor level (same pattern as balance.js and buildBreakdownTree).
+    // Ancestor nodes receive their .type from whichever leaf is iterated first ("first-writer-wins").
+    // This is reliable because typeExtractor classifies accounts by top-level path-prefix regex
+    // (e.g. /^assets?(:|$)/ → 'assets'), so every account under a given root shares that root's
+    // type. Net-worth computation (assets + liabilities root nodes) depends on this invariant.
     for (let depth = 1; depth <= segments.length; depth++) {
       const node = getOrCreate(segments.slice(0, depth), key.type);
       node.balance += value;

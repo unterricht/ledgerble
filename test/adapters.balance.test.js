@@ -51,3 +51,21 @@ test('returns empty roots and zero netWorth for empty balances', () => {
   expect(roots).toEqual([]);
   expect(netWorth).toBe(0);
 });
+
+// Pins the root-node type assumption:
+// When two sibling leaves share the same top-level prefix (e.g. Assets:Bank and
+// Assets:Cash), the ancestor node 'Assets' must have type 'assets' and its
+// balance must equal the sum of both leaves. This relies on typeExtractor
+// classifying by top-level path prefix, so all children share the root's type.
+test('root node type is assets and balance is sum when both siblings are assets', () => {
+  const balances = new Map([
+    [{ account: 'Assets:Bank', type: 'assets' }, [600]],
+    [{ account: 'Assets:Cash', type: 'assets' }, [400]],
+  ]);
+  const { roots } = buildBalanceTree(balances, 0);
+  const assetsRoot = roots.find(r => r.account === 'Assets');
+  expect(assetsRoot).toBeDefined();
+  expect(assetsRoot.type).toBe('assets');
+  expect(assetsRoot.balance).toBe(1000);
+  expect(assetsRoot.children).toHaveLength(2);
+});
