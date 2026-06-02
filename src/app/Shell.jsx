@@ -423,7 +423,7 @@ function Shell() {
                 </div>
                 <div style={{ flex: 1 }} />
                 {view === 'postings' ? (
-                  <Segmented options={[{ value: 'all', label: 'All' }, { value: 'income', label: 'Income' }, { value: 'expense', label: 'Expense' }, { value: 'asset', label: 'Asset' }]} value={typeF} onChange={setTypeF} size="sm" />
+                  <Segmented options={[{ value: 'all', label: 'All' }, { value: 'income', label: 'Income' }, { value: 'expenses', label: 'Expenses' }, { value: 'assets', label: 'Assets' }]} value={typeF} onChange={setTypeF} size="sm" />
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                     {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
