@@ -346,9 +346,18 @@ function Shell() {
 
   const subtitle = (() => {
     if (view === 'options') return 'Preferences';
-    if (view === 'postings') return 'All transactions · 2018';
-    if (view === 'balance') return `As of 31 December 2018 · ${period}`;
-    return `${period} · Jan – Dec 2018`;
+    const ivs = model.intervals || [];
+    if (ivs.length === 0) {
+      // No data loaded yet — neutral labels without fake years
+      if (view === 'postings') return 'All transactions';
+      if (view === 'balance') return `As of — · ${period}`;
+      return period;
+    }
+    const first = ivs[0];
+    const last = ivs[ivs.length - 1];
+    if (view === 'postings') return `All transactions · ${first} – ${last}`;
+    if (view === 'balance') return `As of ${last} · ${period}`;
+    return `${period} · ${first} – ${last}`;
   })();
 
   const fonts = FONT_STACK[plat];
@@ -422,10 +431,22 @@ function Shell() {
             {/* main pane */}
             <div className="main-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.surface }}>
               {/* print-only header */}
-              <div id="printHeader" style={{ display: 'none', padding: '0 0 14px', marginBottom: 10, borderBottom: `1px solid ${T.line2}` }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>{TITLES[view]} — cody.journal</div>
-                <div style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>{subtitle} · {cur} · printed 1 Jun 2026</div>
-              </div>
+              {(() => {
+                const fileNames = s.files.size > 0
+                  ? Array.from(s.files.keys()).map(f => f.split('/').pop().split('\\').pop()).join(', ')
+                  : null;
+                const printDate = new Date().toLocaleDateString();
+                return (
+                  <div id="printHeader" style={{ display: 'none', padding: '0 0 14px', marginBottom: 10, borderBottom: `1px solid ${T.line2}` }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>
+                      {TITLES[view]}{fileNames ? ` — ${fileNames}` : ''}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>
+                      {subtitle} · {cur} · printed {printDate}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* pane header */}
               <div className="chrome-print-hide" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 22px', borderBottom: `1px solid ${T.line}`, flexShrink: 0, background: T.surface }}>
                 <div style={{ minWidth: 0 }}>
