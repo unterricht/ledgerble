@@ -130,4 +130,94 @@ function buildOverview(model) {
   };
 }
 
-module.exports = { buildOverview };
+/**
+ * buildBreakdownTree(postings, kind) → Node[]
+ *
+ * Builds a hierarchical category tree for the given kind ('expenses' or 'income').
+ * Each node: { name, label, value, children }
+ *   - name:     full path key below the type root, e.g. 'School' or 'School:Eraser'
+ *   - label:    the last path segment, e.g. 'Eraser'
+ *   - value:    sum of this node's own direct postings PLUS all descendant postings
+ *               (so parent.value − Σchildren.value = "direct / not-itemised" remainder)
+ *   - children: sorted sub-nodes (descending by value)
+ *
+ * Sign convention: income amounts are stored negative in the ledger → flip sign so
+ * every returned value is a positive number. Expenses are already positive.
+ *
+ * Returns the root-level nodes (one level below the type segment), sorted
+ * descending by value.
+ *
+ * NOTE: The "__direct" not-itemised remainder row is NOT added here — it is
+ * computed at render time by the BarNode component (Task 4.2) as
+ * value − Σchildren.value.
+ */
+function buildBreakdownTree(postings, kind) {
+  const filtered = postings.filter((p) => p.type === kind);
+
+  // Determine sign fn: income amounts are negative, flip them; expenses are positive.
+  const amountFn = kind === 'income' ? (p) => -p.amount : (p) => p.amount;
+
+  // nodeMap: full path key (e.g. 'School:Eraser') → node object
+  const nodeMap = new Map();
+
+  function getOrCreate(pathSegments) {
+    const key = pathSegments.join(':');
+    if (!nodeMap.has(key)) {
+      nodeMap.set(key, {
+        name: key,
+        label: pathSegments[pathSegments.length - 1],
+        value: 0,
+        children: [],
+        _parentKey: pathSegments.length > 1 ? pathSegments.slice(0, -1).join(':') : null,
+      });
+    }
+    return nodeMap.get(key);
+  }
+
+  for (const p of filtered) {
+    // Drop the leading type segment (e.g. 'Expenses' or 'Income')
+    // accounts = ['Expenses', 'School', 'Eraser'] → path = ['School', 'Eraser']
+    const path = p.accounts.slice(1);
+    if (path.length === 0) continue; // posting directly on the root type — skip
+
+    const amount = amountFn(p);
+
+    // Accumulate the amount at EVERY ancestor level, including the leaf.
+    // This ensures parent.value = own direct postings + all descendant postings.
+    for (let depth = 1; depth <= path.length; depth++) {
+      const node = getOrCreate(path.slice(0, depth));
+      node.value += amount;
+    }
+  }
+
+  // Wire up children relationships
+  for (const [key, node] of nodeMap) {
+    if (node._parentKey && nodeMap.has(node._parentKey)) {
+      const parent = nodeMap.get(node._parentKey);
+      if (!parent.children.includes(node)) {
+        parent.children.push(node);
+      }
+    }
+  }
+
+  // Sort children arrays descending by value (recursive)
+  function sortNode(node) {
+    node.children.sort((a, b) => b.value - a.value);
+    node.children.forEach(sortNode);
+    return node;
+  }
+
+  // Collect root nodes (depth-1: no parent in the map)
+  const roots = [];
+  for (const [, node] of nodeMap) {
+    if (node._parentKey === null) {
+      roots.push(sortNode(node));
+    }
+  }
+
+  // Sort roots descending by value
+  roots.sort((a, b) => b.value - a.value);
+  return roots;
+}
+
+module.exports = { buildOverview, buildBreakdownTree };
