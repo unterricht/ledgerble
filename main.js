@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const { windowOptionsFor } = require('./windowChrome')
 const { execSync } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(require('child_process').exec);
@@ -35,6 +36,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1500,
     height: 1150,
+    ...windowOptionsFor(process.platform),
     webPreferences: {
       // ── Modern Electron security ──────────────────────────
       nodeIntegration: false,
@@ -308,3 +310,8 @@ ipcMain.handle('settings:getAll', (_event) => {
 ipcMain.handle('path:basename', (_event, filePath) => {
   return path.basename(filePath);
 });
+
+// ── IPC: custom window controls (Windows frameless chrome) ──
+ipcMain.on('window:minimize', () => { if (win) win.minimize(); });
+ipcMain.on('window:maximize', () => { if (!win) return; win.isMaximized() ? win.unmaximize() : win.maximize(); });
+ipcMain.on('window:close', () => { if (win) win.close(); });

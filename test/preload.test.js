@@ -105,4 +105,31 @@ describe('preload', () => {
       expect(result).toBe('journal.dat');
     });
   });
+
+  describe('platform', () => {
+    it('should expose process.platform as a string', () => {
+      expect(typeof api.platform).toBe('string');
+      expect(api.platform.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('windowControls', () => {
+    it('should send "window:minimize" IPC on minimize()', () => {
+      const electron = require('electron');
+      api.windowControls.minimize();
+      expect(electron.ipcRenderer.send).toHaveBeenCalledWith('window:minimize');
+    });
+
+    it('should send "window:maximize" IPC on maximize()', () => {
+      const electron = require('electron');
+      api.windowControls.maximize();
+      expect(electron.ipcRenderer.send).toHaveBeenCalledWith('window:maximize');
+    });
+
+    it('should send "window:close" IPC on close()', () => {
+      const electron = require('electron');
+      api.windowControls.close();
+      expect(electron.ipcRenderer.send).toHaveBeenCalledWith('window:close');
+    });
+  });
 });

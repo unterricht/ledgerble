@@ -58,5 +58,15 @@ contextBridge.exposeInMainWorld('api', {
   
   webUtils: {
     getPathForFile: (file) => require('electron').webUtils.getPathForFile(file)
-  }
+  },
+
+  // ── Platform info ─────────────────────────────────────────
+  platform: process.platform,
+
+  // ── Window Controls (Windows frameless chrome) ────────────
+  windowControls: {
+    minimize: () => ipcRenderer.send('window:minimize'),
+    maximize: () => ipcRenderer.send('window:maximize'),
+    close: () => ipcRenderer.send('window:close'),
+  },
 });
