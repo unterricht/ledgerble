@@ -334,6 +334,7 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     intervalDates,
     balances,
     valResult,
+    valuationService,
     accountTree,
     sliderValues,
   };

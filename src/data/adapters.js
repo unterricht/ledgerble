@@ -413,32 +413,38 @@ function buildAssets(model) {
  * of total portfolio value across intervals.
  *
  * Input (from model):
- *   valResult     — { balances: { [account]: { [commodity]: { [dateStr]: { quantity, costBasis, marketValue } } } }, baseCurrency }
- *   intervals     — string[] of interval keys (e.g. ['2018-01', '2018-02'])
- *   intervalDates — Date[] aligned with intervals
- *   currency      — active display currency (= base currency)
+ *   valResult          — { balances: { [account]: { [commodity]: { [dateStr]: { quantity, costBasis, marketValue } } } }, baseCurrency }
+ *   valuationService   — ValuationService instance (from compute()); used to re-price each
+ *                        holding at each interval-end date via getAccountValueAtDate(), matching
+ *                        the legacy portfolio.js approach so the chart tracks market prices
+ *                        between transactions (not just snapshot values from transaction dates).
+ *   intervals          — string[] of interval keys (e.g. ['2018-01', '2018-02'])
+ *   intervalDates      — Date[] aligned with intervals
+ *   currency           — active display currency (= base currency)
  *
  * Output:
  *   {
- *     totals:      [{ m, value }]   — one entry per interval, portfolio market value
+ *     totals:      [{ m, value }]   — one entry per interval; re-priced at interval-end via
+ *                                     ValuationService.getAccountValueAtDate(), so the chart
+ *                                     reflects market-price movement between transactions.
  *     holdings:    [{ account, asset, qty, cost, market, gain }]
  *     totalCost:   number
  *     totalMarket: number
  *     totalGain:   number           — always equals totalMarket - totalCost
+ *     maxY:        number           — suggested chart y-axis ceiling (nice-rounded)
+ *     grid:        number[]         — suggested y-axis gridlines
  *   }
  *
  * Only non-base-currency commodities are included (i.e., actual portfolio
  * assets, not cash in the base currency). Replicates the math from portfolio.js
- * (repo root) so numbers stay identical to the legacy view; ValuationService
- * pre-computed market values are read directly from the stored per-date snapshots,
- * so no ValuationService instance is required here.
+ * (repo root) so numbers stay identical to the legacy view.
  */
 function buildPortfolio(model) {
-  const empty = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0 };
+  const empty = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0, maxY: 0, grid: [0] };
 
   if (!model || !model.valResult || !model.valResult.balances) return empty;
 
-  const { valResult, intervals, intervalDates, currency } = model;
+  const { valResult, valuationService, intervals, intervalDates, currency } = model;
   const { balances } = valResult;
 
   // The base currency to exclude from holdings (same as 'currentCurrency' in portfolio.js)
@@ -447,9 +453,7 @@ function buildPortfolio(model) {
   if (!intervals || intervals.length === 0) return empty;
 
   // ── Helper: find the latest recorded snapshot on or before a given date ────
-  // valResult.balances[account][commodity] is a plain object keyed by YYYY-MM-DD.
-  // This mirrors the walk done by getAccountValueAtDate in valuation.js but reads
-  // the pre-computed marketValue directly, avoiding the need for a VS instance.
+  // Used for holdings table (latest-value read only, no repricing needed there).
   function snapshotAtDate(accountComm, dateStr) {
     const sortedDates = Object.keys(accountComm).sort();
     let lastDate = null;
@@ -497,21 +501,32 @@ function buildPortfolio(model) {
   }
 
   // ── 2. Compute per-interval total portfolio market value ──────────────────
-  // For each interval, sum getAccountValueAtDate across all non-base holdings,
-  // reading the pre-computed marketValue from the nearest prior snapshot.
+  // Re-price each holding at each interval-end date using ValuationService
+  // getAccountValueAtDate(), matching legacy portfolio.js (line 66-70):
+  //   val = valuationService.getAccountValueAtDate(balances, currentCurrency, account, commodity, lookupDate)
+  //   aggregatedCost[i] += val.costBasis
+  //   aggregatedGain[i] += (val.marketValue - val.costBasis)
+  // This means between-transaction price movement is reflected in the chart,
+  // unlike the old snapshotAtDate approach which went flat between transactions.
   const totals = intervals.map((intervalKey, i) => {
     const date = intervalDates[i];
-    const dateStr = date instanceof Date
-      ? date.toISOString().split('T')[0]
-      : date;
 
     let value = 0;
     for (const account of Object.keys(balances)) {
       for (const commodity of Object.keys(balances[account])) {
         if (commodity === baseCurrency) continue;
-        const snap = snapshotAtDate(balances[account][commodity], dateStr);
-        if (snap) {
-          value += snap.marketValue;
+
+        if (valuationService) {
+          // Re-price at interval-end date using historical prices (legacy portfolio.js approach)
+          const val = valuationService.getAccountValueAtDate(
+            balances, baseCurrency, account, commodity, date
+          );
+          value += val.marketValue;
+        } else {
+          // Fallback when no VS instance: read nearest-prior stored marketValue
+          const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
+          const snap = snapshotAtDate(balances[account][commodity], dateStr);
+          if (snap) value += snap.marketValue;
         }
       }
     }
@@ -524,7 +539,19 @@ function buildPortfolio(model) {
   const totalMarket = holdings.reduce((s, h) => s + h.market, 0);
   const totalGain   = totalMarket - totalCost; // guaranteed identity
 
-  return { totals, holdings, totalCost, totalMarket, totalGain };
+  // ── 4. Compute maxY and grid for the totals chart (matching buildAssets pattern) ─
+  const absMax = totals.reduce((m, t) => Math.max(m, Math.abs(t.value)), 0);
+  const maxYRaw = absMax || 1;
+  const step = Math.pow(10, Math.floor(Math.log10(maxYRaw)));
+  const niceStep = step * (maxYRaw / step <= 2 ? 0.5 : maxYRaw / step <= 5 ? 1 : 2);
+  const niceMax = Math.ceil(maxYRaw / niceStep) * niceStep;
+  const gridCount = 4;
+  const grid = [];
+  for (let g = 0; g <= gridCount; g++) {
+    grid.push(Math.round((niceMax / gridCount) * g));
+  }
+
+  return { totals, holdings, totalCost, totalMarket, totalGain, maxY: niceMax, grid };
 }
 
 module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio };

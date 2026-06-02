@@ -36,22 +36,11 @@ function tdStyle(align) {
   };
 }
 
-function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0 }, cur = 'USD' }) {
-  const { totals, holdings, totalCost, totalMarket, totalGain } = vm;
+function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0, maxY: 0, grid: [0] }, cur = 'USD' }) {
+  const { totals, holdings, totalCost, totalMarket, totalGain, maxY, grid } = vm;
 
   // Series for the AreaLineChart: single 'value' series
   const series = [{ key: 'value', color: T.pos, label: 'Portfolio value' }];
-
-  // Compute maxY and grid for the chart
-  const maxRaw = totals.length > 0 ? Math.max(...totals.map(t => t.value)) : 1;
-  const step = Math.pow(10, Math.floor(Math.log10(maxRaw || 1)));
-  const niceStep = step * (maxRaw / step <= 2 ? 0.5 : maxRaw / step <= 5 ? 1 : 2);
-  const niceMax = Math.ceil((maxRaw || 1) / niceStep) * niceStep || 1;
-  const gridCount = 4;
-  const grid = [];
-  for (let g = 0; g <= gridCount; g++) {
-    grid.push(Math.round((niceMax / gridCount) * g));
-  }
 
   // Summary strip: [Cost basis, Market value, Unrealised gain]
   const stripItems = [
@@ -85,7 +74,7 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
 
       {/* Chart */}
       <div style={{ padding: '14px 22px 4px', flexShrink: 0 }}>
-        <AreaLineChart data={totals} series={series} cur={cur} maxY={niceMax} grid={grid} />
+        <AreaLineChart data={totals} series={series} cur={cur} maxY={maxY} grid={grid} />
       </div>
 
       {/* Holdings table */}
@@ -115,7 +104,7 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
                     {h.asset}
                   </td>
                   <td style={tdStyle('right')}>
-                    <Num color={T.ink3} size={12.5}>{h.qty != null ? h.qty : '—'}</Num>
+                    <Num color={T.ink3} size={12.5}>{h.qty != null ? Number(h.qty).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '—'}</Num>
                   </td>
                   <td style={tdStyle('right')}>
                     <Num color={T.ink2} size={12.5}>{money(h.cost, { cur })}</Num>

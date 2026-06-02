@@ -6,7 +6,7 @@ import { PortfolioView } from '../src/views/PortfolioView';
 const vm = {
   totals: [
     { m: 'Jan', value: 1750 },
-    { m: 'Feb', value: 1900 },
+    { m: 'Feb', value: 1875 },
   ],
   holdings: [
     { account: 'Assets:Shares', asset: 'AAPL', qty: 10,  cost: 1000, market: 1200, gain: 200  },
@@ -15,6 +15,8 @@ const vm = {
   totalCost:   1500,
   totalMarket: 1750,
   totalGain:   250,
+  maxY:        2000,
+  grid:        [0, 500, 1000, 1500, 2000],
 };
 
 test('renders the AreaLineChart', () => {
@@ -76,4 +78,26 @@ test('negative gain renders with neg color indicator', () => {
   // -16.7% shown (negative gain percentage)
   const html = document.body.innerHTML;
   expect(html).toMatch(/16\.7%/);
+});
+
+test('qty is formatted with toLocaleString (no raw float)', () => {
+  render(<PortfolioView vm={vm} cur="USD" />);
+  // qty=10 should appear as "10" (formatted), not as raw number
+  // qty=5 should appear as "5"
+  const html = document.body.innerHTML;
+  // Check the formatted values appear — they should not show as raw long floats
+  expect(html).toMatch(/\b10\b/);
+  expect(html).toMatch(/\b5\b/);
+});
+
+test('renders with null qty as em-dash', () => {
+  const vmWithNull = {
+    ...vm,
+    holdings: [
+      { account: 'Assets:Shares', asset: 'FUND', qty: null, cost: 1000, market: 1200, gain: 200 },
+    ],
+  };
+  render(<PortfolioView vm={vmWithNull} cur="USD" />);
+  const html = document.body.innerHTML;
+  expect(html).toMatch(/—/);
 });

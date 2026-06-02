@@ -33,7 +33,9 @@ const { ValuationService } = require('../valuation');
 function makeModel() {
   const vs = new ValuationService();
 
-  // Register prices
+  // Register prices — two dates so we can assert re-pricing between intervals:
+  //   AAPL:  $120 on 2018-01-02, $130 on 2018-02-01
+  //   VTSAX: $110 on 2018-01-02, $115 on 2018-02-01
   vs.parsePrices([
     { commodity: 'AAPL',  date: '2018-01-02', price: '120', priceCommodity: 'USD' },
     { commodity: 'VTSAX', date: '2018-01-02', price: '110', priceCommodity: 'USD' },
@@ -43,28 +45,27 @@ function makeModel() {
 
   // Construct valResult.balances manually to match ValuationService shape:
   // balances[account][commodity][dateStr] = { quantity, costBasis, marketValue, unrealizedGain }
+  // Snapshot marketValues use transaction-date prices (120/110), not interval-end prices.
   const balances = {
     'Assets:Shares': {
       AAPL: {
-        '2018-01-02': { quantity: 10, costBasis: 1000, marketValue: 1200, unrealizedGain: 200 },
+        '2018-01-02': { quantity: 10, costBasis: 1000, marketValue: 1200, unrealizedGain: 200, costCurrency: 'USD' },
       },
     },
     'Assets:IRA': {
       VTSAX: {
-        '2018-01-02': { quantity: 5, costBasis: 500, marketValue: 550, unrealizedGain: 50 },
+        '2018-01-02': { quantity: 5, costBasis: 500, marketValue: 550, unrealizedGain: 50, costCurrency: 'USD' },
       },
     },
     // A USD-denominated account — should be excluded from holdings (same as base currency)
     'Assets:Cash': {
       USD: {
-        '2018-01-02': { quantity: 2000, costBasis: 2000, marketValue: 2000, unrealizedGain: 0 },
+        '2018-01-02': { quantity: 2000, costBasis: 2000, marketValue: 2000, unrealizedGain: 0, costCurrency: 'USD' },
       },
     },
   };
 
   const valResult = { balances, baseCurrency: 'USD' };
-  // Attach the ValuationService reference so the adapter can call getAccountValueAtDate
-  valResult._valuationService = vs;
 
   const intervals = ['2018-01', '2018-02'];
   const intervalDates = [
@@ -72,7 +73,8 @@ function makeModel() {
     new Date('2018-02-28T00:00:00Z'),
   ];
 
-  return { valResult, intervals, intervalDates, currency: 'USD' };
+  // Expose valuationService at model level (not valResult) — this is what buildPortfolio reads.
+  return { valResult, valuationService: vs, intervals, intervalDates, currency: 'USD' };
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -172,9 +174,54 @@ test('null valResult returns safe empty vm', () => {
 
 test('totals value at last interval is sum of all holding market values', () => {
   const vm = buildPortfolio(makeModel());
-  // The last-interval total should be >= the sum of holdings (which use latest date)
-  // We just check it is a positive number and matches totalMarket
   const lastTotal = vm.totals[vm.totals.length - 1].value;
-  expect(lastTotal).toBeGreaterThan(0);
-  expect(vm.totalMarket).toBeGreaterThan(0);
+  // intervalDate for '2018-02' = 2018-02-28.
+  // Re-priced at interval-end via getAccountValueAtDate:
+  //   AAPL:  qty=10, nearest prior price = $130 (2018-02-01) → 10 × 130 = 1300
+  //   VTSAX: qty=5,  nearest prior price = $115 (2018-02-01) →  5 × 115 =  575
+  //   total = 1875
+  expect(lastTotal).toBe(1875);
+});
+
+test('totals first interval is re-priced at interval-end date', () => {
+  const vm = buildPortfolio(makeModel());
+  const firstTotal = vm.totals[0].value;
+  // intervalDate for '2018-01' = 2018-01-31.
+  // Re-priced at interval-end via getAccountValueAtDate:
+  //   AAPL:  qty=10, nearest prior price = $120 (2018-01-02) → 10 × 120 = 1200
+  //   VTSAX: qty=5,  nearest prior price = $110 (2018-01-02) →  5 × 110 =  550
+  //   total = 1750
+  expect(firstTotal).toBe(1750);
+});
+
+test('totals second interval reflects price movement (re-priced > first interval)', () => {
+  const vm = buildPortfolio(makeModel());
+  // Prices moved up from Jan to Feb: AAPL 120→130, VTSAX 110→115
+  // So Feb total (1875) > Jan total (1750) even though no new transactions occurred.
+  expect(vm.totals[1].value).toBeGreaterThan(vm.totals[0].value);
+});
+
+test('buildPortfolio returns maxY and grid for chart scale', () => {
+  const vm = buildPortfolio(makeModel());
+  expect(typeof vm.maxY).toBe('number');
+  expect(vm.maxY).toBeGreaterThan(0);
+  expect(Array.isArray(vm.grid)).toBe(true);
+  expect(vm.grid.length).toBeGreaterThan(0);
+  expect(vm.grid[0]).toBe(0);
+});
+
+test('sold-out position (quantity === 0) is excluded from holdings', () => {
+  const model = makeModel();
+  // Add a sold-out position to the balances
+  model.valResult.balances['Assets:Old'] = {
+    SOLD: {
+      '2018-01-02': { quantity: 0, costBasis: 0, marketValue: 0, unrealizedGain: 0, costCurrency: 'USD' },
+    },
+  };
+  const vm = buildPortfolio(model);
+  const assets = vm.holdings.map(h => h.asset);
+  expect(assets).not.toContain('SOLD');
+  // The original holdings are still present
+  expect(assets).toContain('AAPL');
+  expect(assets).toContain('VTSAX');
 });
