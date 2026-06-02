@@ -49,9 +49,6 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [
         },
         splitLine: {
           lineStyle: { color: T.line, width: 1 },
-          interval: maxY && grid.length > 1
-            ? (maxY / (grid.length - 1))
-            : undefined,
         },
         splitNumber: grid.length > 1 ? grid.length - 1 : 4,
       },

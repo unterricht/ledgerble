@@ -123,3 +123,12 @@ test('interval label uses MMM format for monthly intervals', () => {
   expect(vm.data[1].m).toBe('Feb');
   expect(vm.data[2].m).toBe('Mar');
 });
+
+test('each series entry has a type field matching assets or liabilities', () => {
+  const model = makeModel();
+  const vm = buildAssets(model);
+  const assetsSeries = vm.series.find(s => s.key === 'Assets');
+  const liabSeries   = vm.series.find(s => s.key === 'Liabilities');
+  expect(assetsSeries.type).toBe('assets');
+  expect(liabSeries.type).toBe('liabilities');
+});

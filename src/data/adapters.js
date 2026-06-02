@@ -1,6 +1,16 @@
 'use strict';
 
 const moment = require('moment');
+const { T } = require('../ui/tokens');
+
+// Produce a readable label from an interval key.
+// Monthly 'YYYY-MM' → 'Jan'; other formats fall back to the raw key.
+function labelFor(key) {
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    return moment.utc(key, 'YYYY-MM').format('MMM');
+  }
+  return key;
+}
 
 /**
  * buildOverview(model) → OverviewViewModel
@@ -60,15 +70,6 @@ function buildOverview(model) {
     } else if (p.type === 'expenses') {
       bucket.exp += p.amount;
     }
-  }
-
-  // Produce readable month label for Monthly keys ('2018-01' → 'Jan').
-  // For other formats we fall back to the raw key as the label.
-  function labelFor(key) {
-    if (/^\d{4}-\d{2}$/.test(key)) {
-      return moment.utc(key, 'YYYY-MM').format('MMM');
-    }
-    return key;
   }
 
   const monthly = intervals.map((key) => {
@@ -341,17 +342,9 @@ function buildAssets(model) {
     return { data: [], series: [], maxY: 0, grid: [0] };
   }
 
-  // ── Label helper (reuse same format as buildOverview) ─────────────────────
-  function labelFor(key) {
-    if (/^\d{4}-\d{2}$/.test(key)) {
-      return moment.utc(key, 'YYYY-MM').format('MMM');
-    }
-    return key;
-  }
-
   // ── 1. Collect top-level accounts of type assets/liabilities ──────────────
-  // topKey → { type, perInterval: number[] (length = intervals.length, all zeros) }
-  const topMap = new Map(); // key = top-level segment string
+  // topKey → { type, sums: number[] (length = intervals.length, all zeros) }
+  const topMap = new Map(); // key = top-level segment string → { type, sums }
 
   for (const [balKey, arr] of balances) {
     if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
@@ -359,10 +352,10 @@ function buildAssets(model) {
     const topSegment = balKey.account.split(':')[0];
 
     if (!topMap.has(topSegment)) {
-      topMap.set(topSegment, new Array(intervals.length).fill(0));
+      topMap.set(topSegment, { type: balKey.type, sums: new Array(intervals.length).fill(0) });
     }
 
-    const sums = topMap.get(topSegment);
+    const { sums } = topMap.get(topSegment);
     for (let i = 0; i < intervals.length; i++) {
       sums[i] += arr[i] || 0;
     }
@@ -373,19 +366,19 @@ function buildAssets(model) {
   }
 
   // ── 2. Build series array (one per top-level account, cycling T.chart) ────
-  const { T } = require('../ui/tokens');
   const topKeys = Array.from(topMap.keys()).sort();
   const series = topKeys.map((key, idx) => ({
     key,
     color: T.chart[idx % T.chart.length],
     label: key,
+    type: topMap.get(key).type,
   }));
 
   // ── 3. Build data array ────────────────────────────────────────────────────
   const data = intervals.map((interval, i) => {
     const entry = { m: labelFor(interval) };
     for (const key of topKeys) {
-      entry[key] = topMap.get(key)[i];
+      entry[key] = topMap.get(key).sums[i];
     }
     return entry;
   });

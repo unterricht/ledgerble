@@ -14,9 +14,10 @@ function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = '
   // Compute the last data point for the summary strip totals
   const last = data.length > 0 ? data[data.length - 1] : null;
 
-  // Total assets = sum of all series values at the last interval
+  // Total assets = sum of asset-type series only (liabilities are excluded so this
+  // does not conflate net worth with gross assets, matching the design mockup).
   const total = last
-    ? series.reduce((acc, s) => acc + (last[s.key] || 0), 0)
+    ? series.filter(s => s.type === 'assets').reduce((acc, s) => acc + (last[s.key] || 0), 0)
     : 0;
 
   // Summary strip: Total assets first, then one tile per series
