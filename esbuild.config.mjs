@@ -6,20 +6,16 @@ import { readFileSync } from 'fs';
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 await build({
-  entryPoints: ['ui.js'],
+  entryPoints: ['src/app/index.jsx'],
   bundle: true,
   outfile: 'dist/bundle.js',
   platform: 'browser',
   format: 'iife',
-  // Externalize electron – it's not available in the renderer anymore
   external: ['electron'],
-  // Define globals that esbuild needs to handle
-  define: {
-    'process.env.NODE_ENV': '"production"',
-  },
-  // Source maps for debugging
+  jsx: 'automatic',
+  loader: { '.js': 'jsx', '.jsx': 'jsx' },
+  define: { 'process.env.NODE_ENV': '"production"' },
   sourcemap: true,
-  // Keep readable for now
   minify: false,
   logLevel: 'info',
 });
