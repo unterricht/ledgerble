@@ -32,6 +32,7 @@ const SETTINGS_DEFAULTS = {
   'options.liabilities.regex': '^(debts?|liabilit(y|ies))(:|$)',
   'options.equity.regex':    '^equity(:|$)',
   'options.overview.catRule': 'top5',
+  'options.locale':          'auto',
 };
 
 function makeGetSetting(cache) {
