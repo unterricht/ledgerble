@@ -83,15 +83,6 @@ const FILTER_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'asset
 const PERIOD_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'assets', 'portfolio']);
 
 // ── window controls ──────────────────────────────────────────
-function TrafficLights() {
-  const dot = c => ({ width: 12, height: 12, borderRadius: '50%', background: c, boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.12)' });
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <span style={dot('#FF5F57')} /><span style={dot('#FEBC2E')} /><span style={dot('#28C840')} />
-    </div>
-  );
-}
-
 function WinControls() {
   const [hov, setHov] = useState(null);
   const base = { width: 46, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'default', transition: 'background 100ms' };
@@ -253,25 +244,6 @@ function FileMenu({ mod, onPrint, itemStyle }) {
   );
 }
 
-// ── macOS global menu bar ────────────────────────────────────
-function MacMenuBar({ onPrint }) {
-  const menus = [{ key: 'menu.edit', label: 'Edit' }, { key: 'menu.view', label: 'View' }, { key: 'menu.window', label: 'Window' }];
-  const item = { padding: '2px 9px', borderRadius: 5, fontSize: 13, fontFamily: T.sans, color: T.ink, cursor: 'default', lineHeight: 1.2 };
-  return (
-    <div className="chrome-print-hide" style={{
-      height: 26, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 1, padding: '0 9px',
-      background: 'rgba(245,246,249,0.72)', backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-      borderBottom: '0.5px solid rgba(16,18,22,0.10)', position: 'relative', zIndex: 30,
-    }}>
-      <span className="rd-menu" style={{ ...item, fontWeight: 680, padding: '2px 10px' }}>Ledgerble</span>
-      <FileMenu mod="⌘" onPrint={onPrint} itemStyle={item} />
-      {menus.map(m => <span key={m.key} className="rd-menu" style={item}>{t(m.key)}</span>)}
-      <div style={{ flex: 1 }} />
-      <span style={{ ...item, fontWeight: 500 }}>Sun 1 Jun&nbsp;&nbsp;9:41</span>
-    </div>
-  );
-}
-
 // ── Shell ────────────────────────────────────────────────────
 function Shell() {
   const plat = (window.api && window.api.platform === 'win32') ? 'win' : 'mac';
@@ -362,7 +334,6 @@ function Shell() {
   })();
 
   const fonts = FONT_STACK[plat];
-  const cardRadius = plat === 'win' ? 8 : 13;
 
   const brand = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -372,11 +343,10 @@ function Shell() {
   );
 
   const macBar = (
-    <div className="chrome-print-hide" style={{ display: 'flex', alignItems: 'center', height: 48, background: T.sidebar, borderBottom: `1px solid ${T.line}`, paddingLeft: 18, paddingRight: 12, flexShrink: 0, gap: 12 }}>
-      <TrafficLights />
-      <div style={{ width: 196, paddingLeft: 8 }}>{brand}</div>
+    <div className="chrome-print-hide" style={{ display: 'flex', alignItems: 'center', height: 52, background: T.sidebar, borderBottom: `1px solid ${T.line}`, paddingLeft: 80, paddingRight: 12, flexShrink: 0, gap: 12, WebkitAppRegion: 'drag' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>{brand}</div>
       <div style={{ flex: 1 }} />
-      <SearchField query={query} onChange={onSearch} />
+      <div style={{ WebkitAppRegion: 'no-drag' }}><SearchField query={query} onChange={onSearch} /></div>
     </div>
   );
 
@@ -398,14 +368,8 @@ function Shell() {
   );
 
   return (
-    <div className="app-root" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', '--rd-sans': fonts.sans, '--rd-mono': fonts.mono }}>
-      {plat === 'mac' && <MacMenuBar onPrint={doPrint} />}
-      <div className="app-stage" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '26px 28px 30px' }}>
-        <div className="print-card" style={{
-          width: 'min(1240px, 100%)', height: '100%', maxHeight: 806,
-          background: T.surface, borderRadius: cardRadius, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 40px 80px -24px rgba(16,18,22,0.40), 0 12px 28px -12px rgba(16,18,22,0.22), 0 0 0 0.5px rgba(16,18,22,0.10)',
-        }}>
+    <div className="app-root" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.surface, '--rd-sans': fonts.sans, '--rd-mono': fonts.mono }}>
+      <div className="print-card" style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {plat === 'mac' ? macBar : winBar}
 
           {/* ── body ── */}
@@ -519,7 +483,6 @@ function Shell() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }
