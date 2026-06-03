@@ -63,16 +63,36 @@ function buildLabels(intervals, period) {
 // through axisLabel.formatter with interval:0 so ECharts can't drop the
 // year-bearing labels (the cause of the "Q1 '15 · Q4 · Q3 …" jumble).
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-// Aim for roughly this many labelled ticks across the visible window.
-const TICK_TARGET = 12;
-const UNIT_LADDER = ['year', 'quarter', 'month', 'week', 'day'];
-const PERIOD_FINEST_UNIT = { Yearly: 'year', Quarterly: 'quarter', Monthly: 'month', Weekly: 'week', Daily: 'day' };
+// Upper bound on labelled ticks across the visible window. The step ladder is
+// chosen as the FINEST step whose tick count stays under this, so the axis is as
+// dense as it can be without crowding — no sparse "3 ticks with gaping voids".
+const TICK_MAX = 14;
+// Finest calendar unit each period may resolve to (rank: day0<week1<month2<quarter3<year4).
+const PERIOD_FINEST_RANK = { Yearly: 4, Quarterly: 3, Monthly: 2, Weekly: 1, Daily: 0 };
+// Tick "steps" from finest→coarsest. Each yields a candidate set of boundary
+// positions; intermediate strides (week×2, year×2/5/10) keep the density curve
+// smooth so there is never a big jump from "every week" straight to "every month".
+const STEP_LADDER = [
+  { unit: 'day', n: 1, rank: 0 },
+  { unit: 'week', n: 1, rank: 1 },
+  { unit: 'week', n: 2, rank: 1 },
+  { unit: 'month', n: 1, rank: 2 },
+  { unit: 'quarter', n: 1, rank: 3 },
+  { unit: 'half', n: 1, rank: 3 },
+  { unit: 'year', n: 1, rank: 4 },
+  { unit: 'year', n: 2, rank: 4 },
+  { unit: 'year', n: 5, rank: 4 },
+  { unit: 'year', n: 10, rank: 4 },
+];
 
-// Density-adaptive: finer marks (month/week/day) only appear once the visible
-// window is narrow enough to fit them, so Daily over 10 years shows just years,
-// but shrinking the slider reveals quarters, then months, then days. Each chosen
-// tick is labelled by its COARSEST boundary (year > quarter > month > week > day)
-// so the axis nests cleanly: "2015 · Q2 · Q3 · 2016 …" / "2015 · Feb · Mar · Q2 …".
+// Density-adaptive axis ticks. Finer marks (month/week/day) appear only once the
+// visible (slider-windowed) range is narrow enough to fit them under TICK_MAX, so
+// Daily over 10 years shows just years, but shrinking the slider reveals quarters,
+// then months, then weeks, then days. Each tick is labelled by its COARSEST
+// boundary (year > quarter > month > week > day) so the axis nests cleanly, and
+// month/quarter/year boundaries are always overlaid for context even when the
+// chosen step is weekly/daily. Charts feed these through axisLabel.formatter with
+// interval:0 so ECharts can't drop the year-bearing labels.
 function axisTicksFor(intervals, intervalDates, period) {
   const n = intervalDates.length;
   if (n === 0) return [];
@@ -101,43 +121,54 @@ function axisTicksFor(intervals, intervalDates, period) {
   const mStart = (i) => yStart(i) || attr[i].mo !== attr[i - 1].mo;
   const wStart = (i) => i === 0 || attr[i].wy !== attr[i - 1].wy || attr[i].wk !== attr[i - 1].wk;
 
-  const count = (fn) => { let c = 0; for (let i = 0; i < n; i++) if (fn(i)) c++; return c; };
-  const counts = { year: count(yStart), quarter: count(qStart), month: count(mStart), week: count(wStart), day: n };
+  const indicesWhere = (fn) => { const a = []; for (let i = 0; i < n; i++) if (fn(i)) a.push(i); return a; };
+  const yearStarts = indicesWhere(yStart);
+  const quarterStarts = indicesWhere(qStart);
+  const monthStarts = indicesWhere(mStart);
+  const weekStarts = indicesWhere(wStart);
+  const halfStarts = monthStarts.filter((i) => attr[i].mo === 0 || attr[i].mo === 6);
 
-  // Pick the finest unit (no finer than the period itself) whose tick count fits.
-  const finestIdx = UNIT_LADDER.indexOf(PERIOD_FINEST_UNIT[period] || 'month');
-  let chosenIdx = 0;
-  for (let li = 0; li <= finestIdx; li++) {
-    if (counts[UNIT_LADDER[li]] <= TICK_TARGET) chosenIdx = li;
+  // How many ticks a step would produce (primary positions only — overlays add a few).
+  const stepCount = (s) => {
+    if (s.unit === 'day') return n;
+    if (s.unit === 'week') return Math.ceil(weekStarts.length / s.n);
+    if (s.unit === 'month') return monthStarts.length;
+    if (s.unit === 'quarter') return quarterStarts.length;
+    if (s.unit === 'half') return halfStarts.length;
+    return Math.ceil(yearStarts.length / s.n); // year
+  };
+
+  // Finest step (no finer than the period) whose primary tick count fits the budget.
+  const finestRank = PERIOD_FINEST_RANK[period] != null ? PERIOD_FINEST_RANK[period] : 2;
+  let chosen = STEP_LADDER[STEP_LADDER.length - 1];
+  for (let li = STEP_LADDER.length - 1; li >= 0; li--) {
+    const s = STEP_LADDER[li];
+    if (s.rank < finestRank) break;           // finer than the period allows
+    if (stepCount(s) <= TICK_MAX) chosen = s;  // keep the finest that still fits
   }
-  const chosen = UNIT_LADDER[chosenIdx];
-  const isChosenBoundary = (i) =>
-    chosen === 'day' ? true
-      : chosen === 'week' ? wStart(i)
-      : chosen === 'month' ? mStart(i)
-      : chosen === 'quarter' ? qStart(i)
-      : yStart(i);
 
-  // If even yearly is too dense, thin the year labels to ~TICK_TARGET.
-  const yearThin = chosen === 'year' && counts.year > TICK_TARGET ? Math.ceil(counts.year / TICK_TARGET) : 1;
+  // Build the set of tick positions for the chosen step.
+  const show = new Array(n).fill(false);
+  const mark = (arr, stride) => { for (let k = 0; k < arr.length; k += stride) show[arr[k]] = true; };
+  if (chosen.unit === 'day') { show.fill(true); }
+  else if (chosen.unit === 'week') { mark(weekStarts, chosen.n); }
+  else if (chosen.unit === 'month') { mark(monthStarts, 1); }
+  else if (chosen.unit === 'quarter') { mark(quarterStarts, 1); }
+  else if (chosen.unit === 'half') { mark(halfStarts, 1); }
+  else { mark(yearStarts, chosen.n); }
+  // Always overlay coarse boundaries for context when stepping by week/day.
+  if (chosen.rank <= 1) { for (const i of monthStarts) show[i] = true; }
 
   const ticks = new Array(n).fill('');
-  let yearSeen = 0;
   for (let i = 0; i < n; i++) {
-    if (!isChosenBoundary(i)) continue;
-    if (yStart(i)) {
-      const show = yearThin === 1 || yearSeen % yearThin === 0;
-      yearSeen++;
-      ticks[i] = show ? String(attr[i].y) : '';
-    } else if (qStart(i)) {
-      ticks[i] = 'Q' + attr[i].q;
-    } else if (mStart(i)) {
-      ticks[i] = MONTH_ABBR[attr[i].mo];
-    } else if (wStart(i)) {
-      ticks[i] = 'W' + attr[i].wk;
-    } else {
-      ticks[i] = String(attr[i].dom);
-    }
+    if (!show[i]) continue;
+    if (yStart(i)) ticks[i] = String(attr[i].y);
+    // Half-year mid-points read better as the month name ("Jul") than as "Q3".
+    else if (chosen.unit === 'half') ticks[i] = MONTH_ABBR[attr[i].mo];
+    else if (qStart(i)) ticks[i] = 'Q' + attr[i].q;
+    else if (mStart(i)) ticks[i] = MONTH_ABBR[attr[i].mo];
+    else if (wStart(i)) ticks[i] = 'W' + attr[i].wk;
+    else ticks[i] = String(attr[i].dom);
   }
   return ticks;
 }

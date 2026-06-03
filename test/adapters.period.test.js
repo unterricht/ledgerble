@@ -60,7 +60,7 @@ test('Monthly: the year is shown at each year boundary (Jan)', () => {
   expect(vm.monthly[2].m).toBe('Feb');     // mid-year → bare month
 });
 
-test('axis ticks mark the year at year start and quarters at quarter starts (Monthly)', () => {
+test('axis ticks: ~1 year of months stays month-level with year/quarter context', () => {
   const intervals = [], intervalDates = [];
   for (let i = 0; i < 13; i++) {
     const d = new Date(Date.UTC(2015, i, 1));
@@ -69,10 +69,31 @@ test('axis ticks mark the year at year start and quarters at quarter starts (Mon
   }
   const vm = buildOverview({ currency: 'USD', period: 'Monthly', intervalKeyFn: KEYFN.Monthly, intervals, intervalDates, postings: [] });
   const ticks = vm.monthly.map(b => b.tick);
-  expect(ticks).toEqual(['2015', '', '', 'Q2', '', '', 'Q3', '', '', 'Q4', '', '', '2016']);
+  // 13 months fits the density budget → every month labelled, coarsest-boundary-first
+  expect(ticks).toEqual(['2015', 'Feb', 'Mar', 'Q2', 'May', 'Jun', 'Q3', 'Aug', 'Sep', 'Q4', 'Nov', 'Dec', '2016']);
   // category key is the unique interval key (so ECharts never collapses repeats like two "Aug")
   expect(vm.monthly[0].key).toBe('2015-01');
   expect(vm.monthly[12].key).toBe('2016-01');
+});
+
+test('axis ticks have a sensible minimum density: ~14 Weekly buckets show week ticks', () => {
+  // Regression: previously 14 weeks fell back to month-level → only ~3 ticks
+  // with gaping voids. We now want actual weekly ticks at this resolution.
+  const intervals = [], intervalDates = [];
+  let d = new Date(Date.UTC(2026, 0, 5)); // a Monday
+  for (let i = 0; i < 14; i++) {
+    intervalDates.push(new Date(d));
+    const mm = require('moment').utc(d);
+    intervals.push(mm.isoWeekYear() + '-' + String(mm.isoWeek()).padStart(2, '0'));
+    d = new Date(d.getTime() + 7 * 86400000);
+  }
+  const vm = buildOverview({ currency: 'USD', period: 'Weekly', intervalKeyFn: (x) => require('moment').utc(x).format('YYYY-WW'), intervals, intervalDates, postings: [] });
+  const ticks = vm.monthly.map(b => b.tick);
+  const nonEmpty = ticks.filter(Boolean);
+  // far more than the old 3 — at least ~8 labelled ticks across 14 weeks
+  expect(nonEmpty.length).toBeGreaterThanOrEqual(8);
+  // and they include actual week marks, not just month names
+  expect(ticks.some(t => /^W\d+$/.test(t))).toBe(true);
 });
 
 test('axis ticks: every yearly bucket keeps its year (unchanged good behaviour)', () => {
