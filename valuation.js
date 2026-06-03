@@ -140,8 +140,6 @@ class ValuationService {
         const costMap = {};
         if (postingsCost && postings.length !== postingsCost.length) {
             console.warn(`Ledger output mismatch: csv (${postings.length}) and csv -B (${postingsCost.length}) line counts differ! Using map-based matching for cost basis.`);
-            console.warn("DEBUG_LOG: First 5 postings: ", JSON.stringify(postings.slice(0, 5)));
-            console.warn("DEBUG_LOG: First 5 postingsCost: ", JSON.stringify(postingsCost.slice(0, 5)));
             for (const pc of postingsCost) {
                 const key = `${pc.date}|${pc.account}`;
                 if (!costMap[key]) costMap[key] = [];

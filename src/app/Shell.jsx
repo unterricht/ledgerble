@@ -186,32 +186,32 @@ function NavItem({ item, active, onClick }) {
 }
 
 // ── journal file menu (bottom-left) ──────────────────────────
-function JournalFooter() {
-  const [files, setFiles] = useState(['cody.journal']);
+function JournalFooter({ files }) {
   const [open, setOpen] = useState(false);
+  const basenames = files.map(f => f.split('/').pop().split('\\').pop());
   const item = { padding: '7px 12px', fontSize: 12.5, fontFamily: T.sans, color: T.ink, cursor: 'default', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' };
   const menu = (
     <>
       <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
       <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, minWidth: 188, zIndex: 41, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: '5px', boxShadow: '0 12px 30px -8px rgba(16,18,22,0.30), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => { setFiles(['cody.journal']); setOpen(false); }}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
         <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="reload" size={15} stroke={T.ink3} /> {t('file.reload')}</div>
         <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="overview" size={15} stroke={T.ink3} /> {t('file.reveal')}</div>
         <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
-        <div className="rd-menu" style={{ ...item, borderRadius: 6, color: T.neg }} onClick={() => { setFiles([]); setOpen(false); }}>{t('file.remove')}</div>
+        <div className="rd-menu" style={{ ...item, borderRadius: 6, color: T.neg }} onClick={() => setOpen(false)}>{t('file.remove')}</div>
       </div>
     </>
   );
   return (
     <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 8, position: 'relative' }}>
       {files.length === 0 ? (
-        <button className="rd-nav" onClick={() => setFiles(['cody.journal'])} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px dashed ${T.line2}`, background: 'transparent', cursor: 'pointer', fontFamily: T.sans, fontSize: 12.5, color: T.ink2 }}>
+        <button className="rd-nav" style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px dashed ${T.line2}`, background: 'transparent', cursor: 'default', fontFamily: T.sans, fontSize: 12.5, color: T.ink2 }}>
           <Icon name="files" size={15} stroke={T.ink3} /> {t('file.open_ledger')}
         </button>
       ) : (
         <div className="rd-nav" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, cursor: 'pointer' }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.pos, flexShrink: 0 }} />
-          <Num color={T.ink2} size={11.5} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{files[0]}{files.length > 1 ? ` +${files.length - 1}` : ''}</Num>
+          <Num color={T.ink2} size={11.5} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{basenames[0]}{basenames.length > 1 ? ` +${basenames.length - 1}` : ''}</Num>
           <span style={{ display: 'flex', color: T.ink3 }}><Icon name="options" size={15} /></span>
         </div>
       )}
@@ -344,7 +344,7 @@ function Shell() {
 
   const macBar = (
     <div className="chrome-print-hide" style={{ display: 'flex', alignItems: 'center', height: 52, background: T.sidebar, borderBottom: `1px solid ${T.line}`, paddingLeft: 80, paddingRight: 12, flexShrink: 0, gap: 12, WebkitAppRegion: 'drag' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>{brand}</div>
+      {brand}
       <div style={{ flex: 1 }} />
       <div style={{ WebkitAppRegion: 'no-drag' }}><SearchField query={query} onChange={onSearch} /></div>
     </div>
@@ -389,7 +389,7 @@ function Shell() {
               {/* footer: options + journal file menu */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <NavItem item={{ id: 'options', labelKey: 'nav.options', icon: 'options' }} active={view === 'options'} onClick={() => setView('options')} />
-                <JournalFooter />
+                <JournalFooter files={Array.from(s.files.keys())} />
               </div>
             </nav>
 
