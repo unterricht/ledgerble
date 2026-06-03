@@ -5,11 +5,55 @@ const { T } = require('../ui/tokens');
 
 // Produce a readable label from an interval key.
 // Monthly 'YYYY-MM' → 'Jan'; other formats fall back to the raw key.
+// NOTE: this period-agnostic fallback cannot distinguish Weekly 'YYYY-WW' from
+// Monthly 'YYYY-MM' (both \d{4}-\d{2}); use buildLabels(intervals, period) when a
+// period is known so weeks/years render correctly. Kept for callers without a period.
 function labelFor(key) {
   if (/^\d{4}-\d{2}$/.test(key)) {
     return moment.utc(key, 'YYYY-MM').format('MMM');
   }
   return key;
+}
+
+// Compact two-digit year suffix, e.g. 2026 → "'26".
+function yy(year4) {
+  return "'" + String(year4).slice(2);
+}
+
+// Period-aware label for a single interval key.
+// Shows the year on the first interval and at each year boundary so long axes
+// stay legible (e.g. Monthly January → "Jan '26"); bare label otherwise.
+function formatIntervalLabel(key, period, prevKey) {
+  const year = key.slice(0, 4);
+  const showYear = !prevKey || prevKey.slice(0, 4) !== year;
+  switch (period) {
+    case 'Yearly':
+      return key; // 'YYYY'
+    case 'Quarterly': {
+      const q = key.slice(5); // 'Qn'
+      return showYear ? `${q} ${yy(year)}` : q;
+    }
+    case 'Weekly': {
+      const w = Number(key.slice(5)); // 'WW' → n
+      return showYear ? `W${w} ${yy(year)}` : `W${w}`;
+    }
+    case 'Daily': {
+      const lbl = moment.utc(key, 'YYYY-MM-DD').format('MMM D');
+      return showYear ? `${lbl} ${yy(year)}` : lbl;
+    }
+    case 'Monthly':
+    default: {
+      const m = moment.utc(key, 'YYYY-MM').format('MMM');
+      return showYear ? `${m} ${yy(year)}` : m;
+    }
+  }
+}
+
+// Build a label per interval. With a known period, uses year-boundary-aware
+// labels; without one, falls back to the bare per-key labelFor.
+function buildLabels(intervals, period) {
+  if (!period) return intervals.map(labelFor);
+  return intervals.map((k, i) => formatIntervalLabel(k, period, i > 0 ? intervals[i - 1] : null));
 }
 
 /**
@@ -30,28 +74,26 @@ function labelFor(key) {
  * This matches how the overview table presents per-month figures.
  */
 function buildOverview(model) {
-  const { postings, intervals, currency } = model;
+  const { postings, intervals, currency, period } = model;
 
-  // ── 1. Derive interval key from a posting date (Monthly: 'YYYY-MM') ────────
-  // We auto-detect the key format from the first interval string length / shape,
-  // then use moment.utc to format each posting date the same way.
-  function intervalKeyFor(date) {
+  // ── 1. Derive interval key from a posting date ────────────────────────────
+  // Prefer the exact key function compute used (model.intervalKeyFn) so the
+  // bucketing is guaranteed to match the interval keys for every period
+  // (this is what fixes Weekly mis-bucketing and the Yearly "all zero" bug).
+  // Falls back to a shape-based heuristic when no key fn is supplied (legacy tests).
+  function heuristicKey(date) {
     if (!intervals || intervals.length === 0) return null;
     const sample = intervals[0];
-    // Detect format: YYYY-MM (7 chars), YYYY-WW (7 chars with W), YYYY-MM-DD (10), YYYY-QN (7 with Q)
-    if (/^\d{4}-W\d{2}$/.test(sample)) {
-      return moment.utc(date).format('YYYY-WW');
-    }
+    if (/^\d{4}-W\d{2}$/.test(sample)) return moment.utc(date).format('YYYY-WW');
     if (/^\d{4}-Q\d$/.test(sample)) {
       const q = Math.ceil((date.getUTCMonth() + 1) / 3);
       return `${date.getUTCFullYear()}-Q${q}`;
     }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(sample)) {
-      return moment.utc(date).format('YYYY-MM-DD');
-    }
-    // Default: Monthly 'YYYY-MM'
+    if (/^\d{4}$/.test(sample)) return String(date.getUTCFullYear());
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sample)) return moment.utc(date).format('YYYY-MM-DD');
     return moment.utc(date).format('YYYY-MM');
   }
+  const intervalKeyFor = typeof model.intervalKeyFn === 'function' ? model.intervalKeyFn : heuristicKey;
 
   // ── 2. Build monthly bars ────────────────────────────────────────────────────
   // Initialise one bucket per interval, preserving order.
@@ -72,9 +114,10 @@ function buildOverview(model) {
     }
   }
 
-  const monthly = intervals.map((key) => {
+  const labels = buildLabels(intervals, period);
+  const monthly = intervals.map((key, i) => {
     const { inc, exp } = bucketMap.get(key);
-    return { m: labelFor(key), inc, exp };
+    return { m: labels[i], inc, exp };
   });
 
   // ── 3. Aggregate by category (full account path) ─────────────────────────────
@@ -375,8 +418,9 @@ function buildAssets(model) {
   }));
 
   // ── 3. Build data array ────────────────────────────────────────────────────
+  const labels = buildLabels(intervals, model.period);
   const data = intervals.map((interval, i) => {
-    const entry = { m: labelFor(interval) };
+    const entry = { m: labels[i] };
     for (const key of topKeys) {
       entry[key] = topMap.get(key).sums[i];
     }
@@ -508,6 +552,7 @@ function buildPortfolio(model) {
   //   aggregatedGain[i] += (val.marketValue - val.costBasis)
   // This means between-transaction price movement is reflected in the chart,
   // unlike the old snapshotAtDate approach which went flat between transactions.
+  const labels = buildLabels(intervals, model.period);
   const totals = intervals.map((intervalKey, i) => {
     const date = intervalDates[i];
 
@@ -531,7 +576,7 @@ function buildPortfolio(model) {
       }
     }
 
-    return { m: labelFor(intervalKey), value };
+    return { m: labels[i], value };
   });
 
   // ── 3. Aggregate totals ───────────────────────────────────────────────────

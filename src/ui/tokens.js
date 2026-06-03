@@ -47,9 +47,16 @@ T.chart = T_CHART;
 // ─────────────────────────────────────────────────────────────
 // NUMBER FORMATTING
 // ─────────────────────────────────────────────────────────────
-const CUR = { USD: '$', EUR: '€', GBP: '£' };
+// Known ISO codes and bare symbols map to a glyph; anything else (CHF, SEK, a
+// stock ticker used as a display unit, …) is shown as a "CODE " prefix so the
+// UI reflects the ledger's real commodity instead of silently falling back to "$".
+const CUR = { USD: '$', EUR: '€', GBP: '£', '$': '$', '€': '€', '£': '£' };
+function curPrefix(cur) {
+  if (CUR[cur]) return CUR[cur];
+  return (cur || 'USD') + ' ';
+}
 function money(v, { cents = true, sign = false, cur = 'USD' } = {}) {
-  const s = CUR[cur] || '$';
+  const s = curPrefix(cur);
   const abs = Math.abs(v).toLocaleString('en-US', {
     minimumFractionDigits: cents ? 2 : 0,
     maximumFractionDigits: cents ? 2 : 0,
@@ -59,7 +66,7 @@ function money(v, { cents = true, sign = false, cur = 'USD' } = {}) {
   return sign ? '+' + body : body;
 }
 function kfmt(v, cur = 'USD') {
-  const s = CUR[cur] || '$';
+  const s = curPrefix(cur);
   if (Math.abs(v) >= 1000) return s + (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'k';
   return s + v;
 }

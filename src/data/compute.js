@@ -209,11 +209,16 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
 
   // Resolve the effective display currency:
   // If the caller passed a specific currency that exists in the set, use it.
-  // Otherwise fall back to valResult.baseCurrency, then detectBaseCurrency.
+  // Otherwise prefer a REAL currency from currenciesSet — never let the fallback
+  // settle on a stock ticker (detectBaseCurrency picks the most frequent commodity,
+  // which can be a holding like "VWRD.L"/"AAPL"). Only when no plausible currency
+  // exists at all do we fall back to detectBaseCurrency.
   let currentCurrency = currency;
   if (!currentCurrency || !currenciesSet.has(currentCurrency)) {
     if (currenciesSet.has(valResult.baseCurrency)) {
       currentCurrency = valResult.baseCurrency;
+    } else if (currenciesSet.size > 0) {
+      currentCurrency = Array.from(currenciesSet)[0];
     } else {
       currentCurrency = valuationService.detectBaseCurrency(allPostings);
     }
@@ -303,11 +308,11 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     sliderValues = [0, Math.max(0, intervals.length - 1)];
   }
 
-  // ── 9. Date-filter rawPostings → postings ──────────────────────────────────
+  // ── 9. Date-filter rawPostings → dateFiltered ──────────────────────────────
   // (update() lines 354–364)
   const fromStr = intervals[sliderValues[0]];
   const toStr = intervals[sliderValues[1]];
-  const postings =
+  const dateFiltered =
     intervals.length === 0
       ? []
       : rawPostings.filter((p) => {
@@ -317,17 +322,39 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
 
   // ── 10. Build accountTree from income/expense accounts ─────────────────────
   // (update() lines 366–373)
+  // NOTE: built from the date-filtered-but-NOT-account-filtered set so that a
+  // deselected account keeps its checkbox in the inspector (otherwise it would
+  // vanish from the tree and could never be re-selected).
   const relevantAccounts = new Set();
-  for (const p of postings) {
+  for (const p of dateFiltered) {
     if (p.type === 'income' || p.type === 'expenses') {
       relevantAccounts.add(p.accountsFmtd());
     }
   }
   const accountTree = buildAccountTree(Array.from(relevantAccounts));
 
+  // ── 11. Account-filter the postings the views render ───────────────────────
+  // The account (category) filter must affect overview/breakdown/postings too —
+  // not only the balances Map. filterPostings cascades over deselected ancestors.
+  const postings = filterPostings(dateFiltered, deselectedAccounts);
+
+  // ── 12. Portfolio relevance ────────────────────────────────────────────────
+  // Mirrors legacy portfolio.js: a portfolio exists iff any held commodity is
+  // not the active display currency (i.e. a stock / non-cash holding).
+  let hasPortfolio = false;
+  const balAccounts = valResult.balances || {};
+  for (const acc of Object.keys(balAccounts)) {
+    for (const commodity of Object.keys(balAccounts[acc])) {
+      if (commodity !== currentCurrency) { hasPortfolio = true; break; }
+    }
+    if (hasPortfolio) break;
+  }
+
   return {
     currency: currentCurrency,
     currencies: Array.from(currenciesSet),
+    period,
+    intervalKeyFn: dateFormat,
     postings,
     rawPostings,
     intervals,
@@ -337,6 +364,7 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     valuationService,
     accountTree,
     sliderValues,
+    hasPortfolio,
   };
 }
 

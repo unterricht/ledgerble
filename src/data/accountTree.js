@@ -25,14 +25,23 @@ function isDeselected(account, deselected) {
     return deselected.has(account);
 }
 
+// Cascade-aware: an account is filtered out if it is deselected itself OR sits
+// below a deselected ancestor (so unchecking a parent hides its whole subtree).
+// The 'd + ":"' guard prevents sibling-prefix false positives
+// (e.g. deselecting "expenses:Food" must not swallow "expenses:FoodCourt").
+function isDeselectedDeep(account, deselected) {
+    if (!deselected || deselected.size === 0) return false;
+    for (const d of deselected) {
+        if (account === d || account.startsWith(d + ':')) return true;
+    }
+    return false;
+}
+
 function filterPostings(postings, deselected) {
     if (!deselected || deselected.size === 0) {
         return postings;
     }
-    return postings.filter(p => {
-        const account = p.accountsFmtd();
-        return !isDeselected(account, deselected);
-    });
+    return postings.filter(p => !isDeselectedDeep(p.accountsFmtd(), deselected));
 }
 
 module.exports = { buildAccountTree, isDeselected, filterPostings };

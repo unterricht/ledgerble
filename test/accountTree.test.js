@@ -45,4 +45,30 @@ describe('accountTree', () => {
         expect(filtered[0].amount).toBe(100);
         expect(filtered[1].amount).toBe(10);
     });
+
+    it('cascades: deselecting a parent account hides all its children', () => {
+        const postings = [
+            { accountsFmtd: () => 'assets:income:work', amount: 100 },
+            { accountsFmtd: () => 'assets:income:dividends', amount: 50 },
+            { accountsFmtd: () => 'expenses:Amazon', amount: 10 }
+        ];
+
+        // Deselecting the parent 'assets:income' must remove BOTH leaf children.
+        const deselected = new Set(['assets:income']);
+        const filtered = filterPostings(postings, deselected);
+
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].amount).toBe(10);
+    });
+
+    it('cascade does not match sibling accounts sharing a name prefix', () => {
+        const postings = [
+            { accountsFmtd: () => 'expenses:Food', amount: 10 },
+            { accountsFmtd: () => 'expenses:FoodCourt', amount: 20 },
+        ];
+        // Deselecting 'expenses:Food' must NOT swallow 'expenses:FoodCourt'.
+        const filtered = filterPostings(postings, new Set(['expenses:Food']));
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].amount).toBe(20);
+    });
 });

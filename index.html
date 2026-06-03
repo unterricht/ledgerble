@@ -34,6 +34,18 @@
     }
     input::placeholder { color: #AFB3BB; }
 
+    /* dual-thumb date-range slider: transparent native tracks overlaid on the
+       custom pine track; only the thumbs catch pointer events so both are draggable */
+    .rd-daterange input[type=range] { pointer-events: none; outline: none; }
+    .rd-daterange input[type=range]::-webkit-slider-runnable-track { background: transparent; height: 18px; }
+    .rd-daterange input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; pointer-events: auto; cursor: grab;
+      width: 15px; height: 15px; margin-top: 2px; border-radius: 50%;
+      background: #FFFFFF; border: 1.5px solid #2E6E5D; box-shadow: 0 1px 3px rgba(16,18,22,0.18);
+    }
+    .rd-daterange input[type=range]:disabled::-webkit-slider-thumb { border-color: #AFB3BB; cursor: default; }
+    .rd-daterange input[type=range]:focus { box-shadow: none; }
+
     /* slim scrollbars */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }

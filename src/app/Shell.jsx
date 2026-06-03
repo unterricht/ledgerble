@@ -11,7 +11,7 @@ import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
 const { t } = require('../../i18n');
 import { Icon } from '../ui/Icon';
-import { Segmented, Eyebrow, Num, MenuSelect, SearchField } from '../ui/controls';
+import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
 import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings } from '../data/adapters';
@@ -116,7 +116,7 @@ function flattenAccountTree(tree, prefix, out) {
 }
 
 // ── account filter tree (inspector) ──────────────────────────
-function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
+function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, intervals, sliderValues, onRangeChange }) {
   const flat = [];
   if (accountTree && typeof accountTree === 'object' && !Array.isArray(accountTree)) {
     flattenAccountTree(accountTree, '', flat);
@@ -134,16 +134,7 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree }) {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
         <Eyebrow style={{ marginBottom: 9 }}>{t('filter.date_range')}</Eyebrow>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 11 }}>
-          <input defaultValue="2018-01" style={{ width: 78, fontFamily: T.mono, fontSize: 12, padding: '5px 8px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none', textAlign: 'center' }} />
-          <span style={{ color: T.ink4, fontSize: 12 }}>—</span>
-          <input defaultValue="2018-12" style={{ width: 78, fontFamily: T.mono, fontSize: 12, padding: '5px 8px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none', textAlign: 'center' }} />
-        </div>
-        <div style={{ position: 'relative', height: 18, margin: '0 4px 18px' }}>
-          <div style={{ position: 'absolute', top: 7, left: 0, right: 0, height: 4, borderRadius: 2, background: T.sink }} />
-          <div style={{ position: 'absolute', top: 7, left: '2%', right: '2%', height: 4, borderRadius: 2, background: T.pine, opacity: 0.85 }} />
-          {['2%', '98%'].map((l, i) => <div key={i} style={{ position: 'absolute', top: 1, left: l, transform: 'translateX(-50%)', width: 15, height: 15, borderRadius: '50%', background: T.surface, border: `1.5px solid ${T.pine}`, boxShadow: '0 1px 3px rgba(16,18,22,0.18)', cursor: 'grab' }} />)}
-        </div>
+        <DateRangeSlider intervals={intervals || []} value={sliderValues || [0, 0]} onChange={onRangeChange} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
           <Eyebrow>{t('filter.accounts')}</Eyebrow>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -308,6 +299,20 @@ function Shell() {
 
   const showInsp = FILTER_TABS.has(view) && insp;
 
+  // Portfolio tab only exists when stock/non-cash holdings are present (legacy
+  // portfolio.js behaviour). Hide it otherwise, and bounce off it if it vanishes.
+  const navGroups = NAV.map(g => ({
+    ...g,
+    items: g.items.filter(it => it.id !== 'portfolio' || model.hasPortfolio),
+  }));
+  useEffect(() => {
+    if (view === 'portfolio' && !model.hasPortfolio) setView('overview');
+  }, [view, model.hasPortfolio, setView]);
+
+  // Changing granularity resets the date filter to the full span (interval
+  // indices are not comparable across periods).
+  const onPeriodChange = (p) => { setPeriod(p); s.setDateRange(null); };
+
   const onSearch = v => { setQuery(v); };
 
   const doPrint = () => window.print();
@@ -377,7 +382,7 @@ function Shell() {
             {/* sidebar */}
             <nav className="chrome-print-hide" style={{ width: 224, flexShrink: 0, background: T.sidebar, borderRight: `1px solid ${T.line}`, display: 'flex', flexDirection: 'column', padding: '8px 10px' }}>
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                {NAV.map(g => (
+                {navGroups.map(g => (
                   <div key={g.group} style={{ marginBottom: 14 }}>
                     <div style={{ padding: '4px 10px 6px' }}><Eyebrow>{t(g.groupKey)}</Eyebrow></div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -423,7 +428,7 @@ function Shell() {
                   <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
+                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={onPeriodChange} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
                     <MenuSelect value={model.currency || cur} onChange={setCur} options={(model.currencies && model.currencies.length > 0) ? model.currencies : ['USD', 'EUR', 'GBP']} width={76} />
                     {FILTER_TABS.has(view) && (
                       <button onClick={() => setInsp(v => !v)} title={t('filter.toggle')} style={{
@@ -475,6 +480,9 @@ function Shell() {
                       onNone={() => setDeselected(new Set(allPaths))}
                       onClose={() => setInsp(false)}
                       accountTree={model.accountTree}
+                      intervals={model.intervals}
+                      sliderValues={model.sliderValues}
+                      onRangeChange={(from, to) => s.setDateRange([from, to])}
                     />
                   </div>
                   );

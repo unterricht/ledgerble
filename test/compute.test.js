@@ -125,6 +125,72 @@ test('compute balances: Assets:Bank cumulative array is 1000 after Jan, 800 afte
   expect(bankAmounts[1]).toBe(800);
 });
 
+test('compute applies deselected accounts to the returned postings (not just balances)', () => {
+  const files = new Map([['j', { postings, postingsCost: [], prices: [] }]]);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(['Expenses:Food']), dateRange: null, typeExtractor: te });
+  // The deselected expense account must be filtered out of the postings used by the views.
+  expect(m.postings.find(x => x.accounts.join(':') === 'Expenses:Food')).toBeUndefined();
+  // Non-deselected postings remain.
+  expect(m.postings.find(x => x.accounts.join(':') === 'Income:Salary')).toBeDefined();
+});
+
+test('compute keeps deselected accounts in the accountTree so their checkbox stays toggleable', () => {
+  const files = new Map([['j', { postings, postingsCost: [], prices: [] }]]);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(['Expenses:Food']), dateRange: null, typeExtractor: te });
+  // accountTree must still list the deselected account (built from the date-filtered, NOT account-filtered set).
+  expect(m.accountTree.Expenses).toBeDefined();
+  expect(m.accountTree.Expenses.Food).toBeDefined();
+});
+
+test('compute exposes period and an intervalKeyFn matching the interval keys', () => {
+  const files = new Map([['j', { postings, postingsCost: [], prices: [] }]]);
+  const m = compute({ files, currency: 'USD', period: 'Yearly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.period).toBe('Yearly');
+  expect(typeof m.intervalKeyFn).toBe('function');
+  // The key produced for a posting date must be a member of the intervals list.
+  const key = m.intervalKeyFn(new Date('2018-02-10T00:00:00Z'));
+  expect(m.intervals).toContain(key);
+  expect(key).toBe('2018');
+});
+
+test('compute resolves the display currency to a real currency, never a stock ticker', () => {
+  // Mirrors test-euro.ledger: a VWRD.L holding priced in € plus a € cash leg.
+  // detectBaseCurrency() ties on frequency and may pick the ticker; the display
+  // currency must still fall back to a real currency (€), not "VWRD.L".
+  const euroPostings = [
+    { date: '2024-01-25', accounts: ['Assets', 'Depot'], amount: 3.608, currency: 'VWRD.L', commodity: 'VWRD.L' },
+    { date: '2024-01-25', accounts: ['Assets', 'Investment'], amount: -399.91, currency: '€' },
+  ];
+  const prices = [{ commodity: 'VWRD.L', date: '2024-01-25', price: '110.84', priceCommodity: '€' }];
+  const files = new Map([['j', { postings: euroPostings, postingsCost: [], prices }]]);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.currency).toBe('€');
+  expect(m.currencies).toContain('€');
+  expect(m.currencies).not.toContain('VWRD.L');
+});
+
+test('compute flags hasPortfolio when a non-currency commodity (stock) is held', () => {
+  // VWRD.L bought for EUR → a stock holding exists → portfolio relevant.
+  const stockPostings = [
+    { date: '2024-01-01', accounts: ['Assets', 'Depot'], amount: 1, currency: 'VWRD.L', commodity: 'VWRD.L', price: 100, priceCurrency: 'EUR' },
+    { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: -100, currency: 'EUR' },
+  ];
+  const stockCost = [
+    { date: '2024-01-01', accounts: ['Assets', 'Depot'], amount: 100, currency: 'EUR' },
+    { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: -100, currency: 'EUR' },
+  ];
+  const prices = [{ commodity: 'VWRD.L', date: '2024-01-01', price: '100', priceCommodity: 'EUR' }];
+  const files = new Map([['j', { postings: stockPostings, postingsCost: stockCost, prices }]]);
+  const m = compute({ files, currency: 'EUR', period: 'Monthly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.hasPortfolio).toBe(true);
+});
+
+test('compute clears hasPortfolio for a pure-cash ledger (no stocks)', () => {
+  const files = new Map([['j', { postings, postingsCost: [], prices: [] }]]);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.hasPortfolio).toBe(false);
+});
+
 test('compute multi-file merge: postings from both files combined, balances correct', () => {
   // Split the synthetic journal across two files:
   //   file 'a': Income:Salary + Assets:Bank (Jan)
