@@ -1,13 +1,13 @@
-const { buildAccountTree, filterPostings, isDeselected } = require('../accountFilter');
+const { buildAccountTree, filterPostings, isDeselected } = require('../src/data/accountTree');
 
-describe('accountFilter', () => {
+describe('accountTree', () => {
     it('builds account tree from array of account strings', () => {
         const accounts = [
             'assets:income:work',
             'assets:income:dividends',
             'expenses:Amazon'
         ];
-        
+
         const tree = buildAccountTree(accounts);
         expect(tree).toEqual({
             assets: {
@@ -24,7 +24,7 @@ describe('accountFilter', () => {
 
     it('identifies if an account is deselected exactly', () => {
         const deselected = new Set(['assets:income']);
-        
+
         expect(isDeselected('assets:income', deselected)).toBe(true);
         expect(isDeselected('assets:income:work', deselected)).toBe(false);
         expect(isDeselected('assets', deselected)).toBe(false);

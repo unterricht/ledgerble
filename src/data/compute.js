@@ -21,7 +21,7 @@
 
 const bs = require('binary-search');
 const { ValuationService } = require('../../valuation');
-const { buildAccountTree, filterPostings } = require('../../accountFilter');
+const { buildAccountTree, filterPostings } = require('./accountTree');
 
 // ── Period → dateFormat mapping ──────────────────────────────────────────────
 // Ported from dateRangeSelector.js updateDateUnits().

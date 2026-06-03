@@ -1,0 +1,7 @@
+2024/01/01 Buy
+    Assets:Depot          1 "VWRD.L" @ 100 EUR
+    Assets:Bank
+
+2024/01/03 Sell
+    Assets:Depot         -2 "VWRD.L" {100 EUR}
+    Assets:Bank
