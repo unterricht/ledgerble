@@ -46,10 +46,11 @@ test('compute returns rawPostings (unfiltered by date) and postings (date-filter
   expect(m.postings.length).toBe(m.rawPostings.length);
 });
 
-test('compute dateRange filters postings correctly', () => {
+test('compute dateRange (date-based) filters postings correctly', () => {
   const files = new Map([['j', { postings, postingsCost: [], prices: [] }]]);
-  // Restrict to only first interval (January = index 0)
-  const restricted = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [0, 0], typeExtractor: te });
+  // Restrict to January 2018 by date span [from, to] in ms.
+  const from = Date.UTC(2018, 0, 1), to = Date.UTC(2018, 0, 31);
+  const restricted = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
   // Only January postings should be in postings (date-filtered)
   expect(restricted.postings.length).toBeGreaterThan(0);
   expect(restricted.postings.every(x => x.dateString.startsWith('2018-01'))).toBe(true);
@@ -58,6 +59,41 @@ test('compute dateRange filters postings correctly', () => {
   expect(food).toBeUndefined();
   // rawPostings must still contain all 4 postings (unfiltered by date)
   expect(restricted.rawPostings.length).toBe(4);
+});
+
+test('compute windows the display series to the dateRange (charts show only the selection)', () => {
+  const ps = [
+    p('2018-01-15', ['Assets', 'Bank'], 100),
+    p('2018-02-15', ['Assets', 'Bank'], 100),
+    p('2018-03-15', ['Assets', 'Bank'], 100),
+    p('2018-04-15', ['Assets', 'Bank'], 100),
+  ];
+  const files = new Map([['j', { postings: ps, postingsCost: [], prices: [] }]]);
+  const from = Date.UTC(2018, 1, 1), to = Date.UTC(2018, 2, 28); // Feb..Mar
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
+  // Full intervals remain available for the slider track
+  expect(m.fullIntervals).toEqual(['2018-01', '2018-02', '2018-03', '2018-04']);
+  expect(m.fullIntervalDates.length).toBe(4);
+  // The display series is windowed to the selection
+  expect(m.intervals).toEqual(['2018-02', '2018-03']);
+  expect(m.sliderValues).toEqual([1, 2]);
+  for (const [, arr] of m.balances) expect(arr.length).toBe(2);
+});
+
+test('compute date-based range survives a period change (keeps the same span)', () => {
+  const ps = [];
+  for (let mo = 0; mo < 24; mo++) {
+    const d = new Date(Date.UTC(2017, mo, 15));
+    ps.push(p(d.toISOString().slice(0, 10), ['Assets', 'Bank'], 10));
+  }
+  const files = new Map([['j', { postings: ps, postingsCost: [], prices: [] }]]);
+  const from = Date.UTC(2018, 0, 1), to = Date.UTC(2018, 11, 31); // all of 2018
+  const monthly = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
+  expect(monthly.intervals.every(k => k.startsWith('2018'))).toBe(true);
+  expect(monthly.intervals.length).toBe(12);
+  // Same date span, different granularity → still restricted to 2018.
+  const yearly = compute({ files, currency: 'USD', period: 'Yearly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
+  expect(yearly.intervals).toEqual(['2018']);
 });
 
 test('compute returns balances map keyed by BalanceKey objects', () => {

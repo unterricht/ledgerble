@@ -20,7 +20,11 @@ function IncomeExpensesChart({ monthly = [], netColor = '#7A47C2', cur = 'USD', 
 
     const chart = echarts.init(ref.current);
 
-    const months  = monthly.map(d => d.m);
+    // category = unique interval key (avoids ECharts collapsing repeats like two "Aug");
+    // axis labels are sparse year/quarter ticks; tooltips use the full readable label.
+    const months  = monthly.map(d => d.key != null ? d.key : d.m);
+    const ticks   = monthly.map(d => d.tick !== undefined ? d.tick : (d.m != null ? d.m : ''));
+    const tipLabels = monthly.map(d => d.m != null ? d.m : (d.key != null ? d.key : ''));
     const incData = monthly.map(d => d.inc);
     const expData = monthly.map(d => d.exp);
     const netData = monthly.map(d => d.inc - d.exp);
@@ -33,7 +37,7 @@ function IncomeExpensesChart({ monthly = [], netColor = '#7A47C2', cur = 'USD', 
         data: months,
         axisLine:  { lineStyle: { color: T.line2 } },
         axisTick:  { show: false },
-        axisLabel: { color: T.ink3, fontFamily: T.sans, fontSize: 10.5 },
+        axisLabel: { color: T.ink3, fontFamily: T.sans, fontSize: 10.5, interval: 0, formatter: (val, idx) => ticks[idx] != null ? ticks[idx] : '' },
         splitLine: { show: false },
       },
       yAxis: {
@@ -56,7 +60,8 @@ function IncomeExpensesChart({ monthly = [], netColor = '#7A47C2', cur = 'USD', 
         textStyle: { color: T.ink, fontFamily: T.sans, fontSize: 11.5 },
         extraCssText: 'box-shadow: 0 8px 20px rgba(16,18,22,0.14); border-radius: 9px;',
         formatter(params) {
-          const m = params[0]?.axisValueLabel ?? '';
+          const di = params[0]?.dataIndex;
+          const m = (di != null && tipLabels[di] != null) ? tipLabels[di] : (params[0]?.axisValueLabel ?? '');
           let inc = 0, exp = 0, net = 0;
           params.forEach(p => {
             if (p.seriesName === 'Income')   inc = p.value;

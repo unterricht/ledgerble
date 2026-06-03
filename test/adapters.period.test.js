@@ -60,6 +60,46 @@ test('Monthly: the year is shown at each year boundary (Jan)', () => {
   expect(vm.monthly[2].m).toBe('Feb');     // mid-year → bare month
 });
 
+test('axis ticks mark the year at year start and quarters at quarter starts (Monthly)', () => {
+  const intervals = [], intervalDates = [];
+  for (let i = 0; i < 13; i++) {
+    const d = new Date(Date.UTC(2015, i, 1));
+    intervalDates.push(d);
+    intervals.push(d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'));
+  }
+  const vm = buildOverview({ currency: 'USD', period: 'Monthly', intervalKeyFn: KEYFN.Monthly, intervals, intervalDates, postings: [] });
+  const ticks = vm.monthly.map(b => b.tick);
+  expect(ticks).toEqual(['2015', '', '', 'Q2', '', '', 'Q3', '', '', 'Q4', '', '', '2016']);
+  // category key is the unique interval key (so ECharts never collapses repeats like two "Aug")
+  expect(vm.monthly[0].key).toBe('2015-01');
+  expect(vm.monthly[12].key).toBe('2016-01');
+});
+
+test('axis ticks: every yearly bucket keeps its year (unchanged good behaviour)', () => {
+  const intervals = ['2015', '2016', '2017'];
+  const intervalDates = intervals.map(y => new Date(Date.UTC(Number(y), 0, 1)));
+  const vm = buildOverview({ currency: 'USD', period: 'Yearly', intervalKeyFn: KEYFN.Yearly, intervals, intervalDates, postings: [] });
+  expect(vm.monthly.map(b => b.tick)).toEqual(['2015', '2016', '2017']);
+});
+
+test('axis ticks for Quarterly read the quarter from the key (skewed legacy buckets)', () => {
+  // compute's legacy Quarterly buckets are uneven, so the bucket date does not
+  // align to a calendar quarter; the tick must come from the 'YYYY-Qn' key.
+  const intervals = ['2015-Q1', '2015-Q2', '2015-Q3', '2015-Q4', '2016-Q1'];
+  const intervalDates = [Date.UTC(2015, 0, 15), Date.UTC(2015, 1, 15), Date.UTC(2015, 5, 15), Date.UTC(2015, 9, 15), Date.UTC(2016, 0, 15)].map(t => new Date(t));
+  const vm = buildOverview({ currency: 'USD', period: 'Quarterly', intervalKeyFn: KEYFN.Yearly, intervals, intervalDates, postings: [] });
+  expect(vm.monthly.map(b => b.tick)).toEqual(['2015', 'Q2', 'Q3', 'Q4', '2016']);
+});
+
+test('buildAssets carries unique keys and sparse year/quarter ticks', () => {
+  const balances = new Map([[{ account: 'Assets:Bank', type: 'assets' }, [1, 2, 3, 4]]]);
+  const intervalDates = [Date.UTC(2015, 0, 1), Date.UTC(2015, 3, 1), Date.UTC(2015, 6, 1), Date.UTC(2016, 0, 1)].map(t => new Date(t));
+  const intervals = ['2015-01', '2015-04', '2015-07', '2016-01'];
+  const vm = buildAssets({ period: 'Monthly', intervalKeyFn: KEYFN.Monthly, intervals, intervalDates, balances });
+  expect(vm.data.map(d => d.tick)).toEqual(['2015', 'Q2', 'Q3', '2016']);
+  expect(vm.data.map(d => d.key)).toEqual(intervals);
+});
+
 test('buildAssets: Weekly labels are valid (no "Invalid date")', () => {
   const balances = new Map([
     [{ account: 'Assets:Bank', type: 'assets' }, [100, 200]],

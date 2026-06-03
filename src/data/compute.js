@@ -296,19 +296,25 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     }
   }
 
-  // ── 8. Resolve sliderValues from dateRange param ───────────────────────────
-  // (replaces DOM dateUpdate(state) call in update() line 336)
-  // dateRange is [fromIdx, toIdx] or null (= full range).
+  // ── 8. Resolve sliderValues from a DATE-based dateRange ────────────────────
+  // dateRange is [fromMs, toMs] (timestamps) or null (= full range). Storing the
+  // selection as dates (not interval indices) lets the same window survive a
+  // period change — the dates are simply re-mapped onto the new period's keys.
   let sliderValues;
   if (dateRange !== null && Array.isArray(dateRange) && intervals.length > 0) {
-    const from = Math.max(0, Math.min(dateRange[0], intervals.length - 1));
-    const to = Math.max(from, Math.min(dateRange[1], intervals.length - 1));
-    sliderValues = [from, to];
+    const keyFrom = dateFormat(new Date(dateRange[0]));
+    const keyTo = dateFormat(new Date(dateRange[1]));
+    let lo = 0;
+    while (lo < intervals.length - 1 && intervals[lo] < keyFrom) lo++;
+    let hi = intervals.length - 1;
+    while (hi > 0 && intervals[hi] > keyTo) hi--;
+    if (hi < lo) hi = lo;
+    sliderValues = [lo, hi];
   } else {
     sliderValues = [0, Math.max(0, intervals.length - 1)];
   }
 
-  // ── 9. Date-filter rawPostings → dateFiltered ──────────────────────────────
+  // ── 9. Date-filter rawPostings → dateFiltered (to the selected window) ──────
   // (update() lines 354–364)
   const fromStr = intervals[sliderValues[0]];
   const toStr = intervals[sliderValues[1]];
@@ -350,6 +356,15 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     if (hasPortfolio) break;
   }
 
+  // ── 13. Window the display series to the slider selection ──────────────────
+  // The reports/charts (overview, assets, portfolio, balance snapshot) render the
+  // selected window only; the FULL series is kept for the date-range slider track.
+  const [lo, hi] = sliderValues;
+  const displayIntervals = intervals.slice(lo, hi + 1);
+  const displayIntervalDates = intervalDates.slice(lo, hi + 1);
+  const displayBalances = new Map();
+  for (const [k, arr] of balances) displayBalances.set(k, arr.slice(lo, hi + 1));
+
   return {
     currency: currentCurrency,
     currencies: Array.from(currenciesSet),
@@ -357,9 +372,13 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     intervalKeyFn: dateFormat,
     postings,
     rawPostings,
-    intervals,
-    intervalDates,
-    balances,
+    // windowed display series (consumed by the view adapters)
+    intervals: displayIntervals,
+    intervalDates: displayIntervalDates,
+    balances: displayBalances,
+    // full series (consumed by the date-range slider)
+    fullIntervals: intervals,
+    fullIntervalDates: intervalDates,
     valResult,
     valuationService,
     accountTree,

@@ -309,9 +309,15 @@ function Shell() {
     if (view === 'portfolio' && !model.hasPortfolio) setView('overview');
   }, [view, model.hasPortfolio, setView]);
 
-  // Changing granularity resets the date filter to the full span (interval
-  // indices are not comparable across periods).
-  const onPeriodChange = (p) => { setPeriod(p); s.setDateRange(null); };
+  // The date range is stored as dates, so it survives a granularity change —
+  // the same span is simply re-mapped onto the new period's intervals.
+  const onRangeChange = (from, to) => {
+    const fd = model.fullIntervalDates;
+    if (!fd || fd.length === 0) return;
+    const lo = Math.max(0, Math.min(from, fd.length - 1));
+    const hi = Math.max(0, Math.min(to, fd.length - 1));
+    s.setDateRange([fd[lo].getTime(), fd[hi].getTime()]);
+  };
 
   const onSearch = v => { setQuery(v); };
 
@@ -428,7 +434,7 @@ function Shell() {
                   <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={onPeriodChange} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
+                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
                     <MenuSelect value={model.currency || cur} onChange={setCur} options={(model.currencies && model.currencies.length > 0) ? model.currencies : ['USD', 'EUR', 'GBP']} width={76} />
                     {FILTER_TABS.has(view) && (
                       <button onClick={() => setInsp(v => !v)} title={t('filter.toggle')} style={{
@@ -480,9 +486,9 @@ function Shell() {
                       onNone={() => setDeselected(new Set(allPaths))}
                       onClose={() => setInsp(false)}
                       accountTree={model.accountTree}
-                      intervals={model.intervals}
+                      intervals={model.fullIntervals}
                       sliderValues={model.sliderValues}
-                      onRangeChange={(from, to) => s.setDateRange([from, to])}
+                      onRangeChange={onRangeChange}
                     />
                   </div>
                   );

@@ -21,7 +21,10 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [
 
     const chart = echarts.init(ref.current);
 
-    const months = data.map(d => d.m);
+    // category = unique interval key; axis shows sparse year/quarter ticks; tooltip the full label.
+    const months = data.map(d => d.key != null ? d.key : d.m);
+    const ticks = data.map(d => d.tick !== undefined ? d.tick : (d.m != null ? d.m : ''));
+    const tipLabels = data.map(d => d.m != null ? d.m : (d.key != null ? d.key : ''));
 
     const option = {
       backgroundColor: 'transparent',
@@ -32,7 +35,7 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [
         boundaryGap: false,
         axisLine:  { lineStyle: { color: T.line2 } },
         axisTick:  { show: false },
-        axisLabel: { color: T.ink3, fontFamily: T.sans, fontSize: 10.5 },
+        axisLabel: { color: T.ink3, fontFamily: T.sans, fontSize: 10.5, interval: 0, formatter: (val, idx) => ticks[idx] != null ? ticks[idx] : '' },
         splitLine: { show: false },
       },
       yAxis: {
@@ -65,7 +68,8 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [
         extraCssText: 'box-shadow: 0 8px 20px rgba(16,18,22,0.14); border-radius: 9px;',
         formatter(params) {
           if (!params || !params.length) return '';
-          const m = params[0]?.axisValueLabel ?? '';
+          const di = params[0]?.dataIndex;
+          const m = (di != null && tipLabels[di] != null) ? tipLabels[di] : (params[0]?.axisValueLabel ?? '');
           const dotStyle = c =>
             `display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:6px;`;
           let rows = params.map(p => {

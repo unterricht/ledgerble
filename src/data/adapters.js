@@ -56,6 +56,47 @@ function buildLabels(intervals, period) {
   return intervals.map((k, i) => formatIntervalLabel(k, period, i > 0 ? intervals[i - 1] : null));
 }
 
+// Sparse, evenly-meaningful x-axis ticks for ANY period: the full year at each
+// year start, "Qn" at each quarter start, '' everywhere else. Driven by the
+// interval's real date so it is correct for Daily/Weekly/Monthly/Quarterly
+// alike (Yearly naturally yields one year label per bucket). Charts feed these
+// through axisLabel.formatter with interval:0 so ECharts can't drop the
+// year-bearing labels (the cause of the "Q1 '15 · Q4 · Q3 …" jumble).
+function axisTicksFor(intervals, intervalDates, period) {
+  const ticks = [];
+  let prevYear = null, prevQuarter = null;
+  for (let i = 0; i < intervalDates.length; i++) {
+    let y, q;
+    if (period === 'Quarterly') {
+      // The legacy Quarterly buckets are uneven, so the bucket date can fall in a
+      // different calendar quarter than its 'YYYY-Qn' key — trust the key.
+      const mq = /^(\d{4})-Q(\d)$/.exec(intervals[i]);
+      y = mq ? Number(mq[1]) : intervalDates[i].getUTCFullYear();
+      q = mq ? Number(mq[2]) : Math.floor(intervalDates[i].getUTCMonth() / 3) + 1;
+    } else {
+      const d = intervalDates[i];
+      y = d.getUTCFullYear();
+      q = Math.floor(d.getUTCMonth() / 3) + 1;
+    }
+    let tick = '';
+    if (y !== prevYear) tick = String(y);
+    else if (q !== prevQuarter) tick = 'Q' + q;
+    ticks.push(tick);
+    prevYear = y;
+    prevQuarter = q;
+  }
+  return ticks;
+}
+
+// Tick array aligned to intervals: real year/quarter ticks when interval dates
+// are available, otherwise the plain labels (legacy callers without dates).
+function buildTicks(intervals, intervalDates, period, labels) {
+  if (intervalDates && intervalDates.length === intervals.length) {
+    return axisTicksFor(intervals, intervalDates, period);
+  }
+  return labels;
+}
+
 /**
  * buildOverview(model) → OverviewViewModel
  *
@@ -115,9 +156,10 @@ function buildOverview(model) {
   }
 
   const labels = buildLabels(intervals, period);
+  const ticks = buildTicks(intervals, model.intervalDates, period, labels);
   const monthly = intervals.map((key, i) => {
     const { inc, exp } = bucketMap.get(key);
-    return { m: labels[i], inc, exp };
+    return { key, m: labels[i], tick: ticks[i], inc, exp };
   });
 
   // ── 3. Aggregate by category (full account path) ─────────────────────────────
@@ -379,7 +421,7 @@ function buildBalanceTree(balances, intervalIdx) {
  *   }
  */
 function buildAssets(model) {
-  const { balances, intervals } = model;
+  const { balances, intervals, intervalDates } = model;
 
   if (!balances || balances.size === 0 || !intervals || intervals.length === 0) {
     return { data: [], series: [], maxY: 0, grid: [0] };
@@ -419,8 +461,9 @@ function buildAssets(model) {
 
   // ── 3. Build data array ────────────────────────────────────────────────────
   const labels = buildLabels(intervals, model.period);
+  const ticks = buildTicks(intervals, intervalDates, model.period, labels);
   const data = intervals.map((interval, i) => {
-    const entry = { m: labels[i] };
+    const entry = { key: interval, m: labels[i], tick: ticks[i] };
     for (const key of topKeys) {
       entry[key] = topMap.get(key).sums[i];
     }
@@ -553,6 +596,7 @@ function buildPortfolio(model) {
   // This means between-transaction price movement is reflected in the chart,
   // unlike the old snapshotAtDate approach which went flat between transactions.
   const labels = buildLabels(intervals, model.period);
+  const ticks = buildTicks(intervals, intervalDates, model.period, labels);
   const totals = intervals.map((intervalKey, i) => {
     const date = intervalDates[i];
 
@@ -576,7 +620,7 @@ function buildPortfolio(model) {
       }
     }
 
-    return { m: labels[i], value };
+    return { key: intervalKey, m: labels[i], tick: ticks[i], value };
   });
 
   // ── 3. Aggregate totals ───────────────────────────────────────────────────
