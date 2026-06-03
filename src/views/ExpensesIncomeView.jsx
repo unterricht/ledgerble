@@ -20,13 +20,15 @@ function ExpensesIncomeView({ tree, total, cur, kind }) {
         padding: '12px 22px', borderBottom: `1px solid ${T.line}`, flexShrink: 0,
       }}>
         <div>
-          <Eyebrow>{kind === 'income' ? 'Income sources' : 'Where it goes'}</Eyebrow>
+          <Eyebrow>{kind === 'income' ? t('expenses_income.eyebrow_income') : t('expenses_income.eyebrow_expenses')}</Eyebrow>
           <div style={{ marginTop: 5 }}>
             <Num color={T.ink} size={20} weight={580} style={{ letterSpacing: '-0.02em' }}>
               {money(total, { cents: false, cur })}
             </Num>
             <span style={{ fontSize: 12.5, color: T.ink3, fontFamily: T.sans, marginLeft: 8 }}>
-              total · {flat.length} {kind === 'income' ? 'sources' : 'categories'}
+              {kind === 'income'
+                ? t('expenses_income.sub_sources').replace('{n}', flat.length)
+                : t('expenses_income.sub_categories').replace('{n}', flat.length)}
             </span>
           </div>
         </div>

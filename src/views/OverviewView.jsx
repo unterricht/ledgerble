@@ -22,10 +22,10 @@ const tdStyle = (align = 'left') => ({
 function StatStrip({ statStrip, categoryCount, cur }) {
   const { income, expenses, net, savingsRate } = statStrip;
   const stats = [
-    { label: t('stat.income'),       value: money(income,   { cents: false, cur }), color: T.pos, sub: 'period total' },
-    { label: t('stat.expenses'),     value: money(expenses, { cents: false, cur }), color: T.neg, sub: `across ${categoryCount} categories` },
-    { label: t('stat.net_saved'),    value: money(net,      { cents: false, sign: true, cur }), color: net < 0 ? T.neg : T.net, sub: 'income − expenses' },
-    { label: t('stat.savings_rate'), value: savingsRate + '%', color: net < 0 ? T.neg : T.net, sub: 'of income kept' },
+    { label: t('stat.income'),       value: money(income,   { cents: false, cur }), color: T.pos, sub: t('stat.sub.period_total') },
+    { label: t('stat.expenses'),     value: money(expenses, { cents: false, cur }), color: T.neg, sub: t('stat.sub.across_n_categories').replace('{n}', categoryCount) },
+    { label: t('stat.net_saved'),    value: money(net,      { cents: false, sign: true, cur }), color: net < 0 ? T.neg : T.net, sub: t('stat.sub.income_minus_expenses') },
+    { label: t('stat.savings_rate'), value: savingsRate + '%', color: net < 0 ? T.neg : T.net, sub: t('stat.sub.of_income_kept') },
   ];
   return (
     <div style={{ display: 'flex', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
@@ -86,17 +86,17 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
             <Eyebrow>{t('overview.largest_categories')}</Eyebrow>
             <span style={{ fontSize: 11, color: T.ink4, fontFamily: T.sans }}>
               {effRule === 'all'
-                ? `All ${vm.categoryCount} expense categories`
-                : `${RULE_LABEL[catRule]} of ${vm.categoryCount} expense categories`}
+                ? t('overview.all_n_expense_categories').replace('{n}', vm.categoryCount)
+                : t('overview.rule_of_n_expense_categories').replace('{rule}', RULE_LABEL[catRule]).replace('{n}', vm.categoryCount)}
             </span>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr>
-              <th style={thStyle('left')}>Account</th>
-              <th style={thStyle('right')}>Avg / mo</th>
-              <th style={thStyle('right')}>Max</th>
-              <th style={thStyle('right')}>Min</th>
-              <th style={thStyle('right')}>Total</th>
+              <th style={thStyle('left')}>{t('table.account')}</th>
+              <th style={thStyle('right')}>{t('table.avg_mo')}</th>
+              <th style={thStyle('right')}>{t('table.max')}</th>
+              <th style={thStyle('right')}>{t('table.min')}</th>
+              <th style={thStyle('right')}>{t('table.total')}</th>
             </tr></thead>
             <tbody>
               {/* income rows first */}

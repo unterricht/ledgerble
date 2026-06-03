@@ -2,6 +2,7 @@
 import React from 'react';
 import { T } from './tokens';
 import { Icon } from './Icon';
+const { t } = require('../../i18n');
 
 // ─────────────────────────────────────────────────────────────
 // SEGMENTED CONTROL — macOS-style pill segmented control
@@ -81,7 +82,7 @@ export function SearchField({ query, onChange, width = 172 }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <span style={{ position: 'absolute', left: 9, color: T.ink4, display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={14} /></span>
-      <input value={query} onChange={e => onChange(e.target.value)} placeholder="Search postings"
+      <input value={query} onChange={e => onChange(e.target.value)} placeholder={t('search.placeholder')}
         style={{ width, fontFamily: T.sans, fontSize: 12.5, padding: '5px 10px 5px 28px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none' }} />
     </div>
   );

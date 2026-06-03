@@ -121,7 +121,7 @@ function BalanceView({ roots = [], netWorth = 0, cur }) {
               padding: '13px 16px 13px 37px', fontSize: 12.5, fontWeight: 600,
               color: T.ink, fontFamily: T.sans, borderTop: `1.5px solid ${T.line2}`,
             }}>
-              Net Worth
+              {t('balance.net_worth')}
             </td>
             <td style={{ padding: '13px 16px', textAlign: 'right', borderTop: `1.5px solid ${T.line2}` }}>
               <Num color={T.ink} size={14} weight={650}>

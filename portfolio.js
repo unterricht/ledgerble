@@ -80,7 +80,7 @@ function updatePortfolio(chartElement, tableBodyElement, state, valResult, valua
     const chart = echarts.getInstanceByDom(chartElement) || echarts.init(chartElement, 'macarons');
 
     const costBasisLabel = t('portfolio.cost_basis');
-    const unrealizedGainsLabel = t('portfolio.unrealized_gains');
+    const unrealizedGainsLabel = t('portfolio.unrealised_gain');
 
     const option = {
         tooltip: {

@@ -56,15 +56,15 @@ const FONT_STACK = {
 
 const NAV = [
   { groupKey: 'nav.reports', group: 'Reports', items: [
-    { id: 'overview',  label: 'Income & Expenses',  icon: 'overview'  },
-    { id: 'balance',   label: 'Balance',             icon: 'balance'   },
-    { id: 'expenses',  label: 'Expenses',            icon: 'expenses'  },
-    { id: 'income',    label: 'Income',              icon: 'income'    },
-    { id: 'assets',    label: 'Assets & Liabilities',icon: 'assets'    },
-    { id: 'portfolio', label: 'Portfolio',           icon: 'portfolio' },
+    { id: 'overview',  labelKey: 'nav.overview',  icon: 'overview'  },
+    { id: 'balance',   labelKey: 'tab.balance',   icon: 'balance'   },
+    { id: 'expenses',  labelKey: 'tab.expenses',  icon: 'expenses'  },
+    { id: 'income',    labelKey: 'tab.income',    icon: 'income'    },
+    { id: 'assets',    labelKey: 'nav.assets',    icon: 'assets'    },
+    { id: 'portfolio', labelKey: 'tab.portfolio', icon: 'portfolio' },
   ]},
   { groupKey: 'nav.ledger', group: 'Ledger', items: [
-    { id: 'postings',  label: 'Postings',            icon: 'postings'  },
+    { id: 'postings',  labelKey: 'tab.postings',  icon: 'postings'  },
   ]},
 ];
 
@@ -180,7 +180,7 @@ function NavItem({ item, active, onClick }) {
       background: active ? T.pineSoft : 'transparent', transition: 'background 120ms, color 120ms',
     }}>
       <span style={{ color: active ? T.pine : T.ink3, display: 'flex' }}><Icon name={item.icon} size={17} sw={1.6} /></span>
-      {item.label}
+      {item.labelKey ? t(item.labelKey) : item.label}
     </button>
   );
 }
@@ -388,7 +388,7 @@ function Shell() {
               </div>
               {/* footer: options + journal file menu */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <NavItem item={{ id: 'options', label: 'Options', icon: 'options' }} active={view === 'options'} onClick={() => setView('options')} />
+                <NavItem item={{ id: 'options', labelKey: 'nav.options', icon: 'options' }} active={view === 'options'} onClick={() => setView('options')} />
                 <JournalFooter />
               </div>
             </nav>
@@ -420,13 +420,13 @@ function Shell() {
                 </div>
                 <div style={{ flex: 1 }} />
                 {view === 'postings' ? (
-                  <Segmented options={[{ value: 'all', label: 'All' }, { value: 'income', label: 'Income' }, { value: 'expenses', label: 'Expenses' }, { value: 'assets', label: 'Assets' }]} value={typeF} onChange={setTypeF} size="sm" />
+                  <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                     {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
                     <MenuSelect value={model.currency || cur} onChange={setCur} options={(model.currencies && model.currencies.length > 0) ? model.currencies : ['USD', 'EUR', 'GBP']} width={76} />
                     {FILTER_TABS.has(view) && (
-                      <button onClick={() => setInsp(v => !v)} title="Toggle filters" style={{
+                      <button onClick={() => setInsp(v => !v)} title={t('filter.toggle')} style={{
                         display: 'flex', alignItems: 'center', gap: 6, fontFamily: T.sans, fontSize: 12.5, fontWeight: 500,
                         padding: '5px 11px', borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${showInsp ? T.pine : T.line2}`, background: showInsp ? T.pineSoft : T.surface, color: showInsp ? T.pineStrong : T.ink2,

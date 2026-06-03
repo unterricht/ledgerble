@@ -41,7 +41,7 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
   const { totals, holdings, totalCost, totalMarket, totalGain, maxY, grid } = vm;
 
   // Series for the AreaLineChart: single 'value' series
-  const series = [{ key: 'value', color: T.pos, label: 'Portfolio value' }];
+  const series = [{ key: 'value', color: T.pos, label: t('portfolio.series_value') }];
 
   // Summary strip: [Cost basis, Market value, Unrealised gain]
   const stripItems = [
@@ -126,7 +126,7 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
           <tfoot>
             <tr style={{ background: T.surface2 }}>
               <td colSpan={3} style={{ padding: '12px 16px', fontSize: 12.5, fontWeight: 600, color: T.ink, fontFamily: T.sans, borderTop: `1.5px solid ${T.line2}` }}>
-                Total
+                {t('table.total')}
               </td>
               <td style={{ ...tdStyle('right'), borderTop: `1.5px solid ${T.line2}` }}>
                 <Num color={T.ink} size={12.5} weight={600}>{money(totalCost, { cur })}</Num>

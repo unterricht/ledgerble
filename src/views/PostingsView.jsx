@@ -25,16 +25,17 @@ const tdStyle = (align = 'left') => ({
 
 // Badge map — covers design mock types (singular) and real app types (plural).
 // POST_BADGE keys must cover whatever type strings actually flow through.
+// Labels are functions to defer t() resolution until render time (locale may change).
 const POST_BADGE = {
   // Design mock / Shell Segmented values (singular)
-  income:   { bg: T.posSoft,   color: T.pos,   label: 'Income'  },
-  expense:  { bg: T.negSoft,   color: T.neg,   label: 'Expense' },
-  asset:    { bg: T.steelSoft, color: T.steel, label: 'Asset'   },
+  income:   { bg: T.posSoft,   color: T.pos,   label: () => t('badge.income')    },
+  expense:  { bg: T.negSoft,   color: T.neg,   label: () => t('badge.expense')   },
+  asset:    { bg: T.steelSoft, color: T.steel, label: () => t('badge.asset')     },
   // Real app types from typeExtractor (plural)
-  expenses:    { bg: T.negSoft,   color: T.neg,   label: 'Expense'    },
-  assets:      { bg: T.steelSoft, color: T.steel, label: 'Asset'      },
-  liabilities: { bg: T.negSoft,   color: T.neg,   label: 'Liability'  },
-  equity:      { bg: T.steelSoft, color: T.steel, label: 'Equity'     },
+  expenses:    { bg: T.negSoft,   color: T.neg,   label: () => t('badge.expense')   },
+  assets:      { bg: T.steelSoft, color: T.steel, label: () => t('badge.asset')     },
+  liabilities: { bg: T.negSoft,   color: T.neg,   label: () => t('badge.liability') },
+  equity:      { bg: T.steelSoft, color: T.steel, label: () => t('badge.equity')    },
 };
 
 function postColor(type) {
@@ -101,7 +102,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
         </thead>
         <tbody>
           {visible.map((p, i) => {
-            const b = POST_BADGE[p.type] || { bg: T.steelSoft, color: T.steel, label: p.type };
+            const b = POST_BADGE[p.type] || { bg: T.steelSoft, color: T.steel, label: () => p.type };
             return (
               <tr key={i} className="rd-row">
                 <td style={tdStyle('left')}>
@@ -124,7 +125,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
                     fontSize: 10.5, fontWeight: 600,
                     background: b.bg, color: b.color, fontFamily: T.sans,
                   }}>
-                    {b.label}
+                    {b.label()}
                   </span>
                 </td>
               </tr>
@@ -134,7 +135,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
       </table>
       {visible.length === 0 && (
         <div style={{ padding: 40, textAlign: 'center', color: T.ink4, fontSize: 13, fontFamily: T.sans }}>
-          No postings match this filter.
+          {t('postings.empty')}
         </div>
       )}
     </div>
