@@ -91,6 +91,43 @@ test('axis ticks for Quarterly read the quarter from the key (skewed legacy buck
   expect(vm.monthly.map(b => b.tick)).toEqual(['2015', 'Q2', 'Q3', 'Q4', '2016']);
 });
 
+test('axis ticks adapt: Daily over 10 years collapses to year-only marks', () => {
+  const intervals = [], intervalDates = [];
+  let d = new Date(Date.UTC(2015, 0, 1));
+  const end = new Date(Date.UTC(2024, 11, 31));
+  while (d <= end) { intervalDates.push(new Date(d)); intervals.push(d.toISOString().slice(0, 10)); d = new Date(d.getTime() + 86400000); }
+  const vm = buildOverview({ currency: 'USD', period: 'Daily', intervalKeyFn: (x) => x.toISOString().slice(0, 10), intervals, intervalDates, postings: [] });
+  const ticks = vm.monthly.map(b => b.tick);
+  // ~10 year labels, and no finer (quarter/month) clutter over such a wide span
+  expect(ticks.filter(t => /^\d{4}$/.test(t)).length).toBeGreaterThanOrEqual(10);
+  expect(ticks.some(t => /^Q/.test(t))).toBe(false);
+});
+
+test('axis ticks adapt: Daily over ~10 days marks individual days', () => {
+  const intervals = [], intervalDates = [];
+  for (let day = 2; day <= 11; day++) {
+    const dt = new Date(Date.UTC(2015, 2, day));
+    intervalDates.push(dt); intervals.push(dt.toISOString().slice(0, 10));
+  }
+  const vm = buildOverview({ currency: 'USD', period: 'Daily', intervalKeyFn: (x) => x.toISOString().slice(0, 10), intervals, intervalDates, postings: [] });
+  const ticks = vm.monthly.map(b => b.tick);
+  // every day in a short window gets a label (fine detail when zoomed right in)
+  expect(ticks.filter(Boolean).length).toBe(10);
+});
+
+test('axis ticks adapt: Monthly over a single year shows month names between quarters', () => {
+  const intervals = [], intervalDates = [];
+  for (let i = 0; i < 12; i++) {
+    const dt = new Date(Date.UTC(2015, i, 1));
+    intervalDates.push(dt); intervals.push('2015-' + String(i + 1).padStart(2, '0'));
+  }
+  const vm = buildOverview({ currency: 'USD', period: 'Monthly', intervalKeyFn: KEYFN.Monthly, intervals, intervalDates, postings: [] });
+  const ticks = vm.monthly.map(b => b.tick);
+  expect(ticks[0]).toBe('2015');
+  expect(ticks).toContain('Feb');  // bare month between quarter marks
+  expect(ticks).toContain('Q2');   // quarter start still labelled as the quarter
+});
+
 test('buildAssets carries unique keys and sparse year/quarter ticks', () => {
   const balances = new Map([[{ account: 'Assets:Bank', type: 'assets' }, [1, 2, 3, 4]]]);
   const intervalDates = [Date.UTC(2015, 0, 1), Date.UTC(2015, 3, 1), Date.UTC(2015, 6, 1), Date.UTC(2016, 0, 1)].map(t => new Date(t));

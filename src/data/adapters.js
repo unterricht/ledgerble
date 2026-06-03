@@ -62,28 +62,82 @@ function buildLabels(intervals, period) {
 // alike (Yearly naturally yields one year label per bucket). Charts feed these
 // through axisLabel.formatter with interval:0 so ECharts can't drop the
 // year-bearing labels (the cause of the "Q1 '15 · Q4 · Q3 …" jumble).
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Aim for roughly this many labelled ticks across the visible window.
+const TICK_TARGET = 12;
+const UNIT_LADDER = ['year', 'quarter', 'month', 'week', 'day'];
+const PERIOD_FINEST_UNIT = { Yearly: 'year', Quarterly: 'quarter', Monthly: 'month', Weekly: 'week', Daily: 'day' };
+
+// Density-adaptive: finer marks (month/week/day) only appear once the visible
+// window is narrow enough to fit them, so Daily over 10 years shows just years,
+// but shrinking the slider reveals quarters, then months, then days. Each chosen
+// tick is labelled by its COARSEST boundary (year > quarter > month > week > day)
+// so the axis nests cleanly: "2015 · Q2 · Q3 · 2016 …" / "2015 · Feb · Mar · Q2 …".
 function axisTicksFor(intervals, intervalDates, period) {
-  const ticks = [];
-  let prevYear = null, prevQuarter = null;
-  for (let i = 0; i < intervalDates.length; i++) {
-    let y, q;
+  const n = intervalDates.length;
+  if (n === 0) return [];
+
+  // Per-interval calendar attributes. Quarterly trusts its 'YYYY-Qn' key because
+  // the legacy quarter buckets are uneven (the date can fall in another quarter).
+  const attr = new Array(n);
+  for (let i = 0; i < n; i++) {
     if (period === 'Quarterly') {
-      // The legacy Quarterly buckets are uneven, so the bucket date can fall in a
-      // different calendar quarter than its 'YYYY-Qn' key — trust the key.
       const mq = /^(\d{4})-Q(\d)$/.exec(intervals[i]);
-      y = mq ? Number(mq[1]) : intervalDates[i].getUTCFullYear();
-      q = mq ? Number(mq[2]) : Math.floor(intervalDates[i].getUTCMonth() / 3) + 1;
+      const y = mq ? Number(mq[1]) : intervalDates[i].getUTCFullYear();
+      const q = mq ? Number(mq[2]) : Math.floor(intervalDates[i].getUTCMonth() / 3) + 1;
+      attr[i] = { y, q, mo: (q - 1) * 3, wk: 0, wy: y, dom: 1 };
     } else {
       const d = intervalDates[i];
-      y = d.getUTCFullYear();
-      q = Math.floor(d.getUTCMonth() / 3) + 1;
+      const mm = moment.utc(d);
+      attr[i] = {
+        y: d.getUTCFullYear(), q: Math.floor(d.getUTCMonth() / 3) + 1, mo: d.getUTCMonth(),
+        wk: mm.isoWeek(), wy: mm.isoWeekYear(), dom: d.getUTCDate(),
+      };
     }
-    let tick = '';
-    if (y !== prevYear) tick = String(y);
-    else if (q !== prevQuarter) tick = 'Q' + q;
-    ticks.push(tick);
-    prevYear = y;
-    prevQuarter = q;
+  }
+
+  const yStart = (i) => i === 0 || attr[i].y !== attr[i - 1].y;
+  const qStart = (i) => yStart(i) || attr[i].q !== attr[i - 1].q;
+  const mStart = (i) => yStart(i) || attr[i].mo !== attr[i - 1].mo;
+  const wStart = (i) => i === 0 || attr[i].wy !== attr[i - 1].wy || attr[i].wk !== attr[i - 1].wk;
+
+  const count = (fn) => { let c = 0; for (let i = 0; i < n; i++) if (fn(i)) c++; return c; };
+  const counts = { year: count(yStart), quarter: count(qStart), month: count(mStart), week: count(wStart), day: n };
+
+  // Pick the finest unit (no finer than the period itself) whose tick count fits.
+  const finestIdx = UNIT_LADDER.indexOf(PERIOD_FINEST_UNIT[period] || 'month');
+  let chosenIdx = 0;
+  for (let li = 0; li <= finestIdx; li++) {
+    if (counts[UNIT_LADDER[li]] <= TICK_TARGET) chosenIdx = li;
+  }
+  const chosen = UNIT_LADDER[chosenIdx];
+  const isChosenBoundary = (i) =>
+    chosen === 'day' ? true
+      : chosen === 'week' ? wStart(i)
+      : chosen === 'month' ? mStart(i)
+      : chosen === 'quarter' ? qStart(i)
+      : yStart(i);
+
+  // If even yearly is too dense, thin the year labels to ~TICK_TARGET.
+  const yearThin = chosen === 'year' && counts.year > TICK_TARGET ? Math.ceil(counts.year / TICK_TARGET) : 1;
+
+  const ticks = new Array(n).fill('');
+  let yearSeen = 0;
+  for (let i = 0; i < n; i++) {
+    if (!isChosenBoundary(i)) continue;
+    if (yStart(i)) {
+      const show = yearThin === 1 || yearSeen % yearThin === 0;
+      yearSeen++;
+      ticks[i] = show ? String(attr[i].y) : '';
+    } else if (qStart(i)) {
+      ticks[i] = 'Q' + attr[i].q;
+    } else if (mStart(i)) {
+      ticks[i] = MONTH_ABBR[attr[i].mo];
+    } else if (wStart(i)) {
+      ticks[i] = 'W' + attr[i].wk;
+    } else {
+      ticks[i] = String(attr[i].dom);
+    }
   }
   return ticks;
 }
