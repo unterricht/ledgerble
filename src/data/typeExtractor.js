@@ -9,7 +9,10 @@ function makeTypeExtractor(getSetting) {
     ];
     for (const [key, type] of tests) {
       const rx = getSetting(key);
-      if (rx && accountString.match(new RegExp(rx, 'i'))) return type;
+      if (!rx) continue;
+      let regex;
+      try { regex = new RegExp(rx, 'i'); } catch (_) { continue; }
+      if (accountString.match(regex)) return type;
     }
     return 'unknown';
   };

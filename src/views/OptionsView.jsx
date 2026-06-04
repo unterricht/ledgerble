@@ -176,6 +176,15 @@ function OptionsView({ getSetting, setSetting }) {
     setSetting('options.ledger.command', val);
   };
 
+  const handleBrowse = async () => {
+    if (!window.api || !window.api.showOpenDialog) return;
+    const picked = await window.api.showOpenDialog();
+    if (picked) {
+      setLedgerCmd(picked);
+      setSetting('options.ledger.command', picked);
+    }
+  };
+
   const handleLocaleChange = (e) => {
     const val = e.target.value;
     setLocale(val);
@@ -205,8 +214,11 @@ function OptionsView({ getSetting, setSetting }) {
               onBlur={handleLedgerCmdBlur}
               style={inputStyle(280)}
             />
-            {/* Browse: no renderer-accessible file-picker IPC; rendered as no-op placeholder */}
-            <button style={btnStyle} disabled title="File picker not yet wired via IPC">Browse…</button>
+            <button
+              data-testid="btn-browse-ledger"
+              style={btnStyle}
+              onClick={handleBrowse}
+            >Browse…</button>
           </Row>
           <Row label="Use hledger" hint="Run hledger instead of ledger-cli" last>
             <Toggle

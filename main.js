@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const { windowOptionsFor } = require('./windowChrome')
 const { execSync } = require('child_process');
@@ -304,6 +304,14 @@ ipcMain.handle('settings:getAll', (_event) => {
 
 ipcMain.handle('path:basename', (_event, filePath) => {
   return path.basename(filePath);
+});
+
+ipcMain.handle('dialog:openFile', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [{ name: 'Executables', extensions: ['*'] }],
+  });
+  return canceled ? null : filePaths[0];
 });
 
 // ── IPC: custom window controls (Windows frameless chrome) ──

@@ -1,14 +1,17 @@
 /** @jest-environment jsdom */
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // ── Mock window.api ──────────────────────────────────────────────────────────
 const mockSet = jest.fn().mockResolvedValue(undefined);
 const mockMenuRebuild = jest.fn();
+const mockShowOpenDialog = jest.fn();
 
 beforeEach(() => {
   mockSet.mockClear();
   mockMenuRebuild.mockClear();
+  mockShowOpenDialog.mockClear();
   global.window.api = {
     settings: {
       getAll: jest.fn().mockResolvedValue({}),
@@ -18,6 +21,7 @@ beforeEach(() => {
     menu: {
       rebuild: mockMenuRebuild,
     },
+    showOpenDialog: mockShowOpenDialog,
   };
 });
 
@@ -129,6 +133,15 @@ test('clicking "Use default" for expenses regex restores default value', () => {
   expect(setSetting).toHaveBeenCalledWith('options.expenses.regex', '^expenses?(:|$)');
 });
 
+test('changing ledger command path calls setSetting on blur', () => {
+  const setSetting = makeSetSetting();
+  render(<OptionsView getSetting={makeSetting()} setSetting={setSetting} />);
+  const input = screen.getByTestId('input-ledger-command');
+  fireEvent.change(input, { target: { value: '/usr/local/bin/ledger' } });
+  fireEvent.blur(input);
+  expect(setSetting).toHaveBeenCalledWith('options.ledger.command', '/usr/local/bin/ledger');
+});
+
 test('language dropdown includes auto + locale codes from getAvailableLocales', () => {
   render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
   const langSelect = screen.getByTestId('select-locale');
@@ -136,4 +149,22 @@ test('language dropdown includes auto + locale codes from getAvailableLocales', 
   expect(opts).toContain('auto');
   expect(opts).toContain('de');
   expect(opts).toContain('en');
+});
+
+test('Browse button calls showOpenDialog and updates ledger command setting', async () => {
+  mockShowOpenDialog.mockResolvedValue('/usr/local/bin/ledger');
+  const setSetting = makeSetSetting();
+  render(<OptionsView getSetting={makeSetting()} setSetting={setSetting} />);
+  await userEvent.click(screen.getByTestId('btn-browse-ledger'));
+  expect(mockShowOpenDialog).toHaveBeenCalled();
+  expect(setSetting).toHaveBeenCalledWith('options.ledger.command', '/usr/local/bin/ledger');
+});
+
+test('Browse button does nothing when dialog is cancelled', async () => {
+  mockShowOpenDialog.mockResolvedValue(null);
+  const setSetting = makeSetSetting();
+  render(<OptionsView getSetting={makeSetting()} setSetting={setSetting} />);
+  await userEvent.click(screen.getByTestId('btn-browse-ledger'));
+  expect(mockShowOpenDialog).toHaveBeenCalled();
+  expect(setSetting).not.toHaveBeenCalledWith('options.ledger.command', expect.anything());
 });
