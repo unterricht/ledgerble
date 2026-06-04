@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
-const { t } = require('../../i18n');
+const { t, loadLocale, detectLocale } = require('../../i18n');
 import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
@@ -251,7 +251,12 @@ function Shell() {
   useEffect(() => {
     if (window.api && window.api.settings && window.api.settings.getAll) {
       window.api.settings.getAll().then(cache => {
-        if (cache && typeof cache === 'object') setSettingsCache(cache);
+        if (cache && typeof cache === 'object') {
+          const saved = cache['options.locale'] || 'auto';
+          const effective = saved === 'auto' ? detectLocale(navigator.language || 'en') : saved;
+          loadLocale(effective);
+          setSettingsCache(cache);
+        }
       }).catch(() => {});
     }
   }, []);
@@ -261,6 +266,10 @@ function Shell() {
 
   // setSetting: persists to main process AND updates React cache so all views re-render.
   const setSetting = (key, value) => {
+    if (key === 'options.locale') {
+      const effective = value === 'auto' ? detectLocale(navigator.language || 'en') : value;
+      loadLocale(effective);
+    }
     setSettingsCache(prev => ({ ...prev, [key]: value }));
     if (window.api && window.api.settings && window.api.settings.set) {
       window.api.settings.set(key, value);

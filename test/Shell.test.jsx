@@ -1,11 +1,21 @@
 /** @jest-environment jsdom */
-import { render, screen, within, act } from '@testing-library/react';
+import { render, screen, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 // ECharts needs a real canvas; stub it so loading data into the Shell doesn't crash jsdom.
 jest.mock('echarts', () => ({ init: () => ({ setOption(){}, resize(){}, dispose(){}, on(){} }) }));
+
+// Spy on loadLocale so we can verify Shell calls it when the locale setting changes.
+// Spread jest.requireActual so t() and all other i18n functions keep working normally.
+jest.mock('../i18n', () => {
+  const actual = jest.requireActual('../i18n');
+  return { ...actual, loadLocale: jest.fn() };
+});
+const { loadLocale } = require('../i18n');
+
 import { Shell } from '../src/app/Shell';
 
 beforeEach(() => {
+  jest.clearAllMocks();
   window.api = { onParsed: () => {}, settings: { getAll: async () => ({}), get: async () => [], set: () => {} },
                  windowControls: { minimize(){}, maximize(){}, close(){} }, platform: 'darwin' };
 });
@@ -65,4 +75,30 @@ test('typing in search switches to postings view', async () => {
   render(<Shell />);
   await userEvent.type(screen.getByPlaceholderText(/search/i), 'rent');
   expect(document.querySelector('[data-view="postings"]')).toBeInTheDocument();
+});
+
+// ── Locale wiring ──────────────────────────────────────────────────────────
+
+test('Shell calls loadLocale with persisted locale on mount', async () => {
+  window.api.settings.getAll = async () => ({ 'options.locale': 'de' });
+  await act(async () => { render(<Shell />); });
+  expect(loadLocale).toHaveBeenCalledWith('de');
+});
+
+test('Shell resolves auto locale from navigator.language on mount', async () => {
+  Object.defineProperty(navigator, 'language', { value: 'fr-FR', configurable: true });
+  window.api.settings.getAll = async () => ({ 'options.locale': 'auto' });
+  await act(async () => { render(<Shell />); });
+  expect(loadLocale).toHaveBeenCalledWith('fr');
+  Object.defineProperty(navigator, 'language', { value: '', configurable: true });
+});
+
+test('Shell calls loadLocale when locale is changed via OptionsView', async () => {
+  render(<Shell />);
+  // Navigate to options
+  await userEvent.click(within(screen.getByRole('navigation')).getByText('Options'));
+  // Change locale dropdown to 'de'
+  const sel = screen.getByTestId('select-locale');
+  fireEvent.change(sel, { target: { value: 'de' } });
+  expect(loadLocale).toHaveBeenCalledWith('de');
 });
