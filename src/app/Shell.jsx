@@ -36,10 +36,19 @@ const SETTINGS_DEFAULTS = {
   'options.locale':          'auto',
 };
 
+function defaultLedgerCommand() {
+  const plat = window.api && window.api.platform;
+  if (plat === 'darwin') return '/opt/homebrew/bin/ledger';
+  if (plat === 'linux') return '/usr/bin/ledger';
+  return 'ledger';
+}
+
 function makeGetSetting(cache) {
   return (key) => {
     const val = cache[key];
-    return val !== undefined ? val : SETTINGS_DEFAULTS[key];
+    if (val !== undefined) return val;
+    if (key === 'options.ledger.command') return defaultLedgerCommand();
+    return SETTINGS_DEFAULTS[key];
   };
 }
 

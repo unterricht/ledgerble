@@ -151,13 +151,13 @@ test('language dropdown includes auto + locale codes from getAvailableLocales', 
   expect(opts).toContain('en');
 });
 
-test('Browse button calls showOpenDialog and updates ledger command setting', async () => {
-  mockShowOpenDialog.mockResolvedValue('/usr/local/bin/ledger');
+test('Browse button calls showOpenDialog with current ledger command and updates setting', async () => {
+  mockShowOpenDialog.mockResolvedValue('/picked/ledger');
   const setSetting = makeSetSetting();
-  render(<OptionsView getSetting={makeSetting()} setSetting={setSetting} />);
+  render(<OptionsView getSetting={makeSetting({ 'options.ledger.command': '/current/ledger' })} setSetting={setSetting} />);
   await userEvent.click(screen.getByTestId('btn-browse-ledger'));
-  expect(mockShowOpenDialog).toHaveBeenCalled();
-  expect(setSetting).toHaveBeenCalledWith('options.ledger.command', '/usr/local/bin/ledger');
+  expect(mockShowOpenDialog).toHaveBeenCalledWith('/current/ledger');
+  expect(setSetting).toHaveBeenCalledWith('options.ledger.command', '/picked/ledger');
 });
 
 test('Browse button does nothing when dialog is cancelled', async () => {

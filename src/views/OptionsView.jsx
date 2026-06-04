@@ -178,7 +178,7 @@ function OptionsView({ getSetting, setSetting }) {
 
   const handleBrowse = async () => {
     if (!window.api || !window.api.showOpenDialog) return;
-    const picked = await window.api.showOpenDialog();
+    const picked = await window.api.showOpenDialog(ledgerCmd);
     if (picked) {
       setLedgerCmd(picked);
       setSetting('options.ledger.command', picked);

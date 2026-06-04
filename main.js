@@ -306,8 +306,10 @@ ipcMain.handle('path:basename', (_event, filePath) => {
   return path.basename(filePath);
 });
 
-ipcMain.handle('dialog:openFile', async () => {
+ipcMain.handle('dialog:openFile', async (_event, currentPath) => {
+  const defaultPath = currentPath ? path.dirname(currentPath) : undefined;
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    defaultPath,
     properties: ['openFile'],
     filters: [{ name: 'Executables', extensions: ['*'] }],
   });

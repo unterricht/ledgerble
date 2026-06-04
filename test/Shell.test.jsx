@@ -77,6 +77,24 @@ test('typing in search switches to postings view', async () => {
   expect(document.querySelector('[data-view="postings"]')).toBeInTheDocument();
 });
 
+// ── Platform-appropriate ledger command default ────────────────────────────
+
+test('ledger command input shows /opt/homebrew/bin/ledger as default on macOS when no setting is persisted', async () => {
+  window.api.platform = 'darwin';
+  window.api.settings.getAll = async () => ({});
+  await act(async () => { render(<Shell />); });
+  await userEvent.click(within(screen.getByRole('navigation')).getByText('Options'));
+  expect(screen.getByTestId('input-ledger-command')).toHaveValue('/opt/homebrew/bin/ledger');
+});
+
+test('persisted ledger command path overrides platform default', async () => {
+  window.api.platform = 'darwin';
+  window.api.settings.getAll = async () => ({ 'options.ledger.command': '/custom/ledger' });
+  await act(async () => { render(<Shell />); });
+  await userEvent.click(within(screen.getByRole('navigation')).getByText('Options'));
+  expect(screen.getByTestId('input-ledger-command')).toHaveValue('/custom/ledger');
+});
+
 // ── Locale wiring ──────────────────────────────────────────────────────────
 
 test('Shell calls loadLocale with persisted locale on mount', async () => {

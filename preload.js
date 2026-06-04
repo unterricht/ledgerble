@@ -45,8 +45,8 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   // ── File dialog ───────────────────────────────────────────────
-  showOpenDialog: () => {
-    return ipcRenderer.invoke('dialog:openFile');
+  showOpenDialog: (currentPath) => {
+    return ipcRenderer.invoke('dialog:openFile', currentPath);
   },
 
   // ── Menu ──────────────────────────────────────────────────────

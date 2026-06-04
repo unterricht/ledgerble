@@ -107,18 +107,18 @@ describe('preload', () => {
   });
 
   describe('showOpenDialog', () => {
-    it('should invoke "dialog:openFile" via IPC and return the selected path', async () => {
+    it('should invoke "dialog:openFile" with currentPath and return the selected path', async () => {
       const electron = require('electron');
       electron.ipcRenderer.invoke.mockResolvedValue('/home/user/journal.dat');
-      const result = await api.showOpenDialog();
-      expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith('dialog:openFile');
+      const result = await api.showOpenDialog('/usr/local/bin/ledger');
+      expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith('dialog:openFile', '/usr/local/bin/ledger');
       expect(result).toBe('/home/user/journal.dat');
     });
 
     it('should return null when the dialog is cancelled', async () => {
       const electron = require('electron');
       electron.ipcRenderer.invoke.mockResolvedValue(null);
-      const result = await api.showOpenDialog();
+      const result = await api.showOpenDialog('/usr/local/bin/ledger');
       expect(result).toBeNull();
     });
   });
