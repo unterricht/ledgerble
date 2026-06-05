@@ -492,44 +492,51 @@ function buildBalanceTree(balances, intervalIdx) {
 }
 
 /**
- * buildAssets(model) → AssetsViewModel
+ * buildAssets(model, deselectedAssetAccounts?) → AssetsViewModel
  *
  * Transforms the compute() `balances` Map into a multi-series time-series view-model
  * for the Assets & Liabilities view (AreaLineChart).
  *
- * Aggregation: one series per top-level account segment (first ':'-separated part)
- * for accounts of type 'assets' or 'liabilities'. Sub-accounts all roll up into
- * their top-level segment's series.
+ * Aggregation: one series per second-level account segment (first two ':'-separated
+ * parts, e.g. 'assets:Girokonto') for accounts of type 'assets' or 'liabilities'.
+ * Deeper sub-accounts roll up into their second-level parent series.
+ *
+ * deselectedAssetAccounts (optional Set<string>): second-level keys to exclude from
+ * the chart. Keys must match the full second-level path (e.g. 'Assets:Savings').
  *
  * Returns:
  *   {
- *     data:   [{ m, <topLevelKey>: value, … }]  — one entry per interval
- *     series: [{ key, color, label }]            — one per top-level account
- *     maxY:   number                             — max abs value across data (for chart scale)
- *     grid:   number[]                           — suggested y-axis gridlines
+ *     data:   [{ m, <secondLevelKey>: value, … }]  — one entry per interval
+ *     series: [{ key, color, label, type }]         — one per visible second-level account
+ *     maxY:   number                                — max abs value across data (for chart scale)
+ *     grid:   number[]                              — suggested y-axis gridlines
  *   }
  */
-function buildAssets(model) {
+function buildAssets(model, deselectedAssetAccounts) {
   const { balances, intervals, intervalDates } = model;
+  const desel = deselectedAssetAccounts instanceof Set ? deselectedAssetAccounts : new Set();
 
   if (!balances || balances.size === 0 || !intervals || intervals.length === 0) {
     return { data: [], series: [], maxY: 0, grid: [0] };
   }
 
-  // ── 1. Collect top-level accounts of type assets/liabilities ──────────────
-  // topKey → { type, sums: number[] (length = intervals.length, all zeros) }
-  const topMap = new Map(); // key = top-level segment string → { type, sums }
+  // ── 1. Collect second-level accounts of type assets/liabilities ───────────
+  // segKey = first two colon-separated segments joined, e.g. 'Assets:Savings'
+  const topMap = new Map();
 
   for (const [balKey, arr] of balances) {
     if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
 
-    const topSegment = balKey.account.split(':')[0];
+    const parts = balKey.account.split(':');
+    const segKey = parts.slice(0, 2).join(':');
 
-    if (!topMap.has(topSegment)) {
-      topMap.set(topSegment, { type: balKey.type, sums: new Array(intervals.length).fill(0) });
+    if (desel.has(segKey)) continue;
+
+    if (!topMap.has(segKey)) {
+      topMap.set(segKey, { type: balKey.type, sums: new Array(intervals.length).fill(0) });
     }
 
-    const { sums } = topMap.get(topSegment);
+    const { sums } = topMap.get(segKey);
     for (let i = 0; i < intervals.length; i++) {
       sums[i] += arr[i] || 0;
     }
@@ -539,12 +546,12 @@ function buildAssets(model) {
     return { data: [], series: [], maxY: 0, grid: [0] };
   }
 
-  // ── 2. Build series array (one per top-level account, cycling T.chart) ────
+  // ── 2. Build series array (one per second-level account, cycling T.chart) ─
   const topKeys = Array.from(topMap.keys()).sort();
   const series = topKeys.map((key, idx) => ({
     key,
     color: T.chart[idx % T.chart.length],
-    label: key,
+    label: key.split(':').pop(),
     type: topMap.get(key).type,
   }));
 
@@ -579,6 +586,28 @@ function buildAssets(model) {
   }
 
   return { data, series, maxY: niceMax, grid };
+}
+
+/**
+ * buildAssetAccountList(balances) → Array<{ key, type, label }>
+ *
+ * Returns a sorted list of all second-level asset/liability accounts present in
+ * the balances Map. Used to populate the inspector filter for the Assets tab.
+ *
+ * Each entry: { key: 'Assets:Savings', type: 'assets', label: 'Savings' }
+ */
+function buildAssetAccountList(balances) {
+  if (!balances || balances.size === 0) return [];
+  const seen = new Map();
+  for (const [balKey] of balances) {
+    if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
+    const parts = balKey.account.split(':');
+    const segKey = parts.slice(0, 2).join(':');
+    if (!seen.has(segKey)) {
+      seen.set(segKey, { key: segKey, type: balKey.type, label: segKey.split(':').pop() });
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => a.key.localeCompare(b.key));
 }
 
 /**
@@ -776,4 +805,4 @@ function buildPostings(model) {
   });
 }
 
-module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings };
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings };

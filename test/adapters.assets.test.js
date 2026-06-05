@@ -1,5 +1,5 @@
 'use strict';
-const { buildAssets } = require('../src/data/adapters');
+const { buildAssets, buildAssetAccountList } = require('../src/data/adapters');
 
 // Minimal model with a few asset/liability accounts across 3 intervals
 function makeModel(overrides = {}) {
@@ -44,44 +44,39 @@ test('only includes assets and liabilities series, not expenses/income', () => {
   const model = makeModel();
   const vm = buildAssets(model);
   const keys = vm.series.map(s => s.key);
-  // Top-level accounts from assets/liabilities: Assets, Liabilities
-  expect(keys).toContain('Assets');
-  expect(keys).toContain('Liabilities');
+  // Second-level accounts from assets/liabilities
+  expect(keys).toContain('Assets:Savings');
+  expect(keys).toContain('Assets:Shares');
+  expect(keys).toContain('Liabilities:Loan');
   // Expenses and Income must be excluded
-  expect(keys).not.toContain('Expenses');
-  expect(keys).not.toContain('Income');
+  expect(keys.every(k => !k.startsWith('Expenses') && !k.startsWith('Income'))).toBe(true);
 });
 
-test('series count equals number of distinct top-level asset/liability accounts', () => {
+test('series count equals number of distinct second-level asset/liability accounts', () => {
   const model = makeModel();
   const vm = buildAssets(model);
-  // We have Assets and Liabilities as top-level types
-  expect(vm.series.length).toBe(2);
+  // Assets:Savings, Assets:Shares, Liabilities:Loan (Assets:Savings:Sub rolls up)
+  expect(vm.series.length).toBe(3);
 });
 
-test('aggregates sub-accounts into the top-level account series per interval', () => {
+test('aggregates sub-accounts into the second-level account series per interval', () => {
   const model = makeModel();
   const vm = buildAssets(model);
-  // Assets top-level at interval 0:
-  //   Assets:Savings = 10000, Assets:Savings:Sub = 1000 (but sub is under Savings, which is under Assets)
-  //   Assets:Shares = 50000
-  //   Top-level 'Assets' should be the sum of Assets:Savings + Assets:Savings:Sub + Assets:Shares
-  //   Wait - we aggregate by TOP-LEVEL segment only, so both Assets:Savings and Assets:Shares belong to 'Assets'
-  //   Sub-accounts (Assets:Savings:Sub) also have top-level 'Assets'
-  //   So Assets total at [0] = 10000 + 50000 + 1000 = 61000
-  const assetsEntry = vm.series.find(s => s.key === 'Assets');
-  expect(assetsEntry).toBeDefined();
-  const dataAt0 = vm.data[0]['Assets'];
-  expect(dataAt0).toBe(10000 + 50000 + 1000);
+  // Assets:Savings at [0] = Savings(10000) + Savings:Sub(1000) = 11000
+  const savingsEntry = vm.series.find(s => s.key === 'Assets:Savings');
+  expect(savingsEntry).toBeDefined();
+  expect(vm.data[0]['Assets:Savings']).toBe(10000 + 1000);
+  // Assets:Shares at [0] = 50000 (its own series)
+  expect(vm.data[0]['Assets:Shares']).toBe(50000);
 });
 
 test('liabilities series values are present', () => {
   const model = makeModel();
   const vm = buildAssets(model);
-  const liabEntry = vm.series.find(s => s.key === 'Liabilities');
+  const liabEntry = vm.series.find(s => s.key === 'Liabilities:Loan');
   expect(liabEntry).toBeDefined();
   // At index 0: -5000
-  expect(vm.data[0]['Liabilities']).toBe(-5000);
+  expect(vm.data[0]['Liabilities:Loan']).toBe(-5000);
 });
 
 test('series entries have key, color, and label', () => {
@@ -127,8 +122,100 @@ test('interval label uses MMM format for monthly intervals', () => {
 test('each series entry has a type field matching assets or liabilities', () => {
   const model = makeModel();
   const vm = buildAssets(model);
-  const assetsSeries = vm.series.find(s => s.key === 'Assets');
-  const liabSeries   = vm.series.find(s => s.key === 'Liabilities');
+  const assetsSeries = vm.series.find(s => s.key === 'Assets:Savings');
+  const liabSeries   = vm.series.find(s => s.key === 'Liabilities:Loan');
   expect(assetsSeries.type).toBe('assets');
   expect(liabSeries.type).toBe('liabilities');
+});
+
+// ── NEW: second-level aggregation ────────────────────────────────────────────
+
+test('creates one series per second-level account segment', () => {
+  const vm = buildAssets(makeModel());
+  const keys = vm.series.map(s => s.key).sort();
+  // Assets:Savings, Assets:Shares, Liabilities:Loan  (Assets:Savings:Sub rolls up)
+  expect(keys).toEqual(['Assets:Savings', 'Assets:Shares', 'Liabilities:Loan']);
+});
+
+test('rolls sub-accounts deeper than second level into their second-level parent', () => {
+  const vm = buildAssets(makeModel());
+  const keys = vm.series.map(s => s.key);
+  expect(keys).not.toContain('Assets:Savings:Sub');
+  // Assets:Savings at index 0 = Savings(10000) + Savings:Sub(1000) = 11000
+  expect(vm.data[0]['Assets:Savings']).toBe(11000);
+});
+
+test('series label is the last colon-separated segment of the key', () => {
+  const vm = buildAssets(makeModel());
+  const savingsSeries = vm.series.find(s => s.key === 'Assets:Savings');
+  expect(savingsSeries.label).toBe('Savings');
+  const loanSeries = vm.series.find(s => s.key === 'Liabilities:Loan');
+  expect(loanSeries.label).toBe('Loan');
+});
+
+test('second-level liabilities series values are present', () => {
+  const vm = buildAssets(makeModel());
+  const liabEntry = vm.series.find(s => s.key === 'Liabilities:Loan');
+  expect(liabEntry).toBeDefined();
+  expect(vm.data[0]['Liabilities:Loan']).toBe(-5000);
+});
+
+// ── NEW: deselectedAssetAccounts filter ──────────────────────────────────────
+
+test('excludes deselected accounts when deselectedAssetAccounts is passed', () => {
+  const desel = new Set(['Assets:Shares']);
+  const vm = buildAssets(makeModel(), desel);
+  const keys = vm.series.map(s => s.key);
+  expect(keys).not.toContain('Assets:Shares');
+  expect(keys).toContain('Assets:Savings');
+  expect(keys).toContain('Liabilities:Loan');
+});
+
+test('deselected account does not appear in data entries', () => {
+  const desel = new Set(['Assets:Shares']);
+  const vm = buildAssets(makeModel(), desel);
+  for (const entry of vm.data) {
+    expect(entry['Assets:Shares']).toBeUndefined();
+  }
+});
+
+test('empty deselectedAssetAccounts shows all second-level series', () => {
+  const vm = buildAssets(makeModel(), new Set());
+  expect(vm.series).toHaveLength(3);
+});
+
+// ── NEW: buildAssetAccountList ────────────────────────────────────────────────
+
+test('buildAssetAccountList returns one entry per second-level asset/liability account', () => {
+  const { balances } = makeModel();
+  const list = buildAssetAccountList(balances);
+  const keys = list.map(a => a.key).sort();
+  expect(keys).toEqual(['Assets:Savings', 'Assets:Shares', 'Liabilities:Loan']);
+});
+
+test('buildAssetAccountList each entry has key, type, and label', () => {
+  const { balances } = makeModel();
+  const list = buildAssetAccountList(balances);
+  for (const a of list) {
+    expect(typeof a.key).toBe('string');
+    expect(['assets', 'liabilities']).toContain(a.type);
+    expect(a.label).toBe(a.key.split(':').pop());
+  }
+});
+
+test('buildAssetAccountList excludes income/expense accounts', () => {
+  const { balances } = makeModel();
+  const list = buildAssetAccountList(balances);
+  expect(list.every(a => a.type === 'assets' || a.type === 'liabilities')).toBe(true);
+});
+
+test('buildAssetAccountList deduplicates (Assets:Savings:Sub rolls up to Assets:Savings)', () => {
+  const { balances } = makeModel();
+  const list = buildAssetAccountList(balances);
+  const savingsCount = list.filter(a => a.key === 'Assets:Savings').length;
+  expect(savingsCount).toBe(1);
+});
+
+test('buildAssetAccountList returns empty array for empty balances', () => {
+  expect(buildAssetAccountList(new Map())).toEqual([]);
 });

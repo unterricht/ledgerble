@@ -23,6 +23,18 @@ test('setQuery("") does not force postings view', () => {
   expect(result.current.view).toBe('balance');
 });
 
+test('deselectedAssetAccounts is an empty Set initially', () => {
+  const { result } = renderHook(() => useAppState());
+  expect(result.current.deselectedAssetAccounts).toBeInstanceOf(Set);
+  expect(result.current.deselectedAssetAccounts.size).toBe(0);
+});
+
+test('setDeselectedAssets updates deselectedAssetAccounts', () => {
+  const { result } = renderHook(() => useAppState());
+  act(() => result.current.setDeselectedAssets(new Set(['Assets:Shares'])));
+  expect(result.current.deselectedAssetAccounts.has('Assets:Shares')).toBe(true);
+});
+
 test('onParsed callback stores a file result', () => {
   const { result } = renderHook(() => useAppState());
   act(() => global.__emitParsed('cody.journal', { postings: [], postingsCost: [], prices: [] }, null));

@@ -14,6 +14,7 @@ export function useAppState() {
   const [query, setQueryRaw] = useState('');
   const [view, setView] = useState('overview');
   const [deselectedAccounts, setDeselected] = useState(() => new Set());
+  const [deselectedAssetAccounts, setDeselectedAssets] = useState(() => new Set());
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [postingType, setPostingType] = useState('all');
 
@@ -43,6 +44,7 @@ export function useAppState() {
     query, setQuery,
     view, setView,
     deselectedAccounts, toggleAccount, setDeselected,
+    deselectedAssetAccounts, setDeselectedAssets,
     inspectorOpen, setInspectorOpen,
     postingType, setPostingType,
   };

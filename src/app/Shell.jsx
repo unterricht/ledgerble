@@ -15,7 +15,7 @@ import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } fro
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
 const { isDeselectedDeep, toggleAccountInDesel } = require('../data/accountTree');
-import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings } from '../data/adapters';
+import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
 import { BalanceView } from '../views/BalanceView';
@@ -314,6 +314,7 @@ function Shell() {
   const s = useAppState();
   const { view, setView, currency: cur, setCurrency: setCur, period, setPeriod,
           deselectedAccounts: desel, setDeselected,
+          deselectedAssetAccounts: deselAssets, setDeselectedAssets,
           inspectorOpen: insp, setInspectorOpen: setInsp,
           query, setQuery, postingType: typeF, setPostingType: setTypeF } = s;
 
@@ -552,7 +553,7 @@ function Shell() {
                     ? (() => { const tree = buildBreakdownTree(model.postings, 'income');
                         return <ExpensesIncomeView tree={tree} total={tree.reduce((a, n) => a + n.value, 0)} cur={model.currency || cur} kind="income" />; })()
                     : view === 'assets' && s.files.size > 0
-                    ? <AssetsView vm={buildAssets(model)} cur={model.currency || cur} />
+                    ? <AssetsView vm={buildAssets(model, deselAssets)} cur={model.currency || cur} />
                     : view === 'portfolio' && s.files.size > 0
                     ? <PortfolioView vm={buildPortfolio(model)} cur={model.currency || cur} />
                     : view === 'postings' && s.files.size > 0
@@ -561,21 +562,40 @@ function Shell() {
                     ? <OptionsView getSetting={getSetting} setSetting={setSetting} />
                     : <div data-view={view} />}
                 </div>
-                {showInsp && (
-                  <div className="chrome-print-hide" style={{ display: 'flex' }}>
-                    <Inspector
-                      desel={desel}
-                      onToggle={(path) => setDeselected(prev => toggleAccountInDesel(path, prev, model.accountTree))}
-                      onAll={() => setDeselected(new Set())}
-                      onNone={() => setDeselected(new Set(Object.keys(model.accountTree || {})))}
-                      onClose={() => setInsp(false)}
-                      accountTree={model.accountTree}
-                      intervals={model.fullIntervals}
-                      sliderValues={model.sliderValues}
-                      onRangeChange={onRangeChange}
-                    />
-                  </div>
-                )}
+                {showInsp && (() => {
+                  const isAssetsTab = view === 'assets';
+                  const assetAccounts = isAssetsTab ? buildAssetAccountList(model.balances) : [];
+                  const assetTree = Object.fromEntries(assetAccounts.map(a => [a.key, {}]));
+                  const inspDesel = isAssetsTab ? deselAssets : desel;
+                  const inspOnToggle = isAssetsTab
+                    ? (path) => setDeselectedAssets(prev => {
+                        const n = new Set(prev);
+                        n.has(path) ? n.delete(path) : n.add(path);
+                        return n;
+                      })
+                    : (path) => setDeselected(prev => toggleAccountInDesel(path, prev, model.accountTree));
+                  const inspOnAll = isAssetsTab
+                    ? () => setDeselectedAssets(new Set())
+                    : () => setDeselected(new Set());
+                  const inspOnNone = isAssetsTab
+                    ? () => setDeselectedAssets(new Set(assetAccounts.map(a => a.key)))
+                    : () => setDeselected(new Set(Object.keys(model.accountTree || {})));
+                  return (
+                    <div className="chrome-print-hide" style={{ display: 'flex' }}>
+                      <Inspector
+                        desel={inspDesel}
+                        onToggle={inspOnToggle}
+                        onAll={inspOnAll}
+                        onNone={inspOnNone}
+                        onClose={() => setInsp(false)}
+                        accountTree={isAssetsTab ? assetTree : model.accountTree}
+                        intervals={model.fullIntervals}
+                        sliderValues={model.sliderValues}
+                        onRangeChange={onRangeChange}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
