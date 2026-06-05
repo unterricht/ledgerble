@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "{last} · {period} 時点",
   "subtitle.all_transactions_range": "すべての取引 · {first} – {last}",
   "options.ledger_path": "ledger-cliパス",
-  "options.ledger_path_hint": "ジャーナルを読むための実行ファイル"
+  "options.ledger_path_hint": "ジャーナルを読むための実行ファイル",
+  "about.credits": "Sean Bridges 作成\nJohannes Wilke メンテナンス"
 }

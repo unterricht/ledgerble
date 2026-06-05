@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "截至 {last} · {period}",
   "subtitle.all_transactions_range": "所有交易 · {first} – {last}",
   "options.ledger_path": "ledger-cli 路径",
-  "options.ledger_path_hint": "用于读取日记账文件的可执行程序"
+  "options.ledger_path_hint": "用于读取日记账文件的可执行程序",
+  "about.credits": "由 Sean Bridges 创建\n由 Johannes Wilke 维护"
 }

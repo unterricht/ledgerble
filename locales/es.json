@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "Al {last} · {period}",
   "subtitle.all_transactions_range": "Todas las transacciones · {first} – {last}",
   "options.ledger_path": "Ruta de ledger-cli",
-  "options.ledger_path_hint": "Ejecutable para leer los diarios"
+  "options.ledger_path_hint": "Ejecutable para leer los diarios",
+  "about.credits": "Creado por Sean Bridges\nmantenido por Johannes Wilke"
 }

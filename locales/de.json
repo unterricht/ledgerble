@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "Stand {last} · {period}",
   "subtitle.all_transactions_range": "Alle Buchungen · {first} – {last}",
   "options.ledger_path": "ledger-Programm-Pfad",
-  "options.ledger_path_hint": "Programm zum Lesen der Journal-Dateien"
+  "options.ledger_path_hint": "Programm zum Lesen der Journal-Dateien",
+  "about.credits": "Erstellt von Sean Bridges\ngepflegt von Johannes Wilke"
 }

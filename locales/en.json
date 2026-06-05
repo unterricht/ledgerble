@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "As of {last} · {period}",
   "subtitle.all_transactions_range": "All transactions · {first} – {last}",
   "options.ledger_path": "ledger-cli path",
-  "options.ledger_path_hint": "Executable used to read journals"
+  "options.ledger_path_hint": "Executable used to read journals",
+  "about.credits": "Created by Sean Bridges\nmaintained by Johannes Wilke"
 }

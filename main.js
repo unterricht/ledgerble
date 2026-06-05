@@ -63,6 +63,7 @@ function createWindow() {
   loadLocale(effectiveLocale)
 
   setupAppMenu(win)
+  refreshAboutPanel()
 
   ipcMain.removeAllListeners('menu:rebuild')
   ipcMain.on('menu:rebuild', () => {
@@ -70,6 +71,7 @@ function createWindow() {
     const newEffectiveLocale = newLocaleSetting === 'auto' ? detectLocale(app.getLocale()) : newLocaleSetting
     loadLocale(newEffectiveLocale)
     setupAppMenu(win)
+    refreshAboutPanel()
   })
 
   //win.webContents.openDevTools()
@@ -105,13 +107,19 @@ app.on('activate', () => {
   }
 })
 
-//https://github.com/electron/electron/issues/10451
-//not supported on all os's
-if (app.setAboutPanelOptions) {
+// https://github.com/electron/electron/issues/10451
+// Called once on startup and again on locale change so credits are translated.
+function refreshAboutPanel() {
+  if (!app.setAboutPanelOptions) return;
+  const { t } = require('./i18n')
+  const iconExt = process.platform === 'win32' ? 'gerbil.ico' : 'gerbil.png'
+  const iconPath = path.join(__dirname, 'icons', iconExt)
   app.setAboutPanelOptions({
     applicationName: "Ledgerble",
-    version: "0.2",
-    copyright: "Sean Bridges"
+    applicationVersion: app.getVersion(),
+    copyright: t('about.credits'),
+    website: "https://github.com/unterricht/ledgerble/",
+    iconPath,
   });
 }
 

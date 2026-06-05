@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "{last} · {period} 기준",
   "subtitle.all_transactions_range": "모든 거래 · {first} – {last}",
   "options.ledger_path": "ledger-cli 경로",
-  "options.ledger_path_hint": "저널을 읽는 데 사용하는 실행 파일"
+  "options.ledger_path_hint": "저널을 읽는 데 사용하는 실행 파일",
+  "about.credits": "Sean Bridges 제작\nJohannes Wilke 유지관리"
 }

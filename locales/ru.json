@@ -179,5 +179,6 @@
   "subtitle.as_of_last": "На {last} · {period}",
   "subtitle.all_transactions_range": "Все транзакции · {first} – {last}",
   "options.ledger_path": "Путь к ledger-cli",
-  "options.ledger_path_hint": "Исполняемый файл для чтения журналов"
+  "options.ledger_path_hint": "Исполняемый файл для чтения журналов",
+  "about.credits": "Создано Sean Bridges\nподдерживается Johannes Wilke"
 }
