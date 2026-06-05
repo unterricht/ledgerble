@@ -69,7 +69,11 @@ export function MenuSelect({ value, onChange, options, width }) {
         appearance: 'none', WebkitAppearance: 'none', fontFamily: T.sans, fontSize: 12.5, fontWeight: 500,
         padding: '5px 26px 5px 11px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface,
         color: T.ink, cursor: 'pointer', outline: 'none', width, boxShadow: '0 1px 1.5px rgba(16,18,22,0.04)',
-      }}>{options.map(o => <option key={o} value={o}>{o}</option>)}</select>
+      }}>{options.map(o => {
+        const v = typeof o === 'object' ? o.value : o;
+        const l = typeof o === 'object' ? o.label : o;
+        return <option key={v} value={v}>{l}</option>;
+      })}</select>
       <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: T.ink3 }}><Icon name="chevronD" size={13} sw={1.8} /></span>
     </div>
   );

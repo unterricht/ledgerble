@@ -148,7 +148,7 @@ function RegexRow({ label, hint, settingKey, getSetting, setSetting, last }) {
         style={btnStyle}
         onClick={useDefault}
       >
-        Use default
+        {t('btn.use_default')}
       </button>
     </Row>
   );
@@ -205,8 +205,8 @@ function OptionsView({ getSetting, setSetting }) {
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
         {/* ── Ledger command ── */}
-        <GroupCard title="Ledger command">
-          <Row label="ledger-cli path" hint="Executable used to read journals">
+        <GroupCard title={t('settings.ledger_command')}>
+          <Row label={t('options.ledger_path')} hint={t('options.ledger_path_hint')}>
             <input
               data-testid="input-ledger-command"
               value={ledgerCmd}
@@ -218,9 +218,9 @@ function OptionsView({ getSetting, setSetting }) {
               data-testid="btn-browse-ledger"
               style={btnStyle}
               onClick={handleBrowse}
-            >Browse…</button>
+            >{t('btn.browse')}</button>
           </Row>
-          <Row label="Use hledger" hint="Run hledger instead of ledger-cli" last>
+          <Row label={t('settings.hledger')} hint={t('settings.hledger.help')} last>
             <Toggle
               testId="toggle-hledger"
               on={hledger}
@@ -230,38 +230,38 @@ function OptionsView({ getSetting, setSetting }) {
         </GroupCard>
 
         {/* ── Account matching ── */}
-        <GroupCard title="Account matching">
+        <GroupCard title={t('options.account_matching')}>
           <RegexRow
-            label="Expense accounts"
-            hint="Regex matching expense accounts"
+            label={t('settings.expenses_regex')}
+            hint={t('settings.expenses_regex.help')}
             settingKey="options.expenses.regex"
             getSetting={getSetting}
             setSetting={setSetting}
           />
           <RegexRow
-            label="Income accounts"
-            hint="Regex matching income/revenue accounts"
+            label={t('settings.income_regex')}
+            hint={t('settings.income_regex.help')}
             settingKey="options.income.regex"
             getSetting={getSetting}
             setSetting={setSetting}
           />
           <RegexRow
-            label="Asset accounts"
-            hint="Regex matching asset accounts"
+            label={t('settings.assets_regex')}
+            hint={t('settings.assets_regex.help')}
             settingKey="options.assets.regex"
             getSetting={getSetting}
             setSetting={setSetting}
           />
           <RegexRow
-            label="Liability accounts"
-            hint="Regex matching liability accounts"
+            label={t('settings.liabilities_regex')}
+            hint={t('settings.liabilities_regex.help')}
             settingKey="options.liabilities.regex"
             getSetting={getSetting}
             setSetting={setSetting}
           />
           <RegexRow
-            label="Equity accounts"
-            hint="Regex matching equity accounts"
+            label={t('settings.equity_regex')}
+            hint={t('settings.equity_regex.help')}
             settingKey="options.equity.regex"
             getSetting={getSetting}
             setSetting={setSetting}
@@ -270,8 +270,8 @@ function OptionsView({ getSetting, setSetting }) {
         </GroupCard>
 
         {/* ── General ── */}
-        <GroupCard title="General">
-          <Row label="Language" hint="Interface language">
+        <GroupCard title={t('options.general')}>
+          <Row label={t('settings.language')} hint={t('settings.language.help')}>
             <select
               data-testid="select-locale"
               value={locale}
@@ -279,7 +279,7 @@ function OptionsView({ getSetting, setSetting }) {
               style={{ ...inputStyle(160), fontFamily: T.sans, cursor: 'pointer' }}
             >
               {locales.map(l => (
-                <option key={l} value={l}>{l === 'auto' ? 'Auto (system)' : l}</option>
+                <option key={l} value={l}>{l === 'auto' ? t('options.locale_auto') : l}</option>
               ))}
             </select>
           </Row>

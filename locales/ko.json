@@ -168,5 +168,16 @@
   "nav.options": "설정",
   "type.all": "전체",
   "type.assets": "자산",
-  "filter.toggle": "필터 전환"
+  "filter.toggle": "필터 전환",
+  "options.account_matching": "계정 분류",
+  "options.general": "일반",
+  "options.locale_auto": "자동 (시스템)",
+  "subtitle.preferences": "환경설정",
+  "subtitle.all_transactions": "모든 거래",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "— · {period} 기준",
+  "subtitle.as_of_last": "{last} · {period} 기준",
+  "subtitle.all_transactions_range": "모든 거래 · {first} – {last}",
+  "options.ledger_path": "ledger-cli 경로",
+  "options.ledger_path_hint": "저널을 읽는 데 사용하는 실행 파일"
 }

@@ -168,5 +168,16 @@
   "nav.options": "Options",
   "type.all": "All",
   "type.assets": "Assets",
-  "filter.toggle": "Toggle filters"
+  "filter.toggle": "Toggle filters",
+  "options.account_matching": "Account matching",
+  "options.general": "General",
+  "options.locale_auto": "Auto (system)",
+  "subtitle.preferences": "Preferences",
+  "subtitle.all_transactions": "All transactions",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "As of — · {period}",
+  "subtitle.as_of_last": "As of {last} · {period}",
+  "subtitle.all_transactions_range": "All transactions · {first} – {last}",
+  "options.ledger_path": "ledger-cli path",
+  "options.ledger_path_hint": "Executable used to read journals"
 }

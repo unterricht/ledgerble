@@ -89,6 +89,43 @@ test('all locale JSON files have exactly the same set of keys as en.json', () =>
     }
 });
 
+// ── formatIntervalLabel ───────────────────────────────────────
+
+test('formatIntervalLabel formats Monthly YYYY-MM as long month + year in English', () => {
+    i18n.loadLocale('en');
+    expect(i18n.formatIntervalLabel('2015-01', 'Monthly')).toBe('January 2015');
+});
+
+test('formatIntervalLabel formats Monthly YYYY-MM in German', () => {
+    i18n.loadLocale('de');
+    expect(i18n.formatIntervalLabel('2015-01', 'Monthly')).toBe('Januar 2015');
+});
+
+test('formatIntervalLabel formats April 2026 in English', () => {
+    i18n.loadLocale('en');
+    expect(i18n.formatIntervalLabel('2026-04', 'Monthly')).toBe('April 2026');
+});
+
+test('formatIntervalLabel returns Yearly YYYY label unchanged', () => {
+    expect(i18n.formatIntervalLabel('2024', 'Yearly')).toBe('2024');
+});
+
+test('formatIntervalLabel returns Weekly label unchanged', () => {
+    expect(i18n.formatIntervalLabel('2024-W03', 'Weekly')).toBe('2024-W03');
+});
+
+test('formatIntervalLabel returns Quarterly label unchanged', () => {
+    expect(i18n.formatIntervalLabel('2024-Q1', 'Quarterly')).toBe('2024-Q1');
+});
+
+test('formatIntervalLabel formats Daily YYYY-MM-DD locale-aware in German', () => {
+    i18n.loadLocale('de');
+    const result = i18n.formatIntervalLabel('2015-01-15', 'Daily');
+    expect(result).not.toBe('2015-01-15');
+    expect(result).toContain('15');
+    expect(result).toContain('2015');
+});
+
 test('en.json has no empty string values', () => {
     const enPath = path.join(__dirname, '..', 'locales', 'en.json');
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));

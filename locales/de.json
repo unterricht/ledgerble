@@ -168,5 +168,16 @@
   "nav.options": "Optionen",
   "type.all": "Alle",
   "type.assets": "Anlagen",
-  "filter.toggle": "Filter umschalten"
+  "filter.toggle": "Filter umschalten",
+  "options.account_matching": "Kontenklassifizierung",
+  "options.general": "Allgemein",
+  "options.locale_auto": "Auto (System)",
+  "subtitle.preferences": "Einstellungen",
+  "subtitle.all_transactions": "Alle Buchungen",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "Stand — · {period}",
+  "subtitle.as_of_last": "Stand {last} · {period}",
+  "subtitle.all_transactions_range": "Alle Buchungen · {first} – {last}",
+  "options.ledger_path": "ledger-Programm-Pfad",
+  "options.ledger_path_hint": "Programm zum Lesen der Journal-Dateien"
 }

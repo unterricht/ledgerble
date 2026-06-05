@@ -158,6 +158,40 @@ function _injectLocale(code, strings) {
     runtimeLocales[code] = strings;
 }
 
+// ── Interval label formatting ─────────────────────────────────
+
+/**
+ * Format a compute-layer interval label string into a locale-aware display string.
+ *
+ * - Monthly "YYYY-MM"  → "January 2015" / "Januar 2015" using long month + year
+ * - Daily   "YYYY-MM-DD" → locale short date (e.g. "1/15/2015" / "15.1.2015")
+ * - All other formats (Yearly "YYYY", Weekly "YYYY-WXX", Quarterly "YYYY-QX") → unchanged
+ *
+ * @param {string} label   Interval string from compute(), e.g. "2015-01" or "2024-W03"
+ * @param {string} period  Period type: 'Monthly'|'Daily'|'Weekly'|'Quarterly'|'Yearly'
+ * @returns {string}
+ */
+function formatIntervalLabel(label, period) {
+    if (period === 'Monthly') {
+        const parts = label.split('-');
+        if (parts.length === 2) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // 0-indexed
+            const d = new Date(year, month, 1);
+            return d.toLocaleString(currentLocale, { month: 'long', year: 'numeric' });
+        }
+    }
+    if (period === 'Daily') {
+        const parts = label.split('-');
+        if (parts.length === 3) {
+            const [y, m, dy] = parts.map(Number);
+            const d = new Date(y, m - 1, dy);
+            return d.toLocaleDateString(currentLocale);
+        }
+    }
+    return label;
+}
+
 // ── Exports ───────────────────────────────────────────────────
 
 module.exports = {
@@ -167,5 +201,6 @@ module.exports = {
     getCurrentLocale,
     getAvailableLocales,
     translatePage,
+    formatIntervalLabel,
     _injectLocale,
 };

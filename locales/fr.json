@@ -168,5 +168,16 @@
   "nav.options": "Options",
   "type.all": "Tous",
   "type.assets": "Actifs",
-  "filter.toggle": "Afficher/masquer les filtres"
+  "filter.toggle": "Afficher/masquer les filtres",
+  "options.account_matching": "Correspondance des comptes",
+  "options.general": "Général",
+  "options.locale_auto": "Auto (système)",
+  "subtitle.preferences": "Préférences",
+  "subtitle.all_transactions": "Toutes les transactions",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "Au — · {period}",
+  "subtitle.as_of_last": "Au {last} · {period}",
+  "subtitle.all_transactions_range": "Toutes les transactions · {first} – {last}",
+  "options.ledger_path": "Chemin de ledger-cli",
+  "options.ledger_path_hint": "Exécutable pour lire les journaux"
 }

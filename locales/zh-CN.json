@@ -168,5 +168,16 @@
   "nav.options": "设置",
   "type.all": "全部",
   "type.assets": "资产",
-  "filter.toggle": "切换筛选"
+  "filter.toggle": "切换筛选",
+  "options.account_matching": "账户分类",
+  "options.general": "常规",
+  "options.locale_auto": "自动（系统）",
+  "subtitle.preferences": "偏好设置",
+  "subtitle.all_transactions": "所有交易",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "截至 — · {period}",
+  "subtitle.as_of_last": "截至 {last} · {period}",
+  "subtitle.all_transactions_range": "所有交易 · {first} – {last}",
+  "options.ledger_path": "ledger-cli 路径",
+  "options.ledger_path_hint": "用于读取日记账文件的可执行程序"
 }

@@ -25,10 +25,10 @@ beforeEach(() => {
   };
 });
 
-// ── Mock i18n (getAvailableLocales returns locale codes) ─────────────────────
+// ── Mock i18n (real translations, but limit getAvailableLocales for test stability) ──
 jest.mock('../i18n', () => ({
+  ...jest.requireActual('../i18n'),
   getAvailableLocales: () => ['de', 'en', 'es', 'fr'],
-  t: (key) => key, // minimal stub — returns key; tests don't assert on translated strings
 }));
 
 // ── Mock pickCats (RULE_LABEL) ───────────────────────────────────────────────
@@ -64,9 +64,9 @@ function makeSetSetting() {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-test('renders "Ledger command" group card', () => {
+test('renders "Ledger command" group card section title', () => {
   render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
-  expect(screen.getByText(/ledger command/i)).toBeInTheDocument();
+  expect(screen.getByText('Ledger command')).toBeInTheDocument();
 });
 
 test('renders hledger toggle in OFF state by default', () => {
@@ -167,4 +167,38 @@ test('Browse button does nothing when dialog is cancelled', async () => {
   await userEvent.click(screen.getByTestId('btn-browse-ledger'));
   expect(mockShowOpenDialog).toHaveBeenCalled();
   expect(setSetting).not.toHaveBeenCalledWith('options.ledger.command', expect.anything());
+});
+
+// ── i18n coverage: buttons must use locale keys, not hardcoded English ────────
+
+test('"Use default" button label comes from btn.use_default i18n key (en: "Use Default")', () => {
+  render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
+  // en.json: "btn.use_default": "Use Default" (capital D), not hardcoded "Use default"
+  const btn = screen.getByTestId('btn-default-expenses-regex');
+  expect(btn).toHaveTextContent('Use Default');
+});
+
+test('"Browse…" button label comes from btn.browse i18n key (en: "Browse...")', () => {
+  render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
+  // en.json: "btn.browse": "Browse..." (three periods), not hardcoded ellipsis "Browse…"
+  const btn = screen.getByTestId('btn-browse-ledger');
+  expect(btn).toHaveTextContent('Browse...');
+});
+
+test('"Account matching" section title comes from options.account_matching i18n key', () => {
+  render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
+  expect(screen.getByText('Account matching')).toBeInTheDocument();
+});
+
+test('"General" section title comes from options.general i18n key', () => {
+  render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
+  expect(screen.getByText('General')).toBeInTheDocument();
+});
+
+test('"Auto (system)" locale option comes from options.locale_auto i18n key', () => {
+  render(<OptionsView getSetting={makeSetting()} setSetting={makeSetSetting()} />);
+  const langSelect = screen.getByTestId('select-locale');
+  const autoOption = Array.from(langSelect.querySelectorAll('option')).find(o => o.value === 'auto');
+  expect(autoOption).toBeTruthy();
+  expect(autoOption.textContent).toBe('Auto (system)');
 });

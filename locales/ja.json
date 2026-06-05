@@ -168,5 +168,16 @@
   "nav.options": "設定",
   "type.all": "すべて",
   "type.assets": "資産",
-  "filter.toggle": "フィルターを切り替え"
+  "filter.toggle": "フィルターを切り替え",
+  "options.account_matching": "口座の分類",
+  "options.general": "一般",
+  "options.locale_auto": "自動（システム）",
+  "subtitle.preferences": "設定",
+  "subtitle.all_transactions": "すべての取引",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "— · {period} 時点",
+  "subtitle.as_of_last": "{last} · {period} 時点",
+  "subtitle.all_transactions_range": "すべての取引 · {first} – {last}",
+  "options.ledger_path": "ledger-cliパス",
+  "options.ledger_path_hint": "ジャーナルを読むための実行ファイル"
 }

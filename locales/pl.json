@@ -168,5 +168,16 @@
   "nav.options": "Opcje",
   "type.all": "Wszystkie",
   "type.assets": "Aktywa",
-  "filter.toggle": "Przełącz filtry"
+  "filter.toggle": "Przełącz filtry",
+  "options.account_matching": "Klasyfikacja kont",
+  "options.general": "Ogólne",
+  "options.locale_auto": "Automatycznie (system)",
+  "subtitle.preferences": "Preferencje",
+  "subtitle.all_transactions": "Wszystkie transakcje",
+  "subtitle.period_range": "{period} · {first} – {last}",
+  "subtitle.as_of_empty": "Stan — · {period}",
+  "subtitle.as_of_last": "Stan {last} · {period}",
+  "subtitle.all_transactions_range": "Wszystkie transakcje · {first} – {last}",
+  "options.ledger_path": "Ścieżka ledger-cli",
+  "options.ledger_path_hint": "Plik wykonywalny do czytania dzienników"
 }

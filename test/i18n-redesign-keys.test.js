@@ -11,6 +11,10 @@ const NEW_KEYS = [
   'file.open','file.reload','file.reveal','file.remove','file.print','file.print_pdf','file.open_ledger',
   'portfolio.cost_basis','portfolio.market_value','portfolio.unrealised_gain','assets.total_assets',
   'settings.category_table','settings.category_table.help',
+  // i18n Phase 2: OptionsView section titles + subtitle strings
+  'options.account_matching','options.general','options.locale_auto',
+  'subtitle.preferences','subtitle.all_transactions','subtitle.period_range',
+  'subtitle.as_of_empty','subtitle.as_of_last','subtitle.all_transactions_range',
 ];
 const dir = path.join(__dirname, '..', 'locales');
 for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {

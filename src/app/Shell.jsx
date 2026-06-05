@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../store/useAppState';
 import { T, money, kfmt } from '../ui/tokens';
-const { t, loadLocale, detectLocale } = require('../../i18n');
+const { t, loadLocale, detectLocale, formatIntervalLabel } = require('../../i18n');
 import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
@@ -77,15 +77,15 @@ const NAV = [
   ]},
 ];
 
-const TITLES = {
-  overview:  'Income & Expenses',
-  balance:   'Balance',
-  expenses:  'Expenses',
-  income:    'Income',
-  assets:    'Assets & Liabilities',
-  portfolio: 'Portfolio',
-  postings:  'Postings',
-  options:   'Options',
+const TITLE_KEYS = {
+  overview:  'nav.overview',
+  balance:   'tab.balance',
+  expenses:  'tab.expenses',
+  income:    'tab.income',
+  assets:    'nav.assets',
+  portfolio: 'tab.portfolio',
+  postings:  'tab.postings',
+  options:   'nav.options',
 };
 
 const FILTER_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'assets', 'portfolio']);
@@ -347,19 +347,20 @@ function Shell() {
   }, []);
 
   const subtitle = (() => {
-    if (view === 'options') return 'Preferences';
+    if (view === 'options') return t('subtitle.preferences');
+    const periodLabel = t('filter.' + period.toLowerCase());
     const ivs = model.intervals || [];
     if (ivs.length === 0) {
-      // No data loaded yet — neutral labels without fake years
-      if (view === 'postings') return 'All transactions';
-      if (view === 'balance') return `As of — · ${period}`;
-      return period;
+      if (view === 'postings') return t('subtitle.all_transactions');
+      if (view === 'balance') return t('subtitle.as_of_empty').replace('{period}', periodLabel);
+      return periodLabel;
     }
-    const first = ivs[0];
-    const last = ivs[ivs.length - 1];
-    if (view === 'postings') return `All transactions · ${first} – ${last}`;
-    if (view === 'balance') return `As of ${last} · ${period}`;
-    return `${period} · ${first} – ${last}`;
+    const fmt = (label) => formatIntervalLabel(label, period);
+    const first = fmt(ivs[0]);
+    const last = fmt(ivs[ivs.length - 1]);
+    if (view === 'postings') return t('subtitle.all_transactions_range').replace('{first}', first).replace('{last}', last);
+    if (view === 'balance') return t('subtitle.as_of_last').replace('{last}', last).replace('{period}', periodLabel);
+    return t('subtitle.period_range').replace('{period}', periodLabel).replace('{first}', first).replace('{last}', last);
   })();
 
   const fonts = FONT_STACK[plat];
@@ -433,7 +434,7 @@ function Shell() {
                 return (
                   <div id="printHeader" style={{ display: 'none', padding: '0 0 14px', marginBottom: 10, borderBottom: `1px solid ${T.line2}` }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>
-                      {TITLES[view]}{fileNames ? ` — ${fileNames}` : ''}
+                      {t(TITLE_KEYS[view])}{fileNames ? ` — ${fileNames}` : ''}
                     </div>
                     <div style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>
                       {subtitle} · {cur} · printed {printDate}
@@ -444,7 +445,7 @@ function Shell() {
               {/* pane header */}
               <div className="chrome-print-hide" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 22px', borderBottom: `1px solid ${T.line}`, flexShrink: 0, background: T.surface }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 17, fontWeight: 640, color: T.ink, fontFamily: T.sans, letterSpacing: '-0.02em', lineHeight: 1.15 }}>{TITLES[view]}</div>
+                  <div style={{ fontSize: 17, fontWeight: 640, color: T.ink, fontFamily: T.sans, letterSpacing: '-0.02em', lineHeight: 1.15 }}>{t(TITLE_KEYS[view])}</div>
                   <div style={{ fontSize: 12, color: T.ink3, fontFamily: T.sans, marginTop: 2 }}>{subtitle}</div>
                 </div>
                 <div style={{ flex: 1 }} />
@@ -452,7 +453,13 @@ function Shell() {
                   <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
                 ) : view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']} />}
+                    {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={[
+                      { value: 'Daily',     label: t('filter.daily') },
+                      { value: 'Weekly',    label: t('filter.weekly') },
+                      { value: 'Monthly',   label: t('filter.monthly') },
+                      { value: 'Quarterly', label: t('filter.quarterly') },
+                      { value: 'Yearly',    label: t('filter.yearly') },
+                    ]} />}
                     <MenuSelect value={model.currency || cur} onChange={setCur} options={(model.currencies && model.currencies.length > 0) ? model.currencies : ['USD', 'EUR', 'GBP']} width={76} />
                     {FILTER_TABS.has(view) && (
                       <button onClick={() => setInsp(v => !v)} title={t('filter.toggle')} style={{
