@@ -14,6 +14,7 @@ import { Icon } from '../ui/Icon';
 import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } from '../ui/controls';
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
+const { isDeselectedDeep, toggleAccountInDesel } = require('../data/accountTree');
 import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
@@ -124,17 +125,78 @@ function flattenAccountTree(tree, prefix, out) {
   }
 }
 
+// ── collapsible account tree node ────────────────────────────
+function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth }) {
+  const hasChildren = children && Object.keys(children).length > 0;
+  const [expanded, setExpanded] = useState(depth === 0);
+
+  // True if visible (neither self nor any ancestor is in desel)
+  const visible = !isDeselectedDeep(fullPath, desel);
+  // Indeterminate: visible itself but at least one child is hidden
+  const someChildHidden = hasChildren && Object.keys(children).some(
+    child => isDeselectedDeep(fullPath + ':' + child, desel)
+  );
+  const indeterminate = visible && someChildHidden;
+
+  const cbRef = React.useRef(null);
+  React.useEffect(() => {
+    if (cbRef.current) cbRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0', paddingLeft: depth * 14 }}>
+        {hasChildren ? (
+          <button onClick={() => setExpanded(e => !e)}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, color: T.ink3, display: 'flex', width: 14, flexShrink: 0 }}>
+            <svg width="10" height="10" viewBox="0 0 10 10" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }}>
+              <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <span style={{ width: 14, flexShrink: 0 }} />
+        )}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', flex: 1, minWidth: 0 }}>
+          <input ref={cbRef} type="checkbox" checked={visible} onChange={() => onToggle(fullPath)}
+            style={{ accentColor: T.pine, width: 13, height: 13, flexShrink: 0 }} />
+          <span style={{ fontSize: 11.5, fontFamily: T.sans, color: visible ? T.ink2 : T.ink4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {name}
+          </span>
+        </label>
+      </div>
+      {hasChildren && expanded && (
+        <div>
+          {Object.keys(children).sort().map(child => (
+            <AccountTreeNode
+              key={child}
+              name={child}
+              fullPath={fullPath + ':' + child}
+              children={children[child]}
+              desel={desel}
+              onToggle={onToggle}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── account filter tree (inspector) ──────────────────────────
 function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, intervals, sliderValues, onRangeChange }) {
   const flat = [];
   if (accountTree && typeof accountTree === 'object' && !Array.isArray(accountTree)) {
     flattenAccountTree(accountTree, '', flat);
-  } else if (Array.isArray(accountTree)) {
-    flat.push(...accountTree);
   }
   const total = flat.length;
-  const active = total - (desel ? desel.size : 0);
+  const active = flat.filter(p => !isDeselectedDeep(p, desel)).length;
   const ghost = { fontFamily: T.sans, fontSize: 11.5, fontWeight: 500, padding: '4px 10px', borderRadius: 6, border: `1px solid ${T.line2}`, background: T.surface, color: T.ink2, cursor: 'pointer' };
+
+  const rootKeys = accountTree && typeof accountTree === 'object'
+    ? Object.keys(accountTree).sort()
+    : [];
+
   return (
     <div style={{ width: 248, flexShrink: 0, borderLeft: `1px solid ${T.line}`, background: T.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: `1px solid ${T.line}` }}>
@@ -151,17 +213,17 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, inter
             <button style={ghost} onClick={onNone}>{t('filter.none')}</button>
           </div>
         </div>
-        {flat.map(acc => {
-          const name = typeof acc === 'string' ? acc : acc.account;
-          const checked = !desel || !desel.has(name);
-          return (
-            <label key={name} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 0', cursor: 'pointer' }}>
-              <input type="checkbox" checked={checked} onChange={() => onToggle(name)}
-                style={{ accentColor: T.pine, width: 13, height: 13, flexShrink: 0 }} />
-              <span style={{ fontSize: 11.5, fontFamily: T.sans, color: T.ink2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-            </label>
-          );
-        })}
+        {rootKeys.map(key => (
+          <AccountTreeNode
+            key={key}
+            name={key}
+            fullPath={key}
+            children={accountTree[key]}
+            desel={desel}
+            onToggle={onToggle}
+            depth={0}
+          />
+        ))}
       </div>
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.line}`, fontSize: 11.5, color: T.ink3, fontFamily: T.sans }}>
         {t('filter.showing_x_of_y').replace('{active}', active).replace('{total}', total)}
@@ -251,7 +313,7 @@ function Shell() {
 
   const s = useAppState();
   const { view, setView, currency: cur, setCurrency: setCur, period, setPeriod,
-          deselectedAccounts: desel, toggleAccount: toggle, setDeselected,
+          deselectedAccounts: desel, setDeselected,
           inspectorOpen: insp, setInspectorOpen: setInsp,
           query, setQuery, postingType: typeF, setPostingType: setTypeF } = s;
 
@@ -499,16 +561,13 @@ function Shell() {
                     ? <OptionsView getSetting={getSetting} setSetting={setSetting} />
                     : <div data-view={view} />}
                 </div>
-                {showInsp && (() => {
-                  const allPaths = [];
-                  flattenAccountTree(model.accountTree, '', allPaths);
-                  return (
+                {showInsp && (
                   <div className="chrome-print-hide" style={{ display: 'flex' }}>
                     <Inspector
                       desel={desel}
-                      onToggle={toggle}
+                      onToggle={(path) => setDeselected(prev => toggleAccountInDesel(path, prev, model.accountTree))}
                       onAll={() => setDeselected(new Set())}
-                      onNone={() => setDeselected(new Set(allPaths))}
+                      onNone={() => setDeselected(new Set(Object.keys(model.accountTree || {})))}
                       onClose={() => setInsp(false)}
                       accountTree={model.accountTree}
                       intervals={model.fullIntervals}
@@ -516,8 +575,7 @@ function Shell() {
                       onRangeChange={onRangeChange}
                     />
                   </div>
-                  );
-                })()}
+                )}
               </div>
             </div>
           </div>
