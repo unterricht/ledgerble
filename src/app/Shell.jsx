@@ -380,6 +380,26 @@ function Shell() {
 
   const showInsp = FILTER_TABS.has(view) && insp;
 
+  // Build portfolio view-model once so we can read portfolioFirstKey for the
+  // slider clamp AND pass the vm to PortfolioView without calling twice.
+  const portfolioVm = (view === 'portfolio' && s.files.size > 0)
+    ? buildPortfolio(model)
+    : null;
+
+  // Minimum slider index for the Portfolio tab: the first interval that has
+  // any non-zero portfolio value. Other tabs leave this at 0 (no clamping).
+  const portfolioMinIdx = (() => {
+    if (view !== 'portfolio' || !portfolioVm || !portfolioVm.portfolioFirstKey) return 0;
+    const idx = (model.fullIntervals || []).indexOf(portfolioVm.portfolioFirstKey);
+    return idx >= 0 ? idx : 0;
+  })();
+
+  // Slider values shown in the Inspector. On the Portfolio tab the left handle
+  // cannot go before the first holding date.
+  const inspectorSliderValues = portfolioMinIdx > 0
+    ? [Math.max((model.sliderValues || [0, 0])[0], portfolioMinIdx), (model.sliderValues || [0, 0])[1]]
+    : model.sliderValues;
+
   // Portfolio tab only exists when stock/non-cash holdings are present (legacy
   // portfolio.js behaviour). Hide it otherwise, and bounce off it if it vanishes.
   const navGroups = NAV.map(g => ({
@@ -555,7 +575,7 @@ function Shell() {
                     : view === 'assets' && s.files.size > 0
                     ? <AssetsView vm={buildAssets(model, deselAssets)} cur={model.currency || cur} />
                     : view === 'portfolio' && s.files.size > 0
-                    ? <PortfolioView vm={buildPortfolio(model)} cur={model.currency || cur} />
+                    ? <PortfolioView vm={portfolioVm} cur={model.currency || cur} />
                     : view === 'postings' && s.files.size > 0
                     ? <PostingsView rows={buildPostings(model)} query={s.query} typeFilter={s.postingType} cur={model.currency || cur} />
                     : view === 'options'
@@ -590,8 +610,11 @@ function Shell() {
                         onClose={() => setInsp(false)}
                         accountTree={isAssetsTab ? assetTree : model.accountTree}
                         intervals={model.fullIntervals}
-                        sliderValues={model.sliderValues}
-                        onRangeChange={onRangeChange}
+                        sliderValues={inspectorSliderValues}
+                        onRangeChange={(from, to) => {
+                          const clampedFrom = portfolioMinIdx > 0 ? Math.max(from, portfolioMinIdx) : from;
+                          onRangeChange(clampedFrom, to);
+                        }}
                       />
                     </div>
                   );
