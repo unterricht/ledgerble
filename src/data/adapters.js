@@ -664,7 +664,7 @@ function buildAssetAccountList(balances) {
  * (repo root) so numbers stay identical to the legacy view.
  */
 function buildPortfolio(model) {
-  const empty = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0, maxY: 0, grid: [0] };
+  const empty = { totals: [], holdings: [], totalCost: 0, totalMarket: 0, totalGain: 0, maxY: 0, grid: [0], portfolioFirstKey: null };
 
   if (!model || !model.valResult || !model.valResult.balances) return empty;
 
@@ -777,7 +777,13 @@ function buildPortfolio(model) {
     grid.push(Math.round((niceMax / gridCount) * g));
   }
 
-  return { totals, holdings, totalCost, totalMarket, totalGain, maxY: niceMax, grid };
+  // Trim leading zero-value intervals
+  let firstMeaningfulIdx = totals.findIndex(t => t.value > 0);
+  if (firstMeaningfulIdx < 0) firstMeaningfulIdx = 0;
+  const portfolioFirstKey = totals.length > 0 ? (totals[firstMeaningfulIdx]?.key ?? null) : null;
+  const trimmedTotals = totals.slice(firstMeaningfulIdx);
+
+  return { totals: trimmedTotals, holdings, totalCost, totalMarket, totalGain, maxY: niceMax, grid, portfolioFirstKey };
 }
 
 /**

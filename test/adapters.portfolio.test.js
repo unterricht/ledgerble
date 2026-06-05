@@ -225,3 +225,48 @@ test('sold-out position (quantity === 0) is excluded from holdings', () => {
   expect(assets).toContain('AAPL');
   expect(assets).toContain('VTSAX');
 });
+
+// ── portfolioFirstKey and totals trimming ────────────────────────────────────
+
+test('buildPortfolio returns portfolioFirstKey = null when model is empty', () => {
+  const { portfolioFirstKey } = buildPortfolio(null);
+  expect(portfolioFirstKey).toBeNull();
+});
+
+test('buildPortfolio trims totals to start at first non-zero value', () => {
+  const vs = new ValuationService();
+  vs.parsePrices([
+    { commodity: 'AAPL', date: '2018-03-01', price: '100', priceCommodity: 'USD' },
+  ]);
+  const balances = {
+    'Assets:Shares': {
+      AAPL: {
+        '2018-03-01': { quantity: 10, costBasis: 1000, marketValue: 1000, unrealizedGain: 0, costCurrency: 'USD' },
+      },
+    },
+  };
+  const model = {
+    currency: 'USD',
+    period: 'Monthly',
+    intervals:     ['2018-01', '2018-02', '2018-03'],
+    intervalDates: [
+      new Date('2018-01-01T00:00:00Z'),
+      new Date('2018-02-01T00:00:00Z'),
+      new Date('2018-03-01T00:00:00Z'),
+    ],
+    valResult: { balances, baseCurrency: 'USD' },
+    valuationService: vs,
+  };
+
+  const { totals, portfolioFirstKey } = buildPortfolio(model);
+
+  expect(totals).toHaveLength(1);
+  expect(totals[0].key).toBe('2018-03');
+  expect(portfolioFirstKey).toBe('2018-03');
+});
+
+test('buildPortfolio sets portfolioFirstKey = first interval when all values > 0 from start', () => {
+  const { totals, portfolioFirstKey } = buildPortfolio(makeModel());
+  expect(portfolioFirstKey).toBe(totals[0].key);
+  expect(totals).toHaveLength(2);
+});
