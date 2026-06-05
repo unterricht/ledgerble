@@ -3,7 +3,7 @@ const path = require('path');
 const NEW_KEYS = [
   'stat.income','stat.expenses','stat.net_saved','stat.savings_rate',
   'overview.largest_categories','overview.show_more','overview.collapse','overview.other',
-  'toggle.visual','toggle.text','breakdown.category','breakdown.share_of_total','breakdown.amount',
+  'breakdown.category','breakdown.share_of_total','breakdown.amount',
   'breakdown.not_itemised','breakdown.hint',
   'filter.date_range','filter.accounts','filter.all','filter.none','filter.showing_x_of_y','filter.filters',
   'nav.reports','nav.ledger','search.placeholder',
