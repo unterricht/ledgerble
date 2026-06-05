@@ -6,6 +6,15 @@ const rows = [
   { date: '2018-12-24', payee: 'Shop', account: 'Expenses:Food', amount: 50, type: 'expense' },
 ];
 
+const rowsWithCounterpostings = [
+  { date: '2018-12-25', payee: 'Rent Co', account: 'Expenses:Rent', amount: 700, type: 'expenses' },
+  { date: '2018-12-25', payee: 'Rent Co', account: 'Assets:Banking:Girokonto', amount: -700, type: 'assets' },
+  { date: '2018-12-26', payee: 'Acme', account: 'Income:Salary', amount: -1000, type: 'income' },
+  { date: '2018-12-26', payee: 'Acme', account: 'Assets:Banking:Girokonto', amount: 1000, type: 'assets' },
+  { date: '2019-01-10', payee: 'Card Co', account: 'Expenses:Food', amount: 50, type: 'expenses' },
+  { date: '2019-01-10', payee: 'Card Co', account: 'Liabilities:CreditCard', amount: -50, type: 'liabilities' },
+];
+
 test('search matches payee, account, or date (case-insensitive)', () => {
   expect(filterPostings(rows, 'rent', 'all').map(r => r.payee)).toEqual(['Rent Co']);
   expect(filterPostings(rows, 'salary', 'all')).toHaveLength(1);
@@ -54,6 +63,18 @@ test('empty query with all type returns all rows', () => {
 
 test('no match returns empty array', () => {
   expect(filterPostings(rows, 'zzznomatch', 'all')).toHaveLength(0);
+});
+
+test("'all' zeigt nur expenses/income — keine Gegenbuchungen (assets/liabilities)", () => {
+  const result = filterPostings(rowsWithCounterpostings, '', 'all');
+  expect(result.every(r => r.type === 'expenses' || r.type === 'income')).toBe(true);
+  expect(result).toHaveLength(3);
+});
+
+test("'assets' (Kontenbewegungen) zeigt assets und liabilities, aber keine expenses/income", () => {
+  const result = filterPostings(rowsWithCounterpostings, '', 'assets');
+  expect(result.every(r => r.type === 'assets' || r.type === 'liabilities')).toBe(true);
+  expect(result).toHaveLength(3);
 });
 
 test('sortPostings does not mutate input', () => {

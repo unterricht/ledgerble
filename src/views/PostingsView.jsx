@@ -83,6 +83,14 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: T.surface }}>
+      {typeFilter === 'assets' && (
+        <div style={{
+          padding: '10px 18px', background: T.steelSoft, borderBottom: `1px solid ${T.line}`,
+          fontSize: 12, color: T.ink2, fontFamily: T.sans, lineHeight: 1.5,
+        }}>
+          {t('postings.counterpart_note')}
+        </div>
+      )}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr>

@@ -51,10 +51,10 @@ test('typeFilter="income" shows only income rows', () => {
   expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
 
-// typeFilter='all' shows all rows.
-test('typeFilter="all" shows all rows regardless of plural type strings', () => {
+// typeFilter='all' shows only expenses/income — assets/liabilities are counter-postings hidden from default view.
+test('typeFilter="all" shows expenses and income but hides asset counter-postings', () => {
   render(<PostingsView rows={prodRows} query="" typeFilter="all" cur="USD" />);
   expect(screen.getByText('Supermarket')).toBeInTheDocument();
   expect(screen.getByText('Employer')).toBeInTheDocument();
-  expect(screen.getByText('Bank')).toBeInTheDocument();
+  expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
