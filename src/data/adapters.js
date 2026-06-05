@@ -546,14 +546,21 @@ function buildAssets(model, deselectedAssetAccounts) {
     return { data: [], series: [], maxY: 0, grid: [0] };
   }
 
-  // ── 2. Build series array (one per second-level account, cycling T.chart) ─
+  // ── 2. Build series array (one per second-level account) ─────────────────
+  // Assets use the green palette, liabilities the red palette.
   const topKeys = Array.from(topMap.keys()).sort();
-  const series = topKeys.map((key, idx) => ({
-    key,
-    color: T.chart[idx % T.chart.length],
-    label: key.split(':').pop(),
-    type: topMap.get(key).type,
-  }));
+  const assetIdx = { n: 0 };
+  const liabIdx  = { n: 0 };
+  const series = topKeys.map((key) => {
+    const { type } = topMap.get(key);
+    let color;
+    if (type === 'liabilities') {
+      color = T.chartLiabs[liabIdx.n++ % T.chartLiabs.length];
+    } else {
+      color = T.chartAssets[assetIdx.n++ % T.chartAssets.length];
+    }
+    return { key, color, label: key.split(':').pop(), type };
+  });
 
   // ── 3. Build data array ────────────────────────────────────────────────────
   const labels = buildLabels(intervals, model.period);

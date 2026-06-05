@@ -45,6 +45,10 @@ const T = {
 const T_CHART = ['#3E7E6C', '#5B82A6', '#8A8FA0', '#B5806C', '#7E9B72', '#9080A8', '#C2A86A', '#6E94A0'];
 T.chart = T_CHART;
 
+// semantic palettes for Assets & Liabilities chart
+T.chartAssets = ['#2E7D62', '#3E9E7E', '#57B897', '#74CEAE', '#9ADCC5'];
+T.chartLiabs  = ['#AE5645', '#C4705E', '#D98B7A', '#8B3D2E', '#E5A898'];
+
 // ─────────────────────────────────────────────────────────────
 // NUMBER FORMATTING
 // ─────────────────────────────────────────────────────────────

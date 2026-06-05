@@ -89,6 +89,18 @@ test('series entries have key, color, and label', () => {
   }
 });
 
+test('asset series use green palette colors, liability series use red palette colors', () => {
+  const { T } = require('../src/ui/tokens');
+  const vm = buildAssets(makeModel());
+  for (const s of vm.series) {
+    if (s.type === 'assets') {
+      expect(T.chartAssets).toContain(s.color);
+    } else {
+      expect(T.chartLiabs).toContain(s.color);
+    }
+  }
+});
+
 test('maxY is a positive number', () => {
   const model = makeModel();
   const vm = buildAssets(model);
