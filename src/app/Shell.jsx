@@ -400,6 +400,17 @@ function Shell() {
     ? [Math.max((model.sliderValues || [0, 0])[0], portfolioMinIdx), (model.sliderValues || [0, 0])[1]]
     : model.sliderValues;
 
+  // Write-through: when the Portfolio tab becomes active and portfolioMinIdx > 0,
+  // push the clamped from-index into global dateRange so all other tabs see the
+  // same range instead of the raw (unclamped) sliderValues.
+  useEffect(() => {
+    if (view !== 'portfolio' || portfolioMinIdx <= 0) return;
+    const currentFrom = (model.sliderValues || [0, 0])[0];
+    if (currentFrom < portfolioMinIdx) {
+      onRangeChange(portfolioMinIdx, (model.sliderValues || [0, 0])[1]);
+    }
+  }, [view, portfolioMinIdx]);
+
   // Portfolio tab only exists when stock/non-cash holdings are present (legacy
   // portfolio.js behaviour). Hide it otherwise, and bounce off it if it vanishes.
   const navGroups = NAV.map(g => ({

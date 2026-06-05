@@ -159,3 +159,45 @@ test('Portfolio Inspector slider left handle is clamped to portfolioFirstKey ind
   const clampedValue = Number(rangeFrom.value);
   expect(clampedValue).toBeGreaterThan(0);
 });
+
+test('switching to Portfolio tab writes the clamped from-index into global sliderValues', async () => {
+  // When the Portfolio tab becomes active and portfolioMinIdx > 0, the global dateRange
+  // (and therefore model.sliderValues[0]) must be updated to portfolioMinIdx via onRangeChange.
+  // We verify this by switching away from Portfolio to another tab and confirming the
+  // Inspector's range-from slider still reflects the clamped value — proving dateRange
+  // was persisted to global state, not just displayed via inspectorSliderValues.
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  render(<Shell />);
+
+  const result = {
+    postings: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 2, currency: 'VWRD.L', commodity: 'VWRD.L', price: 100, priceCurrency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    postingsCost: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 200, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    prices: [
+      { commodity: 'VWRD.L', date: '2024-03-01', price: '100', priceCommodity: 'EUR' },
+    ],
+  };
+
+  await act(async () => { parsedCb('stocks.ledger', result, null); });
+
+  const nav = screen.getByRole('navigation');
+
+  // Navigate to Portfolio — the useEffect must fire and write portfolioMinIdx into dateRange.
+  await userEvent.click(within(nav).getByText('Portfolio'));
+
+  // Now switch to Assets tab (also shows the Inspector with the global sliderValues).
+  await userEvent.click(within(nav).getByText('Assets & Liabilities'));
+
+  // The range-from slider on the Assets tab must reflect the clamped value that was
+  // written through to global state when Portfolio was active.
+  const rangeFrom = screen.getByTestId('range-from');
+  expect(Number(rangeFrom.value)).toBeGreaterThan(0);
+});
