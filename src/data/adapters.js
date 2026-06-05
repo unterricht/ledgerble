@@ -97,6 +97,10 @@ function axisTicksFor(intervals, intervalDates, period) {
   const n = intervalDates.length;
   if (n === 0) return [];
 
+  // Single-interval window: yStart(0) is always true so the normal path emits just
+  // "2026" — useless without finer context. formatIntervalLabel always includes year.
+  if (n === 1) return [formatIntervalLabel(intervals[0], period, null)];
+
   // Per-interval calendar attributes. Quarterly trusts its 'YYYY-Qn' key because
   // the legacy quarter buckets are uneven (the date can fall in another quarter).
   const attr = new Array(n);

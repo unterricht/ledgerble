@@ -37,3 +37,40 @@ test('renders without crashing for an empty interval list', () => {
   // both range inputs still present (disabled)
   expect(screen.getByTestId('range-from')).toBeDisabled();
 });
+
+test('typing a valid interval in the from-box and pressing Enter updates the range', () => {
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
+  const fromInput = screen.getByDisplayValue('2018-01');
+  fireEvent.change(fromInput, { target: { value: '2018-02' } });
+  fireEvent.keyDown(fromInput, { key: 'Enter' });
+  expect(onChange).toHaveBeenCalledWith(1, 3);
+});
+
+test('typing a valid interval in the to-box and pressing Enter updates the range', () => {
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
+  const toInput = screen.getByDisplayValue('2018-04');
+  fireEvent.change(toInput, { target: { value: '2018-03' } });
+  fireEvent.keyDown(toInput, { key: 'Enter' });
+  expect(onChange).toHaveBeenCalledWith(0, 2);
+});
+
+test('typing an unknown value and pressing Enter does not call onChange', () => {
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
+  const fromInput = screen.getByDisplayValue('2018-01');
+  fireEvent.change(fromInput, { target: { value: '9999-99' } });
+  fireEvent.keyDown(fromInput, { key: 'Enter' });
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+test('pressing Escape in the from-box reverts the draft without calling onChange', () => {
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
+  const fromInput = screen.getByDisplayValue('2018-01');
+  fireEvent.change(fromInput, { target: { value: '2018-02' } });
+  fireEvent.keyDown(fromInput, { key: 'Escape' });
+  expect(onChange).not.toHaveBeenCalled();
+  expect(screen.getByDisplayValue('2018-01')).toBeInTheDocument();
+});

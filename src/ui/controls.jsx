@@ -95,6 +95,20 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
   const toLabel = intervals[to] || '';
   const pct = (i) => (maxIdx === 0 ? 0 : (i / maxIdx) * 100);
 
+  const [draftFrom, setDraftFrom] = React.useState(null);
+  const [draftTo, setDraftTo] = React.useState(null);
+
+  const commitFrom = (draft) => {
+    const idx = intervals.indexOf(draft);
+    if (idx >= 0) onChange(Math.min(idx, to), to);
+    setDraftFrom(null);
+  };
+  const commitTo = (draft) => {
+    const idx = intervals.indexOf(draft);
+    if (idx >= 0) onChange(from, Math.max(idx, from));
+    setDraftTo(null);
+  };
+
   const boundInput = {
     width: 78, fontFamily: T.mono, fontSize: 12, padding: '5px 8px',
     border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface,
@@ -108,9 +122,29 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 11 }}>
-        <input readOnly value={fromLabel} aria-label="from" style={boundInput} />
+        <input
+          value={draftFrom !== null ? draftFrom : fromLabel}
+          aria-label="from"
+          style={boundInput}
+          onChange={e => setDraftFrom(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitFrom(draftFrom !== null ? draftFrom : fromLabel);
+            if (e.key === 'Escape') setDraftFrom(null);
+          }}
+          onBlur={() => setDraftFrom(null)}
+        />
         <span style={{ color: T.ink4, fontSize: 12 }}>—</span>
-        <input readOnly value={toLabel} aria-label="to" style={boundInput} />
+        <input
+          value={draftTo !== null ? draftTo : toLabel}
+          aria-label="to"
+          style={boundInput}
+          onChange={e => setDraftTo(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitTo(draftTo !== null ? draftTo : toLabel);
+            if (e.key === 'Escape') setDraftTo(null);
+          }}
+          onBlur={() => setDraftTo(null)}
+        />
       </div>
       <div className="rd-daterange" style={{ position: 'relative', height: 18, margin: '0 4px 18px' }}>
         <div style={{ position: 'absolute', top: 7, left: 0, right: 0, height: 4, borderRadius: 2, background: T.sink }} />

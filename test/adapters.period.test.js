@@ -158,6 +158,26 @@ test('buildAssets carries unique keys and sparse year/quarter ticks', () => {
   expect(vm.data.map(d => d.key)).toEqual(intervals);
 });
 
+test('axis ticks: single interval shows period-appropriate label with year, not just the year number', () => {
+  // Weekly: 2026-W5 (Jan 26, 2026 is in ISO week 4 or 5)
+  const dW = new Date(Date.UTC(2026, 0, 26)); // ISO week 4
+  const vmW = buildOverview({
+    currency: 'USD', period: 'Weekly', intervalKeyFn: KEYFN.Weekly,
+    intervals: [require('moment').utc(dW).format('YYYY-WW')], intervalDates: [dW], postings: [],
+  });
+  const tickW = vmW.monthly[0].tick;
+  expect(tickW).toMatch(/^W\d+/);     // starts with a week marker, not a bare year
+  expect(tickW).toContain("'26");     // year context is present
+
+  // Monthly: single Jun 2026
+  const dM = new Date(Date.UTC(2026, 5, 1));
+  const vmM = buildOverview({
+    currency: 'USD', period: 'Monthly', intervalKeyFn: KEYFN.Monthly,
+    intervals: ['2026-06'], intervalDates: [dM], postings: [],
+  });
+  expect(vmM.monthly[0].tick).toBe("Jun '26");
+});
+
 test('buildAssets: Weekly labels are valid (no "Invalid date")', () => {
   const balances = new Map([
     [{ account: 'Assets:Bank', type: 'assets' }, [100, 200]],
