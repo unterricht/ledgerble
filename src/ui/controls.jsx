@@ -98,19 +98,31 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
   const [draftFrom, setDraftFrom] = React.useState(null);
   const [draftTo, setDraftTo] = React.useState(null);
 
+  const resolveInterval = (raw) => {
+    if (intervals.includes(raw)) return intervals.indexOf(raw);
+    // Normalize unpadded segments: "2024-1" → "2024-01", "2022-1-5" → "2022-01-05"
+    const normalized = raw.split('-').map((seg, i) => {
+      if (i === 0) return seg; // year — never pad
+      if (/^[QW]\d+$/.test(seg)) return seg[0] + seg.slice(1).padStart(2, '0');
+      if (/^\d+$/.test(seg)) return seg.padStart(2, '0');
+      return seg;
+    }).join('-');
+    return intervals.indexOf(normalized);
+  };
+
   const commitFrom = (draft) => {
-    const idx = intervals.indexOf(draft);
+    const idx = resolveInterval(draft);
     if (idx >= 0) onChange(Math.min(idx, to), to);
     setDraftFrom(null);
   };
   const commitTo = (draft) => {
-    const idx = intervals.indexOf(draft);
+    const idx = resolveInterval(draft);
     if (idx >= 0) onChange(from, Math.max(idx, from));
     setDraftTo(null);
   };
 
   const boundInput = {
-    width: 78, fontFamily: T.mono, fontSize: 12, padding: '5px 8px',
+    width: 108, fontFamily: T.mono, fontSize: 12, padding: '5px 8px',
     border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface,
     color: T.ink, outline: 'none', textAlign: 'center',
   };

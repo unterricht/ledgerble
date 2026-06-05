@@ -65,6 +65,35 @@ test('typing an unknown value and pressing Enter does not call onChange', () => 
   expect(onChange).not.toHaveBeenCalled();
 });
 
+test('monthly: typing unpadded month "2018-2" normalizes to "2018-02" and updates range', () => {
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
+  const fromInput = screen.getByDisplayValue('2018-01');
+  fireEvent.change(fromInput, { target: { value: '2018-2' } });
+  fireEvent.keyDown(fromInput, { key: 'Enter' });
+  expect(onChange).toHaveBeenCalledWith(1, 3);
+});
+
+test('daily: typing "2022-1-5" normalizes to "2022-01-05" and updates range', () => {
+  const daily = ['2022-01-01', '2022-01-05', '2022-01-10'];
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={daily} value={[0, 2]} onChange={onChange} />);
+  const toInput = screen.getByDisplayValue('2022-01-10');
+  fireEvent.change(toInput, { target: { value: '2022-1-5' } });
+  fireEvent.keyDown(toInput, { key: 'Enter' });
+  expect(onChange).toHaveBeenCalledWith(0, 1);
+});
+
+test('weekly: typing "2026-4" normalizes to "2026-04" and updates range', () => {
+  const weekly = ['2026-01', '2026-04', '2026-08'];
+  const onChange = jest.fn();
+  render(<DateRangeSlider intervals={weekly} value={[0, 2]} onChange={onChange} />);
+  const fromInput = screen.getByDisplayValue('2026-01');
+  fireEvent.change(fromInput, { target: { value: '2026-4' } });
+  fireEvent.keyDown(fromInput, { key: 'Enter' });
+  expect(onChange).toHaveBeenCalledWith(1, 2);
+});
+
 test('pressing Escape in the from-box reverts the draft without calling onChange', () => {
   const onChange = jest.fn();
   render(<DateRangeSlider intervals={intervals} value={[0, 3]} onChange={onChange} />);
