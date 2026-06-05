@@ -20,15 +20,15 @@ beforeEach(() => {
                  windowControls: { minimize(){}, maximize(){}, close(){} }, platform: 'darwin' };
 });
 
-test('renders the source-list nav with all non-portfolio report items', () => {
-  render(<Shell />);
+test('renders the source-list nav with all non-portfolio report items', async () => {
+  await act(async () => { render(<Shell />); });
   const nav = screen.getByRole('navigation');
   ['Income & Expenses','Balance','Expenses','Income','Assets & Liabilities','Postings','Options']
     .forEach(l => expect(within(nav).getByText(l)).toBeInTheDocument());
 });
 
-test('Portfolio tab is hidden when no stock holdings are present', () => {
-  render(<Shell />);
+test('Portfolio tab is hidden when no stock holdings are present', async () => {
+  await act(async () => { render(<Shell />); });
   const nav = screen.getByRole('navigation');
   expect(within(nav).queryByText('Portfolio')).not.toBeInTheDocument();
 });
@@ -55,24 +55,24 @@ test('Portfolio tab appears once a journal with stock holdings is loaded', async
 });
 
 test('clicking a nav item switches the active view', async () => {
-  render(<Shell />);
+  await act(async () => { render(<Shell />); });
   await userEvent.click(within(screen.getByRole('navigation')).getByText('Balance'));
   expect(document.querySelector('[data-view="balance"]')).toBeInTheDocument();
 });
 
-test('macOS does not render custom window controls', () => {
-  render(<Shell />);
+test('macOS does not render custom window controls', async () => {
+  await act(async () => { render(<Shell />); });
   expect(screen.queryByTestId('win-controls')).not.toBeInTheDocument();
 });
 
-test('Windows renders custom window controls', () => {
+test('Windows renders custom window controls', async () => {
   window.api.platform = 'win32';
-  render(<Shell />);
+  await act(async () => { render(<Shell />); });
   expect(screen.getByTestId('win-controls')).toBeInTheDocument();
 });
 
 test('typing in search switches to postings view', async () => {
-  render(<Shell />);
+  await act(async () => { render(<Shell />); });
   await userEvent.type(screen.getByPlaceholderText(/search/i), 'rent');
   expect(document.querySelector('[data-view="postings"]')).toBeInTheDocument();
 });
@@ -112,7 +112,7 @@ test('Shell resolves auto locale from navigator.language on mount', async () => 
 });
 
 test('Shell calls loadLocale when locale is changed via OptionsView', async () => {
-  render(<Shell />);
+  await act(async () => { render(<Shell />); });
   // Navigate to options
   await userEvent.click(within(screen.getByRole('navigation')).getByText('Options'));
   // Change locale dropdown to 'de'

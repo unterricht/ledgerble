@@ -13,7 +13,7 @@ import { T, money, kfmt } from '../ui/tokens';
  *   maxY    number                     max y-axis value (for scale)
  *   grid    number[]                   y-axis gridline values
  */
-function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [] }) {
+function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, minY = 0, grid = [] }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, grid = [
       },
       yAxis: {
         type: 'value',
-        min: 0,
+        min: minY || 0,
         max: maxY || undefined,
         axisLine:  { show: false },
         axisTick:  { show: false },

@@ -16,15 +16,16 @@ beforeEach(() => {
   window.print = jest.fn();
 });
 
-test('Cmd+P triggers window.print', () => {
-  render(<Shell />);
+test('Cmd+P triggers window.print', async () => {
+  await act(async () => { render(<Shell />); });
   const e = new KeyboardEvent('keydown', { key: 'p', metaKey: true });
   window.dispatchEvent(e);
   expect(window.print).toHaveBeenCalled();
 });
 
 test('#printHeader shows real file basename and no hardcoded cody.journal', async () => {
-  const { container } = render(<Shell />);
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
 
   // Emit a parsed file with a known path into the store
   await act(async () => {

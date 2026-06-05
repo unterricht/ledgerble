@@ -96,6 +96,26 @@ test('maxY is a positive number', () => {
   expect(vm.maxY).toBeGreaterThan(0);
 });
 
+test('minY is a non-positive number when liabilities exist', () => {
+  const vm = buildAssets(makeModel());
+  expect(typeof vm.minY).toBe('number');
+  expect(vm.minY).toBeLessThanOrEqual(0);
+  // must be <= the actual minimum value in the data (-5000)
+  const actualMin = Math.min(...vm.data.map(d => d['Liabilities:Loan']));
+  expect(vm.minY).toBeLessThanOrEqual(actualMin);
+});
+
+test('minY is 0 when no negative values exist', () => {
+  const k = (account, type) => ({ account, type });
+  const onlyAssets = {
+    intervals: ['2018-01', '2018-02'],
+    balances: new Map([[k('Assets:Cash', 'assets'), [1000, 2000]]]),
+    currency: 'USD',
+  };
+  const vm = buildAssets(onlyAssets);
+  expect(vm.minY).toBe(0);
+});
+
 test('grid is an array of numbers', () => {
   const model = makeModel();
   const vm = buildAssets(model);

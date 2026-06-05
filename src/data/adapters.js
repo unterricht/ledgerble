@@ -566,11 +566,14 @@ function buildAssets(model, deselectedAssetAccounts) {
     return entry;
   });
 
-  // ── 4. Compute maxY (max absolute value for chart scale) ──────────────────
+  // ── 4. Compute maxY/minY (for chart scale) ────────────────────────────────
   let absMax = 0;
+  let minVal = 0;
   for (const entry of data) {
     for (const key of topKeys) {
-      absMax = Math.max(absMax, Math.abs(entry[key]));
+      const v = entry[key];
+      absMax = Math.max(absMax, Math.abs(v));
+      if (v < 0) minVal = Math.min(minVal, v);
     }
   }
   const maxY = absMax || 1;
@@ -585,7 +588,16 @@ function buildAssets(model, deselectedAssetAccounts) {
     grid.push(Math.round((niceMax / gridCount) * g));
   }
 
-  return { data, series, maxY: niceMax, grid };
+  // minY: nice lower bound for negative values (liabilities)
+  let niceMin = 0;
+  if (minVal < 0) {
+    const absMin = Math.abs(minVal);
+    const stepMin = Math.pow(10, Math.floor(Math.log10(absMin)));
+    const niceStepMin = stepMin * (absMin / stepMin <= 2 ? 0.5 : absMin / stepMin <= 5 ? 1 : 2);
+    niceMin = -Math.ceil(absMin / niceStepMin) * niceStepMin;
+  }
+
+  return { data, series, maxY: niceMax, minY: niceMin, grid };
 }
 
 /**

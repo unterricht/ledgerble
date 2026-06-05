@@ -10,7 +10,7 @@ import { AreaLineChart } from '../charts/AreaLineChart';
 const { t } = require('../../i18n');
 
 function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = 'USD' }) {
-  const { data, series, maxY, grid } = vm;
+  const { data, series, maxY, minY = 0, grid } = vm;
 
   // Compute the last data point for the summary strip totals
   const last = data.length > 0 ? data[data.length - 1] : null;
@@ -56,7 +56,7 @@ function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = '
 
       {/* Chart + legend */}
       <div style={{ flex: 1, padding: '20px 22px', overflow: 'auto' }}>
-        <AreaLineChart data={data} series={series} cur={cur} maxY={maxY} grid={grid} />
+        <AreaLineChart data={data} series={series} cur={cur} maxY={maxY} minY={minY} grid={grid} />
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 22, justifyContent: 'center', marginTop: 6 }}>
