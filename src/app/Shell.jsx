@@ -547,10 +547,11 @@ function Shell() {
                   <div style={{ fontSize: 12, color: T.ink3, fontFamily: T.sans, marginTop: 2 }}>{subtitle}</div>
                 </div>
                 <div style={{ flex: 1 }} />
-                {view === 'postings' ? (
-                  <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
-                ) : view === 'options' ? null : (
+                {view === 'options' ? null : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    {view === 'postings' && (
+                      <Segmented options={[{ value: 'all', label: t('type.all') }, { value: 'income', label: t('stat.income') }, { value: 'expenses', label: t('stat.expenses') }, { value: 'assets', label: t('type.assets') }]} value={typeF} onChange={setTypeF} size="sm" />
+                    )}
                     {PERIOD_TABS.has(view) && <MenuSelect value={period} onChange={setPeriod} options={[
                       { value: 'Daily',     label: t('filter.daily') },
                       { value: 'Weekly',    label: t('filter.weekly') },

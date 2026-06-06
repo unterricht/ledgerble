@@ -51,6 +51,22 @@ test('typeFilter="income" shows only income rows', () => {
   expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
 
+test('shows note text below payee when note is non-empty', () => {
+  const rowsWithNote = [
+    { date: '2024-01-01', payee: 'Amazon', account: 'Expenses:Food', amount: 58.19, type: 'expenses', note: 'Bleistifte für Erste Klasse' },
+  ];
+  render(<PostingsView rows={rowsWithNote} query="" typeFilter="all" cur="EUR" />);
+  expect(screen.getByText('Bleistifte für Erste Klasse')).toBeInTheDocument();
+});
+
+test('does not render note when note is empty string', () => {
+  const rowsNoNote = [
+    { date: '2024-01-01', payee: 'Amazon', account: 'Expenses:Food', amount: 10, type: 'expenses', note: '' },
+  ];
+  render(<PostingsView rows={rowsNoNote} query="" typeFilter="all" cur="EUR" />);
+  expect(screen.queryByTestId('posting-note')).not.toBeInTheDocument();
+});
+
 // typeFilter='all' shows only expenses/income — assets/liabilities are counter-postings hidden from default view.
 test('typeFilter="all" shows expenses and income but hides asset counter-postings', () => {
   render(<PostingsView rows={prodRows} query="" typeFilter="all" cur="USD" />);

@@ -11,13 +11,14 @@ const settings = require('settings-store')
 const { KNOWN_KEYS } = require('./knownKeys')
 
 class Posting {
-  constructor(date, accounts, amount, currency, merchant, type) {
+  constructor(date, accounts, amount, currency, merchant, type, note) {
     this.date = date;
     this.accounts = accounts; //array[String]
     this.amount = amount;     //Number
     this.currency = currency; //String
     this.merchant = merchant
     this.type = type
+    this.note = note || ''
   }
 }
 
@@ -195,7 +196,9 @@ async function parseLedgerAsync(command, file) {
           r[3].split(":"),
           parseFloat(r[5]),
           r[4] === '' ? "??" : r[4].replace(/^"|"$/g, ''),
-          r[2]
+          r[2],
+          undefined,
+          typeof r[7] === 'string' ? r[7].trim() : ''
         )
       )
     }

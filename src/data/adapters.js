@@ -826,6 +826,7 @@ function buildPostings(model) {
       account,
       amount: p.amount,
       type: p.type,
+      note: typeof p.note === 'string' ? p.note.trim() : '',
     };
   });
 }

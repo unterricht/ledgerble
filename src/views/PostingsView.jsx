@@ -118,6 +118,11 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
                 </td>
                 <td style={{ ...tdStyle('left'), color: T.ink, fontFamily: T.sans, fontSize: 13 }}>
                   {p.payee}
+                  {p.note && (
+                    <div data-testid="posting-note" style={{ fontSize: 11, color: T.ink3, marginTop: 2, fontStyle: 'italic' }}>
+                      {p.note}
+                    </div>
+                  )}
                 </td>
                 <td style={tdStyle('left')}>
                   <Num color={T.ink2} size={11.5}>{p.account}</Num>
