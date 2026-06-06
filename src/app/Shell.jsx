@@ -382,9 +382,10 @@ function Shell() {
 
   // Build portfolio view-model once so we can read portfolioFirstKey for the
   // slider clamp AND pass the vm to PortfolioView without calling twice.
-  const portfolioVm = (view === 'portfolio' && s.files.size > 0)
-    ? buildPortfolio(model)
-    : null;
+  const portfolioVm = useMemo(
+    () => (view === 'portfolio' && s.files.size > 0) ? buildPortfolio(model) : null,
+    [view, s.files.size, model]
+  );
 
   // Minimum slider index for the Portfolio tab: the first interval that has
   // any non-zero portfolio value. Other tabs leave this at 0 (no clamping).
@@ -397,7 +398,10 @@ function Shell() {
   // Slider values shown in the Inspector. On the Portfolio tab the left handle
   // cannot go before the first holding date.
   const inspectorSliderValues = portfolioMinIdx > 0
-    ? [Math.max((model.sliderValues || [0, 0])[0], portfolioMinIdx), (model.sliderValues || [0, 0])[1]]
+    ? [
+        Math.max((model.sliderValues || [0, 0])[0], portfolioMinIdx),
+        Math.max((model.sliderValues || [0, 0])[1], portfolioMinIdx),
+      ]
     : model.sliderValues;
 
   // Write-through: when the Portfolio tab becomes active and portfolioMinIdx > 0,

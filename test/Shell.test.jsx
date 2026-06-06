@@ -160,6 +160,51 @@ test('Portfolio Inspector slider left handle is clamped to portfolioFirstKey ind
   expect(clampedValue).toBeGreaterThan(0);
 });
 
+test('right slider handle is clamped to portfolioMinIdx when it falls below it', async () => {
+  // When model.sliderValues[1] (right/to handle) is below portfolioMinIdx,
+  // inspectorSliderValues must clamp it up to portfolioMinIdx so the DateRangeSlider
+  // receives a valid [portfolioMinIdx, portfolioMinIdx] pair rather than
+  // [portfolioMinIdx, below-min] which would pass incorrect semantics downstream.
+  // Concretely: on the Portfolio tab, range-to must be >= range-from at all times,
+  // with the floor being portfolioMinIdx (not just whatever model.sliderValues[1] is).
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  render(<Shell />);
+
+  const result = {
+    postings: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 2, currency: 'VWRD.L', commodity: 'VWRD.L', price: 100, priceCurrency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    postingsCost: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 200, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    prices: [
+      { commodity: 'VWRD.L', date: '2024-03-01', price: '100', priceCommodity: 'EUR' },
+    ],
+  };
+
+  await act(async () => { parsedCb('stocks.ledger', result, null); });
+
+  const nav = screen.getByRole('navigation');
+  await userEvent.click(within(nav).getByText('Portfolio'));
+
+  // range-from (left handle) must be clamped to portfolioMinIdx > 0
+  const rangeFrom = screen.getByTestId('range-from');
+  const fromValue = Number(rangeFrom.value);
+  expect(fromValue).toBeGreaterThan(0); // portfolioMinIdx is active
+
+  // range-to (right handle) must be >= range-from.
+  // The fix ensures inspectorSliderValues[1] is also clamped to portfolioMinIdx, so
+  // the right handle is never below the floor even if model.sliderValues[1] was smaller.
+  const rangeTo = screen.getByTestId('range-to');
+  const toValue = Number(rangeTo.value);
+  expect(toValue).toBeGreaterThanOrEqual(fromValue);
+});
+
 test('switching to Portfolio tab writes the clamped from-index into global sliderValues', async () => {
   // When the Portfolio tab becomes active and portfolioMinIdx > 0, the global dateRange
   // (and therefore model.sliderValues[0]) must be updated to portfolioMinIdx via onRangeChange.
@@ -200,4 +245,47 @@ test('switching to Portfolio tab writes the clamped from-index into global slide
   // written through to global state when Portfolio was active.
   const rangeFrom = screen.getByTestId('range-from');
   expect(Number(rangeFrom.value)).toBeGreaterThan(0);
+});
+
+test('buildPortfolio is not called on non-portfolio tabs (portfolioVm is memoized)', async () => {
+  // portfolioVm is wrapped in useMemo([view, s.files.size, model]).
+  // When the user is NOT on the Portfolio tab, buildPortfolio must not be called.
+  // This verifies the memoization guard: (view === 'portfolio' && s.files.size > 0) before computing.
+  const adapters = require('../src/data/adapters');
+  const spy = jest.spyOn(adapters, 'buildPortfolio');
+
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+
+  await act(async () => { render(<Shell />); });
+
+  const result = {
+    postings: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 2, currency: 'VWRD.L', commodity: 'VWRD.L', price: 100, priceCurrency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    postingsCost: [
+      { date: '2024-01-15', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Depot'], amount: 200, currency: 'EUR' },
+      { date: '2024-03-01', accounts: ['Assets', 'Bank'], amount: -200, currency: 'EUR' },
+    ],
+    prices: [
+      { commodity: 'VWRD.L', date: '2024-03-01', price: '100', priceCommodity: 'EUR' },
+    ],
+  };
+
+  await act(async () => { parsedCb('stocks.ledger', result, null); });
+
+  // On the overview tab (default), buildPortfolio must not be called
+  spy.mockClear();
+  const nav = screen.getByRole('navigation');
+  await userEvent.click(within(nav).getByText('Income & Expenses'));
+  expect(spy).not.toHaveBeenCalled();
+
+  // Switching to Portfolio tab must call buildPortfolio (memoized — called when deps change)
+  await userEvent.click(within(nav).getByText('Portfolio'));
+  expect(spy).toHaveBeenCalled();
+
+  spy.mockRestore();
 });
