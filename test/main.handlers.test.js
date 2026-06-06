@@ -104,3 +104,23 @@ describe("ipcMain handle 'journal:includes'", () => {
     spy.mockRestore();
   });
 });
+
+describe('isAdjustmentRow (csv -B <Adjustment> filtering)', () => {
+  const { isAdjustmentRow } = require('../main');
+
+  it('flags synthetic <Adjustment> cost-basis rows so they can be dropped', () => {
+    // ledger `csv -B` emits these to balance lot/rounding differences for
+    // priced commodities; they have no counterpart in the market `csv` output.
+    const row = ['2024/02/01', '', '"Scalable Capital" "Kauf VWRD.L"', '<Adjustment>', '', '-0', '', ''];
+    expect(isAdjustmentRow(row)).toBe(true);
+  });
+
+  it('keeps real postings', () => {
+    const row = ['2024/02/01', '', 'Lohn', 'Assets:Banking:Girokonto', '€', '-100', '', ''];
+    expect(isAdjustmentRow(row)).toBe(false);
+  });
+
+  it('ignores blank single-field rows', () => {
+    expect(isAdjustmentRow([''])).toBe(false);
+  });
+});

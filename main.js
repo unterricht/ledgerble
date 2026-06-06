@@ -158,6 +158,16 @@ async function parse(event, command, hledger, file) {
   }
 }
 
+// ledger's `csv -B` (cost-basis) mode emits synthetic `<Adjustment>` postings
+// to balance lot/rounding differences for priced commodities (e.g. ETFs bought
+// in multiple lots). These have no counterpart in the market `csv` output, so
+// including them would inflate postingsCost, break positional matching with
+// postings, and trigger the map-based fallback warning in valuation.js. The
+// account name lives in CSV column index 3.
+function isAdjustmentRow(row) {
+  return Array.isArray(row) && row[3] === '<Adjustment>';
+}
+
 async function parseLedgerAsync(command, file) {
   const baseCmd = '"' + command + '" -f "' + file + '"';
   
@@ -208,7 +218,7 @@ async function parseLedgerAsync(command, file) {
 
   let postingsCost = []
   for (const r of resCost.data) {
-    if (r.length != 1) {
+    if (r.length != 1 && !isAdjustmentRow(r)) {
       postingsCost.push({
         date: moment.utc(r[0], "YYYY/MM/DD").format("YYYY-MM-DD"),
         account: r[3],
@@ -359,3 +369,5 @@ ipcMain.handle('journal:includes', (_event, filePath) => {
 ipcMain.on('window:minimize', () => { if (win) win.minimize(); });
 ipcMain.on('window:maximize', () => { if (!win) return; win.isMaximized() ? win.unmaximize() : win.maximize(); });
 ipcMain.on('window:close', () => { if (win) win.close(); });
+
+module.exports = { isAdjustmentRow };
