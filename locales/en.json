@@ -140,6 +140,7 @@
   "file.print": "Print…",
   "file.print_pdf": "Print to PDF…",
   "file.open_ledger": "Open ledger file…",
+  "file.included_hint": "already included",
   "portfolio.cost_basis": "Cost basis",
   "portfolio.market_value": "Market value",
   "portfolio.unrealised_gain": "Unrealised gain",

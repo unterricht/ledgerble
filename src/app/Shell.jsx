@@ -15,6 +15,7 @@ import { Segmented, Eyebrow, Num, MenuSelect, SearchField, DateRangeSlider } fro
 import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
 const { isDeselectedDeep, toggleAccountInDesel } = require('../data/accountTree');
+const { findRedundantFiles } = require('../data/redundancy');
 import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
@@ -281,21 +282,11 @@ function IncludeRows({ nodes, depth, onReveal }) {
   ));
 }
 
-function JournalFooter({ files, onOpen, onReload, onReveal, onRemove }) {
+function JournalFooter({ files, includesByFile, redundantPaths, onOpen, onReload, onReveal, onRemove }) {
   const [open, setOpen] = useState(false);
-  const [includes, setIncludes] = useState({});   // { [path]: tree }
+  const includes = includesByFile || {};
+  const redundant = redundantPaths || new Set();
   const basenames = files.map(baseName);
-
-  // Resolve the include tree for each loaded journal file.
-  const fileKey = files.join('\n');
-  useEffect(() => {
-    if (!window.api || !window.api.getIncludes) return;
-    let cancelled = false;
-    Promise.all(files.map((f) => window.api.getIncludes(f).then((tree) => [f, tree]).catch(() => [f, []])))
-      .then((pairs) => { if (!cancelled) setIncludes(Object.fromEntries(pairs)); });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileKey]);
 
   const item = { padding: '7px 12px', fontSize: 12.5, fontFamily: T.sans, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' };
   const close = (fn) => () => { setOpen(false); fn && fn(); };
@@ -303,17 +294,21 @@ function JournalFooter({ files, onOpen, onReload, onReveal, onRemove }) {
     <>
       <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
       <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, minWidth: 230, maxHeight: 360, overflowY: 'auto', zIndex: 41, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: '5px', boxShadow: '0 12px 30px -8px rgba(16,18,22,0.30), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
-        {files.map((f) => (
+        {files.map((f) => {
+          const isRedundant = redundant.has(f);
+          return (
           <React.Fragment key={f}>
-            <div className="rd-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.pos, flexShrink: 0 }} />
-              <span style={{ flex: 1, fontFamily: T.sans, fontSize: 12.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{baseName(f)}</span>
+            <div className="rd-row" data-testid={`file-row:${f}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isRedundant ? T.ink4 : T.pos, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: T.sans, fontSize: 12.5, color: isRedundant ? T.ink3 : T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{baseName(f)}</span>
+              {isRedundant && <span title={t('file.included_hint')} style={{ fontFamily: T.sans, fontSize: 10.5, color: T.ink4, whiteSpace: 'nowrap' }}>{t('file.included_hint')}</span>}
               <RowAction testid={`reveal:${f}`} label={t('file.reveal')} icon="overview" onClick={() => onReveal && onReveal(f)} />
               <RowAction testid={`remove:${f}`} label={t('file.remove')} icon="close" color={T.neg} onClick={() => onRemove && onRemove(f)} />
             </div>
             {(includes[f] || []).length > 0 && <IncludeRows nodes={includes[f]} depth={1} onReveal={onReveal} />}
           </React.Fragment>
-        ))}
+          );
+        })}
         <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
         <div data-testid="journal-open" className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={close(onOpen)}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
         <div data-testid="journal-reload" className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={close(onReload)}><Icon name="reload" size={15} stroke={T.ink3} /> {t('file.reload')}</div>
@@ -392,6 +387,34 @@ function Shell() {
   const getSetting = useMemo(() => makeGetSetting(settingsCache), [settingsCache]);
   const typeExtractor = useMemo(() => makeTypeExtractor(getSetting), [getSetting]);
 
+  // ── Include trees + redundant-file detection ──────────────────────────────
+  // A ledger file can `include` others. If the user ALSO loads an included file
+  // on its own, its postings would be merged twice → doubled values. We resolve
+  // each loaded file's include tree and drop files already pulled in elsewhere.
+  const [includesByFile, setIncludesByFile] = useState({});
+  const fileKey = Array.from(s.files.keys()).join('\n');
+  useEffect(() => {
+    if (!window.api || !window.api.getIncludes) return;
+    const paths = Array.from(s.files.keys());
+    let cancelled = false;
+    Promise.all(paths.map((p) => window.api.getIncludes(p).then((tree) => [p, tree]).catch(() => [p, []])))
+      .then((pairs) => { if (!cancelled) setIncludesByFile(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileKey]);
+
+  const redundantPaths = useMemo(
+    () => findRedundantFiles(Array.from(s.files.keys()), includesByFile),
+    [fileKey, includesByFile] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Files actually fed to compute(): loaded files minus those already included
+  // (transitively) by another loaded file.
+  const activeFiles = useMemo(() => {
+    if (redundantPaths.size === 0) return s.files;
+    return new Map(Array.from(s.files).filter(([p]) => !redundantPaths.has(p)));
+  }, [s.files, redundantPaths]);
+
   // setSetting: persists to main process AND updates React cache so all views re-render.
   const setSetting = (key, value) => {
     if (key === 'options.locale') {
@@ -407,14 +430,14 @@ function Shell() {
   // ── Compute model ────────────────────────────────────────────────────────
   const model = useMemo(
     () => compute({
-      files: s.files,
+      files: activeFiles,
       currency: s.currency,
       period: s.period,
       deselectedAccounts: s.deselectedAccounts,
       dateRange: s.dateRange,
       typeExtractor,
     }),
-    [s.files, s.currency, s.period, s.deselectedAccounts, s.dateRange, typeExtractor]
+    [activeFiles, s.currency, s.period, s.deselectedAccounts, s.dateRange, typeExtractor]
   );
 
   // ── Load persisted file list on mount ────────────────────────────────────
@@ -604,6 +627,8 @@ function Shell() {
                 <NavItem item={{ id: 'options', labelKey: 'nav.options', icon: 'options' }} active={view === 'options'} onClick={() => setView('options')} />
                 <JournalFooter
                   files={Array.from(s.files.keys())}
+                  includesByFile={includesByFile}
+                  redundantPaths={redundantPaths}
                   onOpen={handleOpenJournal}
                   onReload={handleReloadJournals}
                   onReveal={handleRevealJournal}

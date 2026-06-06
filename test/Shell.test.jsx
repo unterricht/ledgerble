@@ -356,6 +356,46 @@ test('included files are listed (indented, read-only) under their parent and are
   expect(window.api.revealFile).toHaveBeenCalledWith('/home/user/2024.ledger');
 });
 
+test('a file already included by another loaded file is excluded from compute (no double counting)', async () => {
+  const computeMod = require('../src/data/compute');
+  const spy = jest.spyOn(computeMod, 'compute');
+
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.getIncludes = jest.fn((p) =>
+    Promise.resolve(p === '/home/user/main.ledger'
+      ? [{ path: '/home/user/accounts.ledger', includes: [] }]
+      : []));
+
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/main.ledger', STOCK_RESULT, null); });
+  await act(async () => { parsedCb('/home/user/accounts.ledger', STOCK_RESULT, null); });
+  // let the include lookups resolve and the redundancy memo settle
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+  const lastFiles = spy.mock.calls[spy.mock.calls.length - 1][0].files;
+  expect(lastFiles.has('/home/user/main.ledger')).toBe(true);
+  expect(lastFiles.has('/home/user/accounts.ledger')).toBe(false);
+  spy.mockRestore();
+});
+
+test('the redundant (already-included) file row is visually marked in the journal panel', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.getIncludes = jest.fn((p) =>
+    Promise.resolve(p === '/home/user/main.ledger'
+      ? [{ path: '/home/user/accounts.ledger', includes: [] }]
+      : []));
+
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/main.ledger', STOCK_RESULT, null); });
+  await act(async () => { parsedCb('/home/user/accounts.ledger', STOCK_RESULT, null); });
+
+  await act(async () => { await userEvent.click(screen.getByTestId('journal-menu-trigger')); });
+
+  expect(screen.getByText('already included')).toBeInTheDocument();
+});
+
 test('buildPortfolio is not called on non-portfolio tabs (portfolioVm is memoized)', async () => {
   // portfolioVm is wrapped in useMemo([view, s.files.size, model]).
   // When the user is NOT on the Portfolio tab, buildPortfolio must not be called.

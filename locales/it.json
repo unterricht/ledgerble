@@ -140,6 +140,7 @@
   "file.print": "Stampa…",
   "file.print_pdf": "Stampa come PDF…",
   "file.open_ledger": "Apri file ledger…",
+  "file.included_hint": "già incluso",
   "portfolio.cost_basis": "Costo base",
   "portfolio.market_value": "Valore di mercato",
   "portfolio.unrealised_gain": "Plusvalenza latente",

@@ -1,7 +1,7 @@
 /**
  * Tests for include-directive parsing (ledger/hledger `include`).
  */
-const { parseIncludeLines, collectIncludes } = require('../includes');
+const { parseIncludeLines, collectIncludes, findRedundantFiles } = require('../includes');
 
 describe('parseIncludeLines', () => {
   it('extracts a single include directive', () => {
@@ -71,5 +71,40 @@ describe('collectIncludes', () => {
   it('returns an empty list when a file cannot be read', () => {
     const read = () => { throw new Error('ENOENT'); };
     expect(collectIncludes('/nope.ledger', read)).toEqual([]);
+  });
+});
+
+describe('findRedundantFiles', () => {
+  it('marks a top-level file that is included by another loaded file as redundant', () => {
+    const includesByFile = {
+      '/j/main.ledger': [{ path: '/j/accounts.ledger', includes: [] }],
+      '/j/accounts.ledger': [],
+    };
+    const redundant = findRedundantFiles(['/j/main.ledger', '/j/accounts.ledger'], includesByFile);
+    expect([...redundant]).toEqual(['/j/accounts.ledger']);
+  });
+
+  it('marks deeply-nested includes as redundant too', () => {
+    const includesByFile = {
+      '/j/main.ledger': [{ path: '/j/a.ledger', includes: [{ path: '/j/b.ledger', includes: [] }] }],
+      '/j/b.ledger': [],
+    };
+    const redundant = findRedundantFiles(['/j/main.ledger', '/j/b.ledger'], includesByFile);
+    expect([...redundant]).toEqual(['/j/b.ledger']);
+  });
+
+  it('does not mark independent files as redundant', () => {
+    const includesByFile = { '/j/a.ledger': [], '/j/b.ledger': [] };
+    const redundant = findRedundantFiles(['/j/a.ledger', '/j/b.ledger'], includesByFile);
+    expect(redundant.size).toBe(0);
+  });
+
+  it('keeps all files when every file would be redundant (mutual-include guard)', () => {
+    const includesByFile = {
+      '/j/a.ledger': [{ path: '/j/b.ledger', includes: [] }],
+      '/j/b.ledger': [{ path: '/j/a.ledger', includes: [] }],
+    };
+    const redundant = findRedundantFiles(['/j/a.ledger', '/j/b.ledger'], includesByFile);
+    expect(redundant.size).toBe(0);
   });
 });

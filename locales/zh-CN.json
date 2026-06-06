@@ -140,6 +140,7 @@
   "file.print": "打印…",
   "file.print_pdf": "打印为 PDF…",
   "file.open_ledger": "打开 ledger 文件…",
+  "file.included_hint": "已包含",
   "portfolio.cost_basis": "成本基础",
   "portfolio.market_value": "市场价值",
   "portfolio.unrealised_gain": "未实现盈亏",

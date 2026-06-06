@@ -45,4 +45,9 @@ function collectIncludes(rootPath, readFile, _seen) {
   return children;
 }
 
-module.exports = { parseIncludeLines, collectIncludes };
+// Path-free redundancy helpers live in src/data/redundancy.js so the browser
+// renderer can import them without bundling Node's `path`; re-exported here for
+// the main process and existing tests.
+const { flattenIncludePaths, findRedundantFiles } = require('./src/data/redundancy');
+
+module.exports = { parseIncludeLines, collectIncludes, flattenIncludePaths, findRedundantFiles };

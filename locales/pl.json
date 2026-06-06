@@ -140,6 +140,7 @@
   "file.print": "Drukuj…",
   "file.print_pdf": "Drukuj do PDF…",
   "file.open_ledger": "Otwórz plik ledger…",
+  "file.included_hint": "już dołączony",
   "portfolio.cost_basis": "Koszt nabycia",
   "portfolio.market_value": "Wartość rynkowa",
   "portfolio.unrealised_gain": "Niezrealizowany zysk",

@@ -140,6 +140,7 @@
   "file.print": "Afdrukken…",
   "file.print_pdf": "Afdrukken als PDF…",
   "file.open_ledger": "Ledger-bestand openen…",
+  "file.included_hint": "al opgenomen",
   "portfolio.cost_basis": "Kostenbasis",
   "portfolio.market_value": "Marktwaarde",
   "portfolio.unrealised_gain": "Niet-gerealiseerde winst",

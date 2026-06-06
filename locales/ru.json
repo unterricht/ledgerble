@@ -140,6 +140,7 @@
   "file.print": "Печать…",
   "file.print_pdf": "Печать в PDF…",
   "file.open_ledger": "Открыть файл ledger…",
+  "file.included_hint": "уже включён",
   "portfolio.cost_basis": "Стоимость покупки",
   "portfolio.market_value": "Рыночная стоимость",
   "portfolio.unrealised_gain": "Нереализованная прибыль",

@@ -146,6 +146,14 @@ sync keys across locale files.
 - **`csv` vs `csv -B` line-count mismatch**: ledger sometimes emits a different
   number of rows for market vs cost output. `valuation.js` detects this and
   falls back to `date|account` map-based matching instead of positional pairing.
+- **Include de-duplication:** a journal can `include` other files, so loading
+  both a parent and one of its includes would double-count postings. `main.js`
+  resolves each loaded file's include tree (`journal:includes` → `includes.js`
+  `collectIncludes`, using `fs`), and `Shell.jsx` drops files already pulled in
+  elsewhere before calling `compute()` (`findRedundantFiles`). The path-free
+  redundancy helpers live in `src/data/redundancy.js` (NOT `includes.js`) so the
+  browser bundle never tries to bundle Node's `path` — keep renderer-imported
+  logic free of Node built-ins.
 - Loose root-level `test-*.js` / `test-*.ledger` files and the `Entwicklung/`
   folder are ad-hoc scratch/experiment files, not part of the Jest suite.
 - The renderer is React 18 + ECharts (charts only). It is **not** the legacy

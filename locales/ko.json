@@ -140,6 +140,7 @@
   "file.print": "인쇄…",
   "file.print_pdf": "PDF로 인쇄…",
   "file.open_ledger": "ledger 파일 열기…",
+  "file.included_hint": "이미 포함됨",
   "portfolio.cost_basis": "취득원가",
   "portfolio.market_value": "시장 가치",
   "portfolio.unrealised_gain": "미실현 손익",

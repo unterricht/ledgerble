@@ -140,6 +140,7 @@
   "file.print": "印刷…",
   "file.print_pdf": "PDFとして印刷…",
   "file.open_ledger": "ledgerファイルを開く…",
+  "file.included_hint": "すでに含まれています",
   "portfolio.cost_basis": "取得原価",
   "portfolio.market_value": "時価",
   "portfolio.unrealised_gain": "含み損益",

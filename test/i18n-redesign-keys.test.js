@@ -9,6 +9,7 @@ const NEW_KEYS = [
   'nav.reports','nav.ledger','search.placeholder',
   'menu.file','menu.edit','menu.view','menu.window','menu.help',
   'file.open','file.reload','file.reveal','file.remove','file.print','file.print_pdf','file.open_ledger',
+  'file.included_hint',
   'portfolio.cost_basis','portfolio.market_value','portfolio.unrealised_gain','assets.total_assets',
   'settings.category_table','settings.category_table.help',
   // i18n Phase 2: OptionsView section titles + subtitle strings

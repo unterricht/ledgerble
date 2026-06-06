@@ -140,6 +140,7 @@
   "file.print": "Drucken…",
   "file.print_pdf": "Als PDF drucken…",
   "file.open_ledger": "Ledger-Datei öffnen…",
+  "file.included_hint": "bereits inkludiert",
   "portfolio.cost_basis": "Kostenbasis",
   "portfolio.market_value": "Marktwert",
   "portfolio.unrealised_gain": "Nicht realisierter Gewinn",
