@@ -248,30 +248,86 @@ function NavItem({ item, active, onClick }) {
 }
 
 // ── journal file menu (bottom-left) ──────────────────────────
-function JournalFooter({ files }) {
+const baseName = (f) => f.split('/').pop().split('\\').pop();
+
+// Small square icon button used in the journal panel rows.
+function RowAction({ testid, label, icon, color, onClick }) {
+  return (
+    <button
+      data-testid={testid}
+      title={label}
+      aria-label={label}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="rd-menu"
+      style={{ border: 'none', background: 'none', cursor: 'pointer', color: color || T.ink3, padding: 3, borderRadius: 5, display: 'flex' }}
+    >
+      <Icon name={icon} size={14} stroke={color || T.ink3} />
+    </button>
+  );
+}
+
+// Recursively render the include tree for one journal file. Included files are
+// read-only (they live inside their parent on disk) but can be revealed.
+function IncludeRows({ nodes, depth, onReveal }) {
+  return nodes.map((n) => (
+    <React.Fragment key={n.path}>
+      <div className="rd-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `3px 10px 3px ${12 + depth * 16}px`, borderRadius: 6 }}>
+        <Icon name="cornerDownRight" size={13} stroke={T.ink4} />
+        <span style={{ flex: 1, fontFamily: T.sans, fontSize: 11.5, color: T.ink3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{baseName(n.path)}</span>
+        <RowAction testid={`reveal:${n.path}`} label={t('file.reveal')} icon="overview" onClick={() => onReveal && onReveal(n.path)} />
+      </div>
+      {n.includes.length > 0 && <IncludeRows nodes={n.includes} depth={depth + 1} onReveal={onReveal} />}
+    </React.Fragment>
+  ));
+}
+
+function JournalFooter({ files, onOpen, onReload, onReveal, onRemove }) {
   const [open, setOpen] = useState(false);
-  const basenames = files.map(f => f.split('/').pop().split('\\').pop());
-  const item = { padding: '7px 12px', fontSize: 12.5, fontFamily: T.sans, color: T.ink, cursor: 'default', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' };
+  const [includes, setIncludes] = useState({});   // { [path]: tree }
+  const basenames = files.map(baseName);
+
+  // Resolve the include tree for each loaded journal file.
+  const fileKey = files.join('\n');
+  useEffect(() => {
+    if (!window.api || !window.api.getIncludes) return;
+    let cancelled = false;
+    Promise.all(files.map((f) => window.api.getIncludes(f).then((tree) => [f, tree]).catch(() => [f, []])))
+      .then((pairs) => { if (!cancelled) setIncludes(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileKey]);
+
+  const item = { padding: '7px 12px', fontSize: 12.5, fontFamily: T.sans, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' };
+  const close = (fn) => () => { setOpen(false); fn && fn(); };
   const menu = (
     <>
       <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-      <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, minWidth: 188, zIndex: 41, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: '5px', boxShadow: '0 12px 30px -8px rgba(16,18,22,0.30), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="reload" size={15} stroke={T.ink3} /> {t('file.reload')}</div>
-        <div className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={() => setOpen(false)}><Icon name="overview" size={15} stroke={T.ink3} /> {t('file.reveal')}</div>
+      <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, minWidth: 230, maxHeight: 360, overflowY: 'auto', zIndex: 41, background: T.surface, border: `1px solid ${T.line2}`, borderRadius: 9, padding: '5px', boxShadow: '0 12px 30px -8px rgba(16,18,22,0.30), 0 0 0 0.5px rgba(16,18,22,0.06)' }}>
+        {files.map((f) => (
+          <React.Fragment key={f}>
+            <div className="rd-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.pos, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: T.sans, fontSize: 12.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{baseName(f)}</span>
+              <RowAction testid={`reveal:${f}`} label={t('file.reveal')} icon="overview" onClick={() => onReveal && onReveal(f)} />
+              <RowAction testid={`remove:${f}`} label={t('file.remove')} icon="close" color={T.neg} onClick={() => onRemove && onRemove(f)} />
+            </div>
+            {(includes[f] || []).length > 0 && <IncludeRows nodes={includes[f]} depth={1} onReveal={onReveal} />}
+          </React.Fragment>
+        ))}
         <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
-        <div className="rd-menu" style={{ ...item, borderRadius: 6, color: T.neg }} onClick={() => setOpen(false)}>{t('file.remove')}</div>
+        <div data-testid="journal-open" className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={close(onOpen)}><Icon name="files" size={15} stroke={T.ink3} /> {t('file.open')}</div>
+        <div data-testid="journal-reload" className="rd-menu" style={{ ...item, borderRadius: 6 }} onClick={close(onReload)}><Icon name="reload" size={15} stroke={T.ink3} /> {t('file.reload')}</div>
       </div>
     </>
   );
   return (
     <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 8, position: 'relative' }}>
       {files.length === 0 ? (
-        <button className="rd-nav" style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px dashed ${T.line2}`, background: 'transparent', cursor: 'default', fontFamily: T.sans, fontSize: 12.5, color: T.ink2 }}>
+        <button data-testid="journal-open-empty" onClick={onOpen} className="rd-nav" style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px dashed ${T.line2}`, background: 'transparent', cursor: 'pointer', fontFamily: T.sans, fontSize: 12.5, color: T.ink2 }}>
           <Icon name="files" size={15} stroke={T.ink3} /> {t('file.open_ledger')}
         </button>
       ) : (
-        <div className="rd-nav" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, cursor: 'pointer' }}>
+        <div data-testid="journal-menu-trigger" className="rd-nav" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, cursor: 'pointer' }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.pos, flexShrink: 0 }} />
           <Num color={T.ink2} size={11.5} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{basenames[0]}{basenames.length > 1 ? ` +${basenames.length - 1}` : ''}</Num>
           <span style={{ display: 'flex', color: T.ink3 }}><Icon name="options" size={15} /></span>
@@ -377,6 +433,35 @@ function Shell() {
   // Run once on mount — getSetting ref will be stable on first render
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Journal file actions (footer menu) ───────────────────────────────────
+  const persistFileList = (paths) => {
+    if (window.api && window.api.settings && window.api.settings.set) {
+      window.api.settings.set('files.list', paths);
+    }
+  };
+  const parseFile = (path) => {
+    if (window.api && window.api.parse) {
+      window.api.parse(getSetting('options.ledger.command'), getSetting('options.hledger'), path);
+    }
+  };
+  const handleOpenJournal = async () => {
+    if (!window.api || !window.api.showOpenJournal) return;
+    const picked = await window.api.showOpenJournal();
+    if (!picked || s.files.has(picked)) return;
+    parseFile(picked);                                  // onParsed adds it to s.files
+    persistFileList([...s.files.keys(), picked]);
+  };
+  const handleReloadJournals = () => {
+    for (const path of s.files.keys()) parseFile(path);
+  };
+  const handleRevealJournal = (path) => {
+    if (window.api && window.api.revealFile) window.api.revealFile(path);
+  };
+  const handleRemoveJournal = (path) => {
+    s.setFiles(prev => { const n = new Map(prev); n.delete(path); return n; });
+    persistFileList(Array.from(s.files.keys()).filter(p => p !== path));
+  };
 
   const showInsp = FILTER_TABS.has(view) && insp;
 
@@ -517,7 +602,13 @@ function Shell() {
               {/* footer: options + journal file menu */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <NavItem item={{ id: 'options', labelKey: 'nav.options', icon: 'options' }} active={view === 'options'} onClick={() => setView('options')} />
-                <JournalFooter files={Array.from(s.files.keys())} />
+                <JournalFooter
+                  files={Array.from(s.files.keys())}
+                  onOpen={handleOpenJournal}
+                  onReload={handleReloadJournals}
+                  onReveal={handleRevealJournal}
+                  onRemove={handleRemoveJournal}
+                />
               </div>
             </nav>
 

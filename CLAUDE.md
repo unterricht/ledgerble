@@ -14,7 +14,7 @@ implement plain-text accounting itself — it visualises what the CLI produces.
 
 ```bash
 npm start            # bundle the renderer (esbuild) + launch electron
-npm run bundle       # esbuild ui.js -> dist/bundle.js (run before electron if not using `start`)
+npm run bundle       # esbuild src/app/index.jsx -> dist/bundle.js (run before electron if not using `start`)
 npm test             # jest (all tests in test/)
 npm run dist         # bundle + electron-builder, mac arm64 dmg
 npx jest test/valuation.test.js              # run one test file
@@ -40,53 +40,61 @@ This is a security-hardened Electron app: `nodeIntegration: false`,
   ledger CLI, parsing its output, `settings-store` persistence, native menu
   (`menu.js`), i18n locale loading. Communicates only via IPC.
 - **Preload** (`preload.js`): the *only* bridge. Exposes a narrow `window.api`
-  (parse, onParsed, settings get/set/getAll, menu.rebuild, path utils,
-  webUtils.getPathForFile). When the renderer needs a new main-process
+  (parse, onParsed, settings get/set/getAll, showOpenDialog, showOpenJournal,
+  revealFile, getIncludes, menu.rebuild, pathBasename, webUtils.getPathForFile,
+  platform, windowControls). When the renderer needs a new main-process
   capability, add it here AND add the matching `ipcMain` handler in `main.js`.
-- **Renderer** (`ui.js` + the other `*.js` modules): bundled by esbuild into
-  `dist/bundle.js`, loaded by `index.html`. Uses `window.api` exclusively.
+- **Renderer** — a **React app** under `src/` (entry `src/app/index.jsx`,
+  bundled by esbuild into `dist/bundle.js`, loaded by `index.html`). Uses
+  `window.api` exclusively. The old jQuery renderer (`ui.js`, `files.js`,
+  `treeMap.js`, `balance.js`, `assets.js`, `portfolio.js`, …) and the
+  jQuery/Bootstrap/DataTables stack are **legacy dead code**, no longer in the
+  bundle — do not edit them expecting changes to show up.
 
 `index.html` loads `dist/bundle.js`, so **renderer code changes require a
-re-bundle** (`npm run bundle`, or just use `npm start`). Editing `ui.js` and
+re-bundle** (`npm run bundle`, or just use `npm start`). Editing `src/` and
 re-running electron without bundling will appear to do nothing.
 
 ### Data flow
 
-1. User picks a file (`files.js`) → `window.api.parse(command, hledger, file)`.
+1. The renderer calls `window.api.parse(command, hledger, file)` (on mount for
+   each persisted `files.list` entry, or when the user opens a file via the
+   journal footer in `src/app/Shell.jsx`).
 2. Main process (`main.js`) runs the CLI. For ledger it runs three commands in
    parallel: `csv` (market amounts), `csv -B` (cost basis), and `prices`. For
    hledger it runs `register -O csv`. Output is parsed with `papaparse` into
    `{ postings, postingsCost, prices }`.
-3. Result returns via the `parsed` IPC event → `window.api.onParsed` in `ui.js`.
-4. `ui.js` stores each file's result in `state.files` (a `Map`), then calls the
-   central `update()` function.
+3. Result returns via the `parsed` IPC event → `window.api.onParsed`, subscribed
+   once in `src/store/useAppState.js`.
+4. `useAppState` stores each file's result in `files` (a React-state `Map`).
+   Changing that Map (or any other state) re-renders `Shell`, which recomputes
+   the view model.
 
-### The `update()` function (ui.js) is the heart of the renderer
+### `compute()` + the views are the heart of the renderer
 
-`update()` is the single re-render entry point — almost every interaction
-(file change, currency change, date-slider change, account filter toggle, tab
-switch) ends by calling the global `window.update()`. It:
+`src/app/Shell.jsx` is the root component. On every relevant state change it runs
+`compute()` (`src/data/compute.js`, memoized over files/currency/period/
+deselected accounts/date range/typeExtractor), which:
 
 - merges postings across all files,
 - runs `ValuationService` to compute running balances / market value,
 - builds time intervals (daily buckets) and per-account balance series,
-- substitutes market value for non-base-currency holdings,
-- then feeds each tab's renderer: `treeMap.js` (expenses/income), `balance.js`,
-  `assets.js`, `portfolio.js`, `incomeExpenses.js`, `postings.js`.
+- substitutes market value for non-base-currency holdings.
 
-Renderer modules share state through a few **globals set by `ui.js`**:
-`window.state`, `window.update`, `window.escapeHtml`, `window.showModal`,
-`window.i18nTranslatePage`. This is intentional (modules are `require`d but
-coordinate via these), so when adding a module that other modules call, follow
-the same pattern rather than threading params everywhere.
+The resulting model is shaped per-tab by the `build*` adapters in
+`src/data/adapters.js` (`buildOverview`, `buildBalanceTree`, `buildAssets`,
+`buildPortfolio`, `buildPostings`, …) and rendered by the view components in
+`src/views/` (+ chart components in `src/charts/`, which wrap ECharts).
+Shared renderer state lives in `useAppState`; pass it down via props/React
+context rather than the old `window.*` globals.
 
 ### Account classification is regex-driven
 
-There is no fixed chart of accounts. `ui.js`'s `typeExtractor` classifies each
-account string as income/expenses/assets/liabilities/equity by matching it
-against user-configurable regexes (defaults in `options.js`, e.g.
-`^expenses?(:|$)`). Changing classification = changing these settings, not
-hardcoding account names.
+There is no fixed chart of accounts. `makeTypeExtractor`
+(`src/data/typeExtractor.js`) classifies each account string as
+income/expenses/assets/liabilities/equity by matching it against
+user-configurable regexes (defaults in `options.js`, e.g. `^expenses?(:|$)`).
+Changing classification = changing these settings, not hardcoding account names.
 
 ### Valuation (valuation.js)
 
@@ -101,30 +109,31 @@ extending it test-first.
 
 ### Settings
 
-Persisted via `settings-store` in the **main process**. The renderer reads them
-through a synchronous cache: `options.js` calls `loadSettingsCache()` once at
-startup (`window.api.settings.getAll()`), then `getSetting(key)` reads the
-cache. Writes go through `window.api.settings.set` AND update the cache.
-`main.js` has a hardcoded `knownKeys` list for `getAll` — **adding a new
-persisted setting means adding its key there too**, or it won't survive a
-restart.
+Persisted via `settings-store` in the **main process**. The renderer loads the
+whole cache once on mount (`window.api.settings.getAll()` in `Shell.jsx`) into
+React state; `makeGetSetting(cache)` reads it and `setSetting(key, value)`
+updates React state AND calls `window.api.settings.set`. `getAll` is gated by
+the hardcoded key list in **`knownKeys.js`** (`KNOWN_KEYS`, consumed by
+`main.js`) — **adding a new persisted setting means adding its key there too**,
+or it won't survive a restart.
 
 ### i18n
 
 `i18n.js` works in both processes (no fs/path — locales are `require`d so
-esbuild inlines them). Locale JSON lives in `locales/` (12 languages). DOM
-translation is attribute-driven: elements with `data-i18n` /
-`data-i18n-html` / `data-i18n-placeholder` are filled by `translatePage()`.
+esbuild inlines them). Locale JSON lives in `locales/` (12 languages). In the
+React renderer, translate by calling `t('key')` inline (the old attribute-driven
+`data-i18n` / `translatePage()` path belongs to the legacy jQuery renderer).
 When adding UI text, add a key to **all** `locales/*.json` and reference it via
-`data-i18n` (HTML) or `t('key')` (JS), never hardcode user-facing strings.
-`update_translations.js` helps sync keys across locale files.
+`t('key')`, never hardcode user-facing strings. `update_translations.js` helps
+sync keys across locale files.
 
 ## Testing notes
 
 - Jest, default node environment. Pure-logic modules (`valuation.js`,
-  `hledger.js`, `i18n.js`) are tested directly. DOM-touching modules are tested
-  by mocking dependencies (see `test/treeMap.test.js` mocking `treeTable`) or
-  asserting on generated HTML strings (`test/options.test.js`).
+  `hledger.js`, `i18n.js`, `includes.js`, `src/data/*`) are tested directly.
+  React components are tested with `@testing-library/react` in `*.test.jsx`
+  files that opt into jsdom via the `/** @jest-environment jsdom */` docblock
+  (see `test/Shell.test.jsx`); ECharts is stubbed (`jest.mock('echarts', …)`).
 - Per the global standard in `~/.claude/CLAUDE.md`, new features/bugfixes follow
   Red/Green TDD and the suite must pass (or remaining failures be explicitly
   classified) before a task is considered done.
@@ -132,12 +141,13 @@ When adding UI text, add a key to **all** `locales/*.json` and reference it via
 ## Gotchas
 
 - **Dates are handled as UTC `YYYY-MM-DD`** to dodge timezone drift. `main.js`
-  formats with `moment.utc(...)`; `ui.js` reconstructs `new Date(str + 'T00:00:00Z')`.
-  Keep new date code in UTC.
+  formats with `moment.utc(...)`; the renderer reconstructs
+  `new Date(str + 'T00:00:00Z')`. Keep new date code in UTC.
 - **`csv` vs `csv -B` line-count mismatch**: ledger sometimes emits a different
   number of rows for market vs cost output. `valuation.js` detects this and
   falls back to `date|account` map-based matching instead of positional pairing.
 - Loose root-level `test-*.js` / `test-*.ledger` files and the `Entwicklung/`
   folder are ad-hoc scratch/experiment files, not part of the Jest suite.
-- The renderer still relies on jQuery + Bootstrap 4 + DataTables + ECharts
-  (required globally in `ui.js`); it is not a reactive/component framework.
+- The renderer is React 18 + ECharts (charts only). It is **not** the legacy
+  jQuery/Bootstrap/DataTables stack — those root-level `*.js` modules are dead
+  code kept around but not bundled.

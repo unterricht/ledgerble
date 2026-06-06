@@ -49,6 +49,29 @@ contextBridge.exposeInMainWorld('api', {
     return ipcRenderer.invoke('dialog:openFile', currentPath);
   },
 
+  /**
+   * Open a journal-file picker (ledger/journal/dat/hledger filters).
+   * Returns the selected path or null when cancelled.
+   */
+  showOpenJournal: () => {
+    return ipcRenderer.invoke('dialog:openJournal');
+  },
+
+  /**
+   * Reveal a file in the OS file manager (Finder / Explorer).
+   */
+  revealFile: (filePath) => {
+    ipcRenderer.send('shell:showItemInFolder', filePath);
+  },
+
+  /**
+   * Resolve the nested tree of files `include`d by a journal file.
+   * Returns [{ path, includes: [...] }, ...].
+   */
+  getIncludes: (filePath) => {
+    return ipcRenderer.invoke('journal:includes', filePath);
+  },
+
   // ── Menu ──────────────────────────────────────────────────────
   menu: {
     rebuild: () => {

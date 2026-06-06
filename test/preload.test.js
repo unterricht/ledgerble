@@ -123,6 +123,42 @@ describe('preload', () => {
     });
   });
 
+  describe('showOpenJournal', () => {
+    it('should invoke "dialog:openJournal" and return the selected path', async () => {
+      const electron = require('electron');
+      electron.ipcRenderer.invoke.mockResolvedValue('/home/user/journal.ledger');
+      const result = await api.showOpenJournal();
+      expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith('dialog:openJournal');
+      expect(result).toBe('/home/user/journal.ledger');
+    });
+
+    it('should return null when the dialog is cancelled', async () => {
+      const electron = require('electron');
+      electron.ipcRenderer.invoke.mockResolvedValue(null);
+      const result = await api.showOpenJournal();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getIncludes', () => {
+    it('should invoke "journal:includes" with the file path and return the tree', async () => {
+      const electron = require('electron');
+      const tree = [{ path: '/home/user/accounts.ledger', includes: [] }];
+      electron.ipcRenderer.invoke.mockResolvedValue(tree);
+      const result = await api.getIncludes('/home/user/main.ledger');
+      expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith('journal:includes', '/home/user/main.ledger');
+      expect(result).toEqual(tree);
+    });
+  });
+
+  describe('revealFile', () => {
+    it('should send "shell:showItemInFolder" with the file path', () => {
+      const electron = require('electron');
+      api.revealFile('/home/user/journal.ledger');
+      expect(electron.ipcRenderer.send).toHaveBeenCalledWith('shell:showItemInFolder', '/home/user/journal.ledger');
+    });
+  });
+
   describe('platform', () => {
     it('should expose process.platform as a string', () => {
       expect(typeof api.platform).toBe('string');

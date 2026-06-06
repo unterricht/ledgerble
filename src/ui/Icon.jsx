@@ -21,6 +21,8 @@ const ICON_PATHS = {
   plus:      'M12 5v14 M5 12h14',
   minus:     'M5 12h14',
   reload:    'M20 11a8 8 0 1 0-2.3 5.6 M20 5v6h-6',
+  close:     'M6 6l12 12 M18 6 6 18',
+  cornerDownRight: 'M7 5v7a3 3 0 0 0 3 3h7 M14 12l3 3-3 3',
   sliders:   'M4 8h10 M18 8h2 M4 16h2 M10 16h10 M16 6v4 M8 14v4',
   sparkle:   'M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6Z',
 };

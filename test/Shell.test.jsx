@@ -247,6 +247,115 @@ test('switching to Portfolio tab writes the clamped from-index into global slide
   expect(Number(rangeFrom.value)).toBeGreaterThan(0);
 });
 
+// ── Journal file management (footer menu) ───────────────────────────────────
+
+const STOCK_RESULT = {
+  postings: [
+    { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+  ],
+  postingsCost: [
+    { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: 500, currency: 'EUR' },
+  ],
+  prices: [],
+};
+
+test('empty-state open button triggers the journal picker and parses + persists the picked file', async () => {
+  window.api.showOpenJournal = jest.fn().mockResolvedValue('/home/user/main.ledger');
+  window.api.parse = jest.fn();
+  window.api.settings.set = jest.fn();
+
+  await act(async () => { render(<Shell />); });
+
+  await act(async () => { await userEvent.click(screen.getByTestId('journal-open-empty')); });
+
+  expect(window.api.showOpenJournal).toHaveBeenCalled();
+  expect(window.api.parse).toHaveBeenCalledWith(expect.anything(), expect.anything(), '/home/user/main.ledger');
+  expect(window.api.settings.set).toHaveBeenCalledWith('files.list', ['/home/user/main.ledger']);
+});
+
+test('journal menu "open" item triggers the journal picker', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.showOpenJournal = jest.fn().mockResolvedValue(null);
+  window.api.parse = jest.fn();
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/a.ledger', STOCK_RESULT, null); });
+
+  await userEvent.click(screen.getByTestId('journal-menu-trigger'));
+  await act(async () => { await userEvent.click(screen.getByTestId('journal-open')); });
+
+  expect(window.api.showOpenJournal).toHaveBeenCalled();
+});
+
+test('journal menu "reload" item re-parses the loaded files', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.parse = jest.fn();
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/a.ledger', STOCK_RESULT, null); });
+
+  window.api.parse.mockClear();
+  await userEvent.click(screen.getByTestId('journal-menu-trigger'));
+  await userEvent.click(screen.getByTestId('journal-reload'));
+
+  expect(window.api.parse).toHaveBeenCalledWith(expect.anything(), expect.anything(), '/home/user/a.ledger');
+});
+
+test('each file row has its own reveal action that reveals that file', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.revealFile = jest.fn();
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/a.ledger', STOCK_RESULT, null); });
+  await act(async () => { parsedCb('/home/user/b.ledger', STOCK_RESULT, null); });
+
+  await userEvent.click(screen.getByTestId('journal-menu-trigger'));
+  await userEvent.click(screen.getByTestId('reveal:/home/user/b.ledger'));
+
+  expect(window.api.revealFile).toHaveBeenCalledWith('/home/user/b.ledger');
+});
+
+test('each file row is individually removable and persists the shortened list', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.settings.set = jest.fn();
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/a.ledger', STOCK_RESULT, null); });
+  await act(async () => { parsedCb('/home/user/b.ledger', STOCK_RESULT, null); });
+
+  await userEvent.click(screen.getByTestId('journal-menu-trigger'));
+  await act(async () => { await userEvent.click(screen.getByTestId('remove:/home/user/a.ledger')); });
+
+  // only a.ledger is dropped; b.ledger survives
+  expect(window.api.settings.set).toHaveBeenCalledWith('files.list', ['/home/user/b.ledger']);
+  expect(screen.queryByTestId('remove:/home/user/a.ledger')).not.toBeInTheDocument();
+  expect(screen.getByTestId('remove:/home/user/b.ledger')).toBeInTheDocument();
+});
+
+test('included files are listed (indented, read-only) under their parent and are revealable', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  window.api.revealFile = jest.fn();
+  window.api.getIncludes = jest.fn().mockResolvedValue([
+    { path: '/home/user/accounts.ledger', includes: [
+      { path: '/home/user/2024.ledger', includes: [] },
+    ] },
+  ]);
+  render(<Shell />);
+  await act(async () => { parsedCb('/home/user/main.ledger', STOCK_RESULT, null); });
+
+  await act(async () => { await userEvent.click(screen.getByTestId('journal-menu-trigger')); });
+
+  expect(window.api.getIncludes).toHaveBeenCalledWith('/home/user/main.ledger');
+  // both the direct and the nested include are shown
+  expect(screen.getByText('accounts.ledger')).toBeInTheDocument();
+  expect(screen.getByText('2024.ledger')).toBeInTheDocument();
+  // included files are read-only (no remove), but can be revealed
+  expect(screen.queryByTestId('remove:/home/user/accounts.ledger')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByTestId('reveal:/home/user/2024.ledger'));
+  expect(window.api.revealFile).toHaveBeenCalledWith('/home/user/2024.ledger');
+});
+
 test('buildPortfolio is not called on non-portfolio tabs (portfolioVm is memoized)', async () => {
   // portfolioVm is wrapped in useMemo([view, s.files.size, model]).
   // When the user is NOT on the Portfolio tab, buildPortfolio must not be called.

@@ -1,5 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const { collectIncludes } = require('./includes')
 const { windowOptionsFor } = require('./windowChrome')
 const { execSync } = require('child_process');
 const util = require('util');
@@ -325,6 +327,32 @@ ipcMain.handle('dialog:openFile', async (_event, currentPath) => {
     filters: [{ name: 'Executables', extensions: ['*'] }],
   });
   return canceled ? null : filePaths[0];
+});
+
+// Journal-file picker with plain-text-accounting filters.
+ipcMain.handle('dialog:openJournal', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Ledger / hledger', extensions: ['ledger', 'journal', 'dat', 'hledger', 'j', 'jrnl'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+  return canceled ? null : filePaths[0];
+});
+
+// Reveal a file in the OS file manager (Finder / Explorer).
+ipcMain.on('shell:showItemInFolder', (_event, filePath) => {
+  if (filePath) shell.showItemInFolder(filePath);
+});
+
+// Resolve the nested tree of files `include`d by a journal file.
+ipcMain.handle('journal:includes', (_event, filePath) => {
+  try {
+    return collectIncludes(filePath, (p) => fs.readFileSync(p, 'utf8'));
+  } catch {
+    return [];
+  }
 });
 
 // ── IPC: custom window controls (Windows frameless chrome) ──
