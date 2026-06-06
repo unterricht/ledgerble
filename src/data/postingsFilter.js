@@ -1,10 +1,8 @@
 // Filter and sort postings rows for the PostingsView table.
 // Ported from rd-views.jsx lines 285-290 (filter predicate) + stable comparator.
 
-// Types that represent income/expense transactions (shown in "Alle")
+// Types shown in the "Transaktionen" (all) segment — expenses and income only
 const INCOME_EXPENSE_TYPES = new Set(['expenses', 'expense', 'income']);
-// Types that represent account-side counter-postings (shown in "Kontenbewegungen")
-const ACCOUNT_MOVEMENT_TYPES = new Set(['assets', 'asset', 'liabilities', 'equity']);
 
 /**
  * filterPostings(rows, query, typeFilter)
@@ -13,8 +11,8 @@ const ACCOUNT_MOVEMENT_TYPES = new Set(['assets', 'asset', 'liabilities', 'equit
  * @param {string}   typeFilter – 'all' | 'income' | 'expenses' | 'assets'
  * @returns {object[]} filtered (new array, input not mutated)
  *
- * 'all'    → only expenses/income rows (counter-postings hidden)
- * 'assets' → all account-movement rows (assets, liabilities, equity)
+ * 'all'    → only expenses/income rows (Transaktionen — user-facing view)
+ * 'assets' → all rows without type filter (Kontenbewegungen — raw journal view)
  */
 function filterPostings(rows, query, typeFilter) {
   const q = (query || '').toLowerCase();
@@ -23,7 +21,7 @@ function filterPostings(rows, query, typeFilter) {
     if (typeFilter === 'all') {
       okT = INCOME_EXPENSE_TYPES.has(p.type);
     } else if (typeFilter === 'assets') {
-      okT = ACCOUNT_MOVEMENT_TYPES.has(p.type);
+      okT = true; // raw journal view: no type filter
     } else {
       okT = p.type === typeFilter;
     }

@@ -71,10 +71,9 @@ test("'all' zeigt nur expenses/income — keine Gegenbuchungen (assets/liabiliti
   expect(result).toHaveLength(3);
 });
 
-test("'assets' (Kontenbewegungen) zeigt assets und liabilities, aber keine expenses/income", () => {
+test("'assets' (Kontenbewegungen) zeigt alle Zeilen — Rohdatenansicht des Journals", () => {
   const result = filterPostings(rowsWithCounterpostings, '', 'assets');
-  expect(result.every(r => r.type === 'assets' || r.type === 'liabilities')).toBe(true);
-  expect(result).toHaveLength(3);
+  expect(result).toHaveLength(6);
 });
 
 test('sortPostings does not mutate input', () => {

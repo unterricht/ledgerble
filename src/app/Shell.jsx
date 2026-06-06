@@ -89,7 +89,7 @@ const TITLE_KEYS = {
   options:   'nav.options',
 };
 
-const FILTER_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'assets', 'portfolio']);
+const FILTER_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'assets', 'portfolio', 'postings']);
 const PERIOD_TABS = new Set(['overview', 'balance', 'expenses', 'income', 'assets', 'portfolio']);
 
 // ── window controls ──────────────────────────────────────────

@@ -35,12 +35,12 @@ test('typeFilter="expenses" shows only plural expenses rows from typeExtractor',
   expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
 
-// typeFilter='assets' must show only rows with type='assets', hiding 'expenses' and 'income'.
-test('typeFilter="assets" shows only plural assets rows from typeExtractor', () => {
+// typeFilter='assets' (Kontenbewegungen) is the raw journal view — shows all rows.
+test('typeFilter="assets" (Kontenbewegungen) shows all rows as raw journal view', () => {
   render(<PostingsView rows={prodRows} query="" typeFilter="assets" cur="USD" />);
   expect(screen.getByText('Bank')).toBeInTheDocument();
-  expect(screen.queryByText('Supermarket')).not.toBeInTheDocument();
-  expect(screen.queryByText('Employer')).not.toBeInTheDocument();
+  expect(screen.getByText('Supermarket')).toBeInTheDocument();
+  expect(screen.getByText('Employer')).toBeInTheDocument();
 });
 
 // typeFilter='income' still works (plural and singular both equal 'income').
