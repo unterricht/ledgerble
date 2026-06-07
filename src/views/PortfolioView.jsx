@@ -65,7 +65,7 @@ function PortfolioView({ vm = { totals: [], holdings: [], totalCost: 0, totalMar
           >
             <Eyebrow>{label}</Eyebrow>
             <div style={{ marginTop: 6 }}>
-              <Num color={color} size={20} weight={560} style={{ letterSpacing: '-0.02em' }}>
+              <Num className="rd-stat-val" color={color} size={20} weight={560} style={{ letterSpacing: '-0.02em' }}>
                 {money(value, { cents: false, cur, sign })}
               </Num>
             </div>

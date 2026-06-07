@@ -54,19 +54,85 @@
 
     button { font-family: inherit; }
 
-    /* ── print: drop all chrome, let the active report flow onto paper ── */
+    /* print-only elements are hidden on screen */
+    .print-logo { display: none; }
+    .print-footer { display: none; }
+
+    /* ── print: turn the active report tab into a clean A4 / US-Letter document ──
+       (drop-in from Entwicklung/print/ledgerble-print.css, "Quiet Ledger" tokens) */
     @media print {
-      @page { margin: 14mm; }
+      /* size:auto lets the driver pick A4 or Letter; 13mm clears both safely */
+      @page { size: auto; margin: 13mm; }
+
+      /* honour colours on colour printers; greys/parentheses carry meaning on mono */
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
       html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
       body { display: block !important; }
+
+      /* collapse the app chrome, let the report flow onto paper */
       .app-root { height: auto !important; display: block !important; }
-.print-card { box-shadow: none !important; border: none !important; border-radius: 0 !important; max-height: none !important; height: auto !important; width: 100% !important; }
+      .print-card { box-shadow: none !important; border: none !important; border-radius: 0 !important; max-height: none !important; height: auto !important; width: 100% !important; }
       .card-body, .main-pane, .pane-region, .pane-content { height: auto !important; overflow: visible !important; display: block !important; }
-      .pane-content * { height: auto !important; max-height: none !important; overflow: visible !important; }
+      /* flatten scroll regions WITHOUT touching fixed heights — forcing height:auto here
+         collapsed the chart canvas and the breakdown bars (height:13px) to nothing. */
+      .pane-content * { max-height: none !important; overflow: visible !important; }
+      .pane-content > * { height: auto !important; }
+
+      /* window chrome, sidebar, pane header, inspector, search, toolbars … gone */
       .chrome-print-hide, [data-omelette-chrome] { display: none !important; }
-      #printHeader { display: block !important; }
-      table, .rd-row { break-inside: avoid; }
       ::-webkit-scrollbar { display: none; }
+
+      /* letterhead — the print-only #printHeader the Shell renders, with gerbil mark */
+      #printHeader {
+        display: block !important;
+        padding: 0 0 10px !important;
+        margin: 0 0 16px !important;
+        border-bottom: 1.5px solid #1E2026 !important;
+      }
+      .print-logo { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 7px; }
+      #printHeader > div:first-of-type { font-size: 22px !important; letter-spacing: -0.025em; }
+      #printHeader > div:last-of-type  { font-size: 11px !important; color: #888D96 !important; }
+
+      /* compact, financial-report table density */
+      .pane-content table { width: 100% !important; border-collapse: collapse !important; }
+      /* repeat the column headers at the top of EVERY printed page … */
+      .pane-content thead { display: table-header-group !important; }
+      .pane-content tfoot { display: table-footer-group !important; }
+      /* … but sticky positioning fights pagination — force it static for print */
+      .pane-content thead th {
+        position: static !important;
+        background: #fff !important;
+        padding: 7px 10px !important;
+        font-size: 8.5pt !important;
+        border-bottom: 1.2px solid #D8DBE1 !important;
+      }
+      .pane-content tbody td {
+        padding: 4.5px 10px !important;
+        font-size: 9pt !important;
+        border-bottom: 1px solid #E6E8EC !important;
+      }
+      /* never split a single row / chart / breakdown bar across pages — but DO let a
+         long table itself flow across pages (otherwise page 1 shows only the heading). */
+      tr, .rd-row, svg, canvas { break-inside: avoid; page-break-inside: avoid; }
+      thead { break-after: avoid; }
+      /* zebra helps scan dense tables on paper */
+      .pane-content tbody tr:nth-child(even) td { background: #FBFBFC !important; }
+
+      .pane-content [class] { box-shadow: none !important; }
+
+      /* big overview stat values: keep on one line (Num is nowrap) and shrink so a
+         long amount like "1.234.567 CHF" never overflows its narrow print column. */
+      .rd-stat-val { font-size: 13pt !important; letter-spacing: -0.03em !important; }
+
+      /* running footer, repeated on every sheet; text comes from t('print.footer') */
+      .print-footer {
+        display: block;
+        position: fixed; bottom: 4mm; left: 0; right: 0;
+        text-align: center;
+        font: 8pt ui-monospace, "SF Mono", Menlo, monospace;
+        color: #AFB3BB;
+      }
     }
   </style>
 </head>

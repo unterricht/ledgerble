@@ -33,7 +33,7 @@ function StatStrip({ statStrip, categoryCount, cur }) {
         <div key={s.label} style={{ flex: 1, padding: '16px 22px', borderLeft: i ? `1px solid ${T.line}` : 'none' }}>
           <Eyebrow>{s.label}</Eyebrow>
           <div style={{ marginTop: 7 }}>
-            <Num color={s.color} weight={560} size={25} style={{ letterSpacing: '-0.02em' }}>{s.value}</Num>
+            <Num className="rd-stat-val" color={s.color} weight={560} size={25} style={{ letterSpacing: '-0.02em' }}>{s.value}</Num>
           </div>
           <div style={{ fontSize: 11.5, color: T.ink3, fontFamily: T.sans, marginTop: 3 }}>{s.sub}</div>
         </div>

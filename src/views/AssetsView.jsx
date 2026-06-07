@@ -46,7 +46,7 @@ function AssetsView({ vm = { data: [], series: [], maxY: 0, grid: [0] }, cur = '
           >
             <Eyebrow>{label}</Eyebrow>
             <div style={{ marginTop: 6 }}>
-              <Num color={color} size={20} weight={560} style={{ letterSpacing: '-0.02em' }}>
+              <Num className="rd-stat-val" color={color} size={20} weight={560} style={{ letterSpacing: '-0.02em' }}>
                 {money(value, { cents: false, cur })}
               </Num>
             </div>

@@ -18,6 +18,10 @@ test('renders stat strip and chart', () => {
   expect(screen.getByTestId('ie-chart')).toBeInTheDocument();
   expect(screen.getByText(/Savings rate/i)).toBeInTheDocument();
 });
+test('big stat values carry the rd-stat-val class so print CSS can size them down', () => {
+  const { container } = render(<OverviewView vm={vm} cur="USD" netColor="#7A47C2" catRule="top5" />);
+  expect(container.querySelectorAll('.rd-stat-val').length).toBe(4);
+});
 test('top5 collapses the 6th category into an Other row that expands', async () => {
   render(<OverviewView vm={vm} cur="USD" netColor="#7A47C2" catRule="top5" />);
   expect(screen.getByText(/Other/)).toBeInTheDocument();

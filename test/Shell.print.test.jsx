@@ -53,3 +53,55 @@ test('#printHeader shows real file basename and no hardcoded cody.journal', asyn
   // Must NOT contain the static date string '1 Jun 2026'
   expect(header.textContent).not.toContain('1 Jun 2026');
 });
+
+test('#printHeader carries the gerbil logo for the letterhead', async () => {
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
+
+  const logo = container.querySelector('#printHeader img.print-logo');
+  expect(logo).not.toBeNull();
+  expect(logo.getAttribute('src')).toContain('gerbil');
+});
+
+test('#printHeader uses localised Base + Printed labels (not a hardcoded "printed")', async () => {
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
+
+  const header = container.querySelector('#printHeader');
+  // en locale labels come from t('print.base') / t('print.printed')
+  expect(header.textContent).toContain('Base');
+  expect(header.textContent).toContain('Printed');
+  // the old hardcoded lowercase "printed " literal must be gone
+  expect(header.textContent).not.toContain('printed ');
+});
+
+test('#printHeader shows the detected base currency, not a hardcoded USD', async () => {
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
+
+  await act(async () => {
+    if (capturedOnParsed) {
+      capturedOnParsed('/some/dir/euro.journal', {
+        postings: [
+          { date: '2023-03-15', accounts: ['expenses:food'], amount: 50, currency: 'EUR' },
+          { date: '2023-06-20', accounts: ['expenses:rent'], amount: 1000, currency: 'EUR' },
+        ],
+        postingsCost: [],
+        prices: [],
+      }, null);
+    }
+  });
+
+  const header = container.querySelector('#printHeader');
+  expect(header.textContent).toContain('EUR');
+  expect(header.textContent).not.toContain('USD');
+});
+
+test('renders a print-only running footer with the localised footer text', async () => {
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
+
+  const footer = container.querySelector('.print-footer');
+  expect(footer).not.toBeNull();
+  expect(footer.textContent).toContain('generated from your journal');
+});

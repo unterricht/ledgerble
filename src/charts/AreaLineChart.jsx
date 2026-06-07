@@ -19,8 +19,6 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, minY = 0
   useEffect(() => {
     if (!ref.current) return;
 
-    const chart = echarts.init(ref.current);
-
     // category = unique interval key; axis shows sparse year/quarter ticks; tooltip the full label.
     const months = data.map(d => d.key != null ? d.key : d.m);
     const ticks = data.map(d => d.tick !== undefined ? d.tick : (d.m != null ? d.m : ''));
@@ -102,18 +100,32 @@ function AreaLineChart({ data = [], series = [], cur = 'USD', maxY = 0, minY = 0
       })),
     };
 
-    chart.setOption(option);
+    // Canvas renders fast and animates on screen; SVG prints vector-crisp.
+    // Swap the renderer around print so the printed chart isn't a blurry raster.
+    let chart;
+    const mount = (renderer) => {
+      chart = echarts.init(ref.current, null, { renderer });
+      // SVG = print: disable animation so the snapshot is fully drawn, not a frame-0 empty chart
+      chart.setOption(renderer === 'svg' ? { ...option, animation: false } : option);
+    };
+    mount('canvas');
 
     const handleResize = () => chart.resize();
+    const toSvg = () => { chart.dispose(); mount('svg'); };
+    const toCanvas = () => { chart.dispose(); mount('canvas'); };
     window.addEventListener('resize', handleResize);
+    window.addEventListener('beforeprint', toSvg);
+    window.addEventListener('afterprint', toCanvas);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('beforeprint', toSvg);
+      window.removeEventListener('afterprint', toCanvas);
       chart.dispose();
     };
   }, [data, series, cur, maxY]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={ref} style={{ width: '100%', height: 280 }} />;
+  return <div ref={ref} className="rd-chart" style={{ width: '100%', height: 280 }} />;
 }
 
 export { AreaLineChart };

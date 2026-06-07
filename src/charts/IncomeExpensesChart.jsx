@@ -18,8 +18,6 @@ function IncomeExpensesChart({ monthly = [], netColor = '#7A47C2', cur = 'USD', 
   useEffect(() => {
     if (!ref.current) return;
 
-    const chart = echarts.init(ref.current);
-
     // category = unique interval key (avoids ECharts collapsing repeats like two "Aug");
     // axis labels are sparse year/quarter ticks; tooltips use the full readable label.
     const months  = monthly.map(d => d.key != null ? d.key : d.m);
@@ -122,24 +120,37 @@ function IncomeExpensesChart({ monthly = [], netColor = '#7A47C2', cur = 'USD', 
       ],
     };
 
-    chart.setOption(option);
-
-    if (onSelectMonth) {
-      chart.on('click', params => {
-        if (params.name) onSelectMonth(params.name);
-      });
-    }
+    // Canvas renders fast and animates on screen; SVG prints vector-crisp.
+    // Swap the renderer around print so the printed chart isn't a blurry raster.
+    let chart;
+    const mount = (renderer) => {
+      chart = echarts.init(ref.current, null, { renderer });
+      // SVG = print: disable animation so the snapshot is fully drawn, not a frame-0 empty chart
+      chart.setOption(renderer === 'svg' ? { ...option, animation: false } : option);
+      if (onSelectMonth) {
+        chart.on('click', params => {
+          if (params.name) onSelectMonth(params.name);
+        });
+      }
+    };
+    mount('canvas');
 
     const handleResize = () => chart.resize();
+    const toSvg = () => { chart.dispose(); mount('svg'); };
+    const toCanvas = () => { chart.dispose(); mount('canvas'); };
     window.addEventListener('resize', handleResize);
+    window.addEventListener('beforeprint', toSvg);
+    window.addEventListener('afterprint', toCanvas);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('beforeprint', toSvg);
+      window.removeEventListener('afterprint', toCanvas);
       chart.dispose();
     };
   }, [monthly, netColor, cur]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={ref} style={{ width: '100%', height: 280 }} />;
+  return <div ref={ref} className="rd-chart" style={{ width: '100%', height: 280 }} />;
 }
 
 export { IncomeExpensesChart };

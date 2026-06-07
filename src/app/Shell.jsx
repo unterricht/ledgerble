@@ -647,11 +647,12 @@ function Shell() {
                 const printDate = new Date().toLocaleDateString();
                 return (
                   <div id="printHeader" style={{ display: 'none', padding: '0 0 14px', marginBottom: 10, borderBottom: `1px solid ${T.line2}` }}>
+                    <img className="print-logo" src="icons/gerbil.webp" alt="" />
                     <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>
                       {t(TITLE_KEYS[view])}{fileNames ? ` — ${fileNames}` : ''}
                     </div>
                     <div style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>
-                      {subtitle} · {cur} · printed {printDate}
+                      {subtitle} · {t('print.base')} {model.currency || cur} · {t('print.printed')} {printDate}
                     </div>
                   </div>
                 );
@@ -755,6 +756,8 @@ function Shell() {
             </div>
           </div>
         </div>
+        {/* print-only running footer (repeated on every printed sheet by Chromium) */}
+        <div className="print-footer">Ledgerble — {t('print.footer')}</div>
     </div>
   );
 }

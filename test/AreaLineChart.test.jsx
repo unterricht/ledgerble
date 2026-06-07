@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 const mockSetOption = jest.fn();
 jest.mock('echarts', () => ({ init: () => ({ setOption: mockSetOption, resize() {}, dispose() {} }) }));
 import { AreaLineChart } from '../src/charts/AreaLineChart';
@@ -53,4 +53,17 @@ test('setOption option contains series colors', () => {
 test('renders a container div', () => {
   const { container } = render(<AreaLineChart data={data} series={series} cur="USD" maxY={70000} grid={[0, 20000, 40000, 60000]} />);
   expect(container.querySelector('div')).toBeTruthy();
+});
+
+test('container carries the rd-chart class', () => {
+  const { container } = render(<AreaLineChart data={data} series={series} cur="USD" maxY={70000} grid={[0, 20000, 40000, 60000]} />);
+  expect(container.querySelector('.rd-chart')).not.toBeNull();
+});
+
+test('disables animation for the print (SVG) render so the chart is fully drawn, not empty', () => {
+  mockSetOption.mockClear();
+  render(<AreaLineChart data={data} series={series} cur="USD" maxY={70000} grid={[0, 20000, 40000, 60000]} />);
+  expect(mockSetOption.mock.calls[0][0].animation).not.toBe(false);
+  act(() => { window.dispatchEvent(new Event('beforeprint')); });
+  expect(mockSetOption.mock.calls.at(-1)[0].animation).toBe(false);
 });

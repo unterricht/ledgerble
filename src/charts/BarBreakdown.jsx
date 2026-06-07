@@ -72,7 +72,7 @@ export function BarBreakdown({ tree, total, cur }) {
       {sorted.map((n, i) => (
         <BarNode key={n.name} node={n} depth={0} color={T.chart[i % T.chart.length]} topMax={topMax} total={total} cur={cur} openSet={openSet} toggle={toggle} path={n.name} />
       ))}
-      {anyKids && <div style={{ padding: '12px 22px 0', fontSize: 11.5, color: T.ink4, fontFamily: T.sans }}>{t('breakdown.hint')}</div>}
+      {anyKids && <div className="chrome-print-hide" style={{ padding: '12px 22px 0', fontSize: 11.5, color: T.ink4, fontFamily: T.sans }}>{t('breakdown.hint')}</div>}
     </div>
   );
 }
