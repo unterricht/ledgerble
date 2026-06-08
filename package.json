@@ -1,16 +1,23 @@
 {
   "name": "ledgerble",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Gui for Ledger CLI",
   "main": "main.js",
   "scripts": {
     "start": "npm run bundle && electron .",
     "bundle": "node esbuild.config.mjs",
     "test": "jest",
-    "dist": "npm run bundle && electron-builder --mac --arm64"
+    "dist": "npm run bundle && electron-builder",
+    "dist:mac": "npm run bundle && electron-builder --mac",
+    "dist:win": "npm run bundle && electron-builder --win",
+    "dist:linux": "npm run bundle && electron-builder --linux"
   },
   "author": "Sean Bridges",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unterricht/ledgerble.git"
+  },
   "bin": {
     "ledgerble": "ledgerble.js"
   },
@@ -23,7 +30,8 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64"
+            "arm64",
+            "x64"
           ]
         }
       ],
@@ -53,8 +61,19 @@
       ]
     },
     "linux": {
-      "icon": "icons/gerbil.png"
+      "icon": "icons/gerbil.png",
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "unterricht",
+        "repo": "ledgerble"
+      }
+    ],
     "files": [
       "main.js",
       "knownKeys.js",

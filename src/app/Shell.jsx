@@ -16,6 +16,7 @@ import { makeTypeExtractor } from '../data/typeExtractor';
 import { compute } from '../data/compute';
 const { isDeselectedDeep, toggleAccountInDesel } = require('../data/accountTree');
 const { findRedundantFiles } = require('../data/redundancy');
+const { buildPdfFilename } = require('../data/pdfFilename');
 import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
@@ -334,7 +335,7 @@ function JournalFooter({ files, includesByFile, redundantPaths, onOpen, onReload
 }
 
 // ── File menu (clickable, both platforms) ────────────────────
-function FileMenu({ mod, onPrint, itemStyle }) {
+function FileMenu({ mod, onPrint, onPrintPdf, itemStyle }) {
   const [open, setOpen] = useState(false);
   const row = { padding: '6px 12px', fontSize: 13, fontFamily: T.sans, color: T.ink, cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 28, borderRadius: 6, whiteSpace: 'nowrap' };
   const acc = { color: T.ink4, fontFamily: T.sans, fontSize: 12 };
@@ -349,7 +350,7 @@ function FileMenu({ mod, onPrint, itemStyle }) {
             <div className="rd-menu" style={row} onClick={() => setOpen(false)}>{t('file.reload')} <span style={acc}>{mod}R</span></div>
             <div style={{ height: 1, background: T.line, margin: '4px 6px' }} />
             <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>{t('file.print')} <span style={acc}>{mod}P</span></div>
-            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrint(); }}>{t('file.print_pdf')}</div>
+            <div className="rd-menu" style={row} onClick={() => { setOpen(false); onPrintPdf(); }}>{t('file.print_pdf')}</div>
           </div>
         </>
       )}
@@ -546,6 +547,20 @@ function Shell() {
   const onSearch = v => { setQuery(v); };
 
   const doPrint = () => window.print();
+  const doPrintPdf = () => {
+    if (!(window.api && window.api.printToPdf)) return;
+    // Use the main (non-included) journal as the file name; included files are
+    // already filtered out of activeFiles, so its first key is the parent.
+    const fileName = Array.from(activeFiles.keys())[0] || null;
+    const name = buildPdfFilename({
+      fileName,
+      tabName: t(TITLE_KEYS[view]),
+      intervals: model.intervals,
+      period,
+      connector: t('print.filename_to'),
+    });
+    window.api.printToPdf(name);
+  };
   useEffect(() => {
     const onKey = e => { if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); window.print(); } };
     window.addEventListener('keydown', onKey);
@@ -595,7 +610,7 @@ function Shell() {
         <WinControls />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', height: 34, background: T.surface, borderBottom: `1px solid ${T.line}`, paddingLeft: 8, paddingRight: 10, gap: 2 }}>
-        <FileMenu mod="Ctrl+" onPrint={doPrint} itemStyle={winMenuItem} />
+        <FileMenu mod="Ctrl+" onPrint={doPrint} onPrintPdf={doPrintPdf} itemStyle={winMenuItem} />
         {[{ key: 'menu.edit', label: 'Edit' }, { key: 'menu.view', label: 'View' }, { key: 'menu.help', label: 'Help' }].map(m => <span key={m.key} className="rd-menu" style={winMenuItem}>{t(m.key)}</span>)}
         <div style={{ flex: 1 }} />
         <SearchField query={query} onChange={onSearch} width={196} />
@@ -647,11 +662,14 @@ function Shell() {
                 const printDate = new Date().toLocaleDateString();
                 return (
                   <div id="printHeader" style={{ display: 'none', padding: '0 0 14px', marginBottom: 10, borderBottom: `1px solid ${T.line2}` }}>
-                    <img className="print-logo" src="icons/gerbil.webp" alt="" />
-                    <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>
+                    <div className="print-brand" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <img className="print-logo" src="icons/gerbil.webp" alt="" />
+                      <span style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.sans, letterSpacing: '-0.02em' }}>Ledger<span style={{ color: T.pine }}>ble</span></span>
+                    </div>
+                    <div className="print-title" style={{ fontSize: 16, fontWeight: 700, color: T.ink, fontFamily: T.sans }}>
                       {t(TITLE_KEYS[view])}{fileNames ? ` — ${fileNames}` : ''}
                     </div>
-                    <div style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>
+                    <div className="print-sub" style={{ fontSize: 12, color: T.ink2, fontFamily: T.sans, marginTop: 3 }}>
                       {subtitle} · {t('print.base')} {model.currency || cur} · {t('print.printed')} {printDate}
                     </div>
                   </div>
@@ -756,8 +774,6 @@ function Shell() {
             </div>
           </div>
         </div>
-        {/* print-only running footer (repeated on every printed sheet by Chromium) */}
-        <div className="print-footer">Ledgerble — {t('print.footer')}</div>
     </div>
   );
 }

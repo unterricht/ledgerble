@@ -33,6 +33,14 @@ function setupAppMenu(mainWindow) {
                         }
                     }
                 },
+                {
+                    label: t('file.print_pdf'),
+                    click: () => {
+                        if (mainWindow && mainWindow.webContents) {
+                            mainWindow.webContents.executeJavaScript('window.api.printToPdf()');
+                        }
+                    }
+                },
                 isMac ? { role: 'close', label: t('menu.close') } : { role: 'quit', label: t('menu.quit') }
             ]
         },

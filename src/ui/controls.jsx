@@ -54,7 +54,7 @@ export function Num({ children, color, weight = 460, size, style, className }) {
     <span className={className} style={{
       fontFamily: T.mono, fontVariantNumeric: 'tabular-nums',
       fontFeatureSettings: '"tnum"', color, fontWeight: weight,
-      fontSize: size, letterSpacing: '-0.01em', whiteSpace: 'nowrap', ...style,
+      fontSize: size, letterSpacing: '-0.01em', ...style,
     }}>{children}</span>
   );
 }

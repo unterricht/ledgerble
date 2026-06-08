@@ -56,7 +56,6 @@
 
     /* print-only elements are hidden on screen */
     .print-logo { display: none; }
-    .print-footer { display: none; }
 
     /* ── print: turn the active report tab into a clean A4 / US-Letter document ──
        (drop-in from Entwicklung/print/ledgerble-print.css, "Quiet Ledger" tokens) */
@@ -90,12 +89,14 @@
         margin: 0 0 16px !important;
         border-bottom: 1.5px solid #1E2026 !important;
       }
-      .print-logo { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 7px; }
-      #printHeader > div:first-of-type { font-size: 22px !important; letter-spacing: -0.025em; }
-      #printHeader > div:last-of-type  { font-size: 11px !important; color: #888D96 !important; }
+      .print-logo { display: inline-block; width: 18px; height: 18px; }
+      #printHeader .print-title { font-size: 22px !important; letter-spacing: -0.025em; }
+      #printHeader .print-sub   { font-size: 11px !important; color: #888D96 !important; }
 
-      /* compact, financial-report table density */
-      .pane-content table { width: 100% !important; border-collapse: collapse !important; }
+      /* compact, financial-report table density. table-layout:fixed pins the table to
+         the page width and splits it into columns, so a right-aligned amount in the last
+         column can never spill past the right margin (which clipped the € + cents). */
+      .pane-content table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
       /* repeat the column headers at the top of EVERY printed page … */
       .pane-content thead { display: table-header-group !important; }
       .pane-content tfoot { display: table-footer-group !important; }
@@ -103,14 +104,16 @@
       .pane-content thead th {
         position: static !important;
         background: #fff !important;
-        padding: 7px 10px !important;
+        padding: 7px 6px !important;
         font-size: 8.5pt !important;
         border-bottom: 1.2px solid #D8DBE1 !important;
       }
       .pane-content tbody td {
-        padding: 4.5px 10px !important;
+        padding: 4.5px 6px !important;
         font-size: 9pt !important;
         border-bottom: 1px solid #E6E8EC !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
       }
       /* never split a single row / chart / breakdown bar across pages — but DO let a
          long table itself flow across pages (otherwise page 1 shows only the heading). */
@@ -121,18 +124,19 @@
 
       .pane-content [class] { box-shadow: none !important; }
 
-      /* big overview stat values: keep on one line (Num is nowrap) and shrink so a
-         long amount like "1.234.567 CHF" never overflows its narrow print column. */
-      .rd-stat-val { font-size: 13pt !important; letter-spacing: -0.03em !important; }
+      /* big overview stat values: keep on one line and shrink so a long amount like
+         "1.234.567 CHF" never overflows its narrow print column. */
+      .rd-stat-val { font-size: 13pt !important; letter-spacing: -0.03em !important; white-space: nowrap !important; }
 
-      /* running footer, repeated on every sheet; text comes from t('print.footer') */
-      .print-footer {
-        display: block;
-        position: fixed; bottom: 4mm; left: 0; right: 0;
-        text-align: center;
-        font: 8pt ui-monospace, "SF Mono", Menlo, monospace;
-        color: #AFB3BB;
-      }
+      /* Postings table: hand-tuned column widths (table-layout:fixed splits to these).
+         Date + type are slim, the amount only needs ~18%, so the account gets the room. */
+      .rd-postings thead th:nth-child(1), .rd-postings tbody td:nth-child(1) { width: 15% !important; }
+      .rd-postings thead th:nth-child(2), .rd-postings tbody td:nth-child(2) { width: 20% !important; }
+      .rd-postings thead th:nth-child(3), .rd-postings tbody td:nth-child(3) { width: 36% !important; }
+      .rd-postings thead th:nth-child(4), .rd-postings tbody td:nth-child(4) { width: 18% !important; }
+      .rd-postings thead th:nth-child(5), .rd-postings tbody td:nth-child(5) { width: 11% !important; }
+      /* date + amount are fixed-format values — never break them at a hyphen or before € */
+      .rd-postings tbody td:nth-child(1), .rd-postings tbody td:nth-child(4) { white-space: nowrap !important; }
     }
   </style>
 </head>

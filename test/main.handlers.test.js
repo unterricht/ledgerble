@@ -16,9 +16,9 @@ jest.mock('electron', () => ({
     getVersion: () => '0.0.0-test',
     setAboutPanelOptions: jest.fn(),
   },
-  BrowserWindow: jest.fn(),
+  BrowserWindow: Object.assign(jest.fn(), { getFocusedWindow: jest.fn() }),
   ipcMain: { on: jest.fn(), handle: jest.fn(), removeAllListeners: jest.fn() },
-  dialog: { showOpenDialog: jest.fn() },
+  dialog: { showOpenDialog: jest.fn(), showSaveDialog: jest.fn() },
   shell: { showItemInFolder: jest.fn() },
 }));
 
@@ -102,6 +102,71 @@ describe("ipcMain handle 'journal:includes'", () => {
     const spy = jest.spyOn(fs, 'readFileSync').mockImplementation(() => { throw new Error('ENOENT'); });
     expect(handleFor('journal:includes')({}, '/nope.ledger')).toEqual([]);
     spy.mockRestore();
+  });
+});
+
+describe("ipcMain handle 'print-to-pdf'", () => {
+  function fakeWindow() {
+    return { webContents: { printToPDF: jest.fn().mockResolvedValue(Buffer.from('%PDF-fake')) } };
+  }
+
+  it('renders a localised "page X of Y" footer with Chromium page-number spans and writes the chosen file', async () => {
+    const { loadLocale } = require('../i18n');
+    loadLocale('de');
+
+    const win = fakeWindow();
+    electron.BrowserWindow.getFocusedWindow.mockReturnValue(win);
+    electron.dialog.showSaveDialog.mockResolvedValue({ canceled: false, filePath: '/home/u/report.pdf' });
+    const writeSpy = jest.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+
+    const result = await handleFor('print-to-pdf')({});
+
+    // footer template handed to Chromium must carry the localised text + the
+    // pageNumber/totalPages spans Chromium substitutes at print time.
+    const pdfOpts = win.webContents.printToPDF.mock.calls[0][0];
+    expect(pdfOpts.displayHeaderFooter).toBe(true);
+    expect(pdfOpts.printBackground).toBe(true);
+    expect(pdfOpts.footerTemplate).toContain('<span class="pageNumber"></span>');
+    expect(pdfOpts.footerTemplate).toContain('<span class="totalPages"></span>');
+    expect(pdfOpts.footerTemplate).toContain('Seite');
+    expect(pdfOpts.footerTemplate).toContain('von');
+    // an explicit font size is required or Chromium renders the footer invisibly,
+    // and the footer should adopt the design's muted subtext colour + system sans
+    expect(pdfOpts.footerTemplate).toMatch(/font-size:\s*[\d.]+(pt|px)/);
+    expect(pdfOpts.footerTemplate).toContain('#888D96');
+    expect(pdfOpts.footerTemplate).toMatch(/-apple-system/);
+
+    expect(writeSpy).toHaveBeenCalledWith('/home/u/report.pdf', expect.anything());
+    expect(result).toEqual({ canceled: false, filePath: '/home/u/report.pdf' });
+
+    writeSpy.mockRestore();
+    loadLocale('en');
+  });
+
+  it('uses the renderer-supplied file name as the save-dialog default', async () => {
+    const win = fakeWindow();
+    electron.BrowserWindow.getFocusedWindow.mockReturnValue(win);
+    electron.dialog.showSaveDialog.mockResolvedValue({ canceled: true, filePath: undefined });
+    const writeSpy = jest.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+
+    await handleFor('print-to-pdf')({}, 'Johannes Budget - Income & Expenses - 04-2023 bis 07-2025.pdf');
+
+    const saveOpts = electron.dialog.showSaveDialog.mock.calls[0][1];
+    expect(saveOpts.defaultPath).toBe('Johannes Budget - Income & Expenses - 04-2023 bis 07-2025.pdf');
+    writeSpy.mockRestore();
+  });
+
+  it('does not write a file when the save dialog is cancelled', async () => {
+    const win = fakeWindow();
+    electron.BrowserWindow.getFocusedWindow.mockReturnValue(win);
+    electron.dialog.showSaveDialog.mockResolvedValue({ canceled: true, filePath: undefined });
+    const writeSpy = jest.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+
+    const result = await handleFor('print-to-pdf')({});
+
+    expect(writeSpy).not.toHaveBeenCalled();
+    expect(result).toEqual({ canceled: true });
+    writeSpy.mockRestore();
   });
 });
 

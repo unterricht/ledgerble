@@ -121,7 +121,7 @@ function OverviewView({ vm, cur, netColor = T.net, catRule = 'top5' }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ width: 7, height: 7, borderRadius: 2, background: T.ink4, flexShrink: 0 }} />
                       <span style={{ fontSize: 12.5, color: T.ink2, fontFamily: T.sans, fontWeight: 500 }}>{t('overview.other')}</span>
-                      <span style={{ fontSize: 11, color: T.pine, fontFamily: T.sans }}>· {t('overview.show_more').replace('{n}', rest.length)}</span>
+                      <span className="chrome-print-hide" style={{ fontSize: 11, color: T.pine, fontFamily: T.sans }}>· {t('overview.show_more').replace('{n}', rest.length)}</span>
                     </div>
                   </td>
                   <td style={tdStyle('right')}><Num color={T.ink4} size={12.5}>—</Num></td>

@@ -91,7 +91,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
           {t('postings.raw_journal_note')}
         </div>
       )}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <table className="rd-postings" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr>
             {COLUMNS.map(col => (

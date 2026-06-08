@@ -39,6 +39,23 @@ describe('App Menu', () => {
         expect(mockWin.webContents.executeJavaScript).toHaveBeenCalledWith('window.print()');
     });
 
+    it('should create a "Print to PDF…" option that triggers the printToPdf bridge', () => {
+        const mockWin = {
+            webContents: {
+                executeJavaScript: jest.fn()
+            }
+        };
+
+        const template = setupAppMenu(mockWin);
+        const fileMenu = template.find(item => item.label === 'File');
+
+        const pdfOption = fileMenu.submenu.find(item => item.label === 'Print to PDF…');
+        expect(pdfOption).toBeDefined();
+
+        pdfOption.click();
+        expect(mockWin.webContents.executeJavaScript).toHaveBeenCalledWith('window.api.printToPdf()');
+    });
+
     it('should translate menu items according to locale', () => {
         const { loadLocale } = require('../i18n');
         loadLocale('de');

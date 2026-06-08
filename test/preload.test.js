@@ -159,6 +159,16 @@ describe('preload', () => {
     });
   });
 
+  describe('printToPdf', () => {
+    it('should invoke "print-to-pdf" with the suggested file name and return the result', async () => {
+      const electron = require('electron');
+      electron.ipcRenderer.invoke.mockResolvedValue({ canceled: false, filePath: '/home/user/Budget.pdf' });
+      const result = await api.printToPdf('Budget - Income & Expenses - 04-2023.pdf');
+      expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith('print-to-pdf', 'Budget - Income & Expenses - 04-2023.pdf');
+      expect(result).toEqual({ canceled: false, filePath: '/home/user/Budget.pdf' });
+    });
+  });
+
   describe('platform', () => {
     it('should expose process.platform as a string', () => {
       expect(typeof api.platform).toBe('string');

@@ -72,6 +72,13 @@ contextBridge.exposeInMainWorld('api', {
     return ipcRenderer.invoke('journal:includes', filePath);
   },
 
+  /**
+   * Render the current window to a PDF with a localised, centered
+   * "page X of Y" footer and prompt the user for a save location.
+   * Returns { canceled, filePath }.
+   */
+  printToPdf: (defaultName) => ipcRenderer.invoke('print-to-pdf', defaultName),
+
   // ── Menu ──────────────────────────────────────────────────────
   menu: {
     rebuild: () => {

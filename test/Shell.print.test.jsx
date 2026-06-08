@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 jest.mock('../src/charts/IncomeExpensesChart', () => ({ IncomeExpensesChart: () => <div data-testid="ie-chart" /> }));
 import { Shell } from '../src/app/Shell';
 
@@ -21,6 +21,25 @@ test('Cmd+P triggers window.print', async () => {
   const e = new KeyboardEvent('keydown', { key: 'p', metaKey: true });
   window.dispatchEvent(e);
   expect(window.print).toHaveBeenCalled();
+});
+
+test('"Print to PDF…" file-menu item triggers window.api.printToPdf (not window.print)', async () => {
+  window.api.platform = 'win32';
+  window.api.printToPdf = jest.fn().mockResolvedValue({ canceled: true });
+
+  await act(async () => { render(<Shell />); });
+
+  // open the File menu (Windows chrome menu bar)
+  fireEvent.click(screen.getByText('File'));
+  fireEvent.click(screen.getByText('Print to PDF…'));
+
+  expect(window.api.printToPdf).toHaveBeenCalled();
+  // a smart default filename is passed: ends in .pdf and names the active tab
+  const suggested = window.api.printToPdf.mock.calls[0][0];
+  expect(typeof suggested).toBe('string');
+  expect(suggested.endsWith('.pdf')).toBe(true);
+  expect(suggested).toContain('Income & Expenses');
+  expect(window.print).not.toHaveBeenCalled();
 });
 
 test('#printHeader shows real file basename and no hardcoded cody.journal', async () => {
@@ -63,6 +82,18 @@ test('#printHeader carries the gerbil logo for the letterhead', async () => {
   expect(logo.getAttribute('src')).toContain('gerbil');
 });
 
+test('#printHeader shows the Ledgerble wordmark next to the gerbil logo', async () => {
+  let container;
+  await act(async () => { ({ container } = render(<Shell />)); });
+
+  const header = container.querySelector('#printHeader');
+  expect(header.textContent).toContain('Ledgerble');
+  // wordmark sits in a brand row together with the logo
+  const brand = container.querySelector('#printHeader .print-brand');
+  expect(brand).not.toBeNull();
+  expect(brand.querySelector('img.print-logo')).not.toBeNull();
+});
+
 test('#printHeader uses localised Base + Printed labels (not a hardcoded "printed")', async () => {
   let container;
   await act(async () => { ({ container } = render(<Shell />)); });
@@ -97,11 +128,9 @@ test('#printHeader shows the detected base currency, not a hardcoded USD', async
   expect(header.textContent).not.toContain('USD');
 });
 
-test('renders a print-only running footer with the localised footer text', async () => {
+test('does not render a print footer (removed — it carried no useful information)', async () => {
   let container;
   await act(async () => { ({ container } = render(<Shell />)); });
 
-  const footer = container.querySelector('.print-footer');
-  expect(footer).not.toBeNull();
-  expect(footer.textContent).toContain('generated from your journal');
+  expect(container.querySelector('.print-footer')).toBeNull();
 });

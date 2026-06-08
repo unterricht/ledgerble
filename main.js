@@ -365,6 +365,59 @@ ipcMain.handle('journal:includes', (_event, filePath) => {
   }
 });
 
+// ── IPC: Print to PDF with a localised "page X of Y" footer ──
+// window.print() opens the native macOS print panel, which can't add page
+// numbers, and Chromium ignores CSS page counters. printToPDF with a
+// footerTemplate is the only reliable path: Chromium substitutes the
+// pageNumber/totalPages spans, and we localise the text around them.
+ipcMain.handle('print-to-pdf', async (_event, defaultName) => {
+  const targetWin = (BrowserWindow.getFocusedWindow && BrowserWindow.getFocusedWindow()) || win;
+  if (!targetWin) return { canceled: true };
+
+  try {
+    const { t } = require('./i18n');
+    const footer = t('print.page_x_of_y')
+      .replace('{x}', '<span class="pageNumber"></span>')
+      .replace('{y}', '<span class="totalPages"></span>');
+    // An explicit font size is mandatory: Chromium defaults the footer font to
+    // ~0, rendering it invisible. Match the printed letterhead's typography —
+    // the "Quiet Ledger" system-sans stack, the muted #888D96 subtext colour
+    // and the 8.5pt table-density size — so the footer sits with the document.
+    // The 13mm padding/margins match index.html's @page { margin:13mm }.
+    const footerStyle = [
+      'width:100%',
+      'box-sizing:border-box',
+      'padding:0 13mm',
+      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif",
+      'font-size:8.5pt',
+      'letter-spacing:0.01em',
+      'color:#888D96',
+      'text-align:center',
+    ].join(';');
+    const footerTemplate = `<div style="${footerStyle}">${footer}</div>`;
+
+    const pdf = await targetWin.webContents.printToPDF({
+      printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate,
+      margins: { marginType: 'custom', top: 0.51, bottom: 0.51, left: 0.51, right: 0.51 },
+    });
+
+    const { canceled, filePath } = await dialog.showSaveDialog(targetWin, {
+      defaultPath: defaultName || 'ledgerble.pdf',
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+    if (canceled || !filePath) return { canceled: true };
+
+    await fs.promises.writeFile(filePath, pdf);
+    return { canceled: false, filePath };
+  } catch (err) {
+    console.error('print-to-pdf failed', err);
+    throw err;
+  }
+});
+
 // ── IPC: custom window controls (Windows frameless chrome) ──
 ipcMain.on('window:minimize', () => { if (win) win.minimize(); });
 ipcMain.on('window:maximize', () => { if (!win) return; win.isMaximized() ? win.unmaximize() : win.maximize(); });

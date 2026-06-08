@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Print-only, user-facing strings that must be localised across all 12 locales.
-const PRINT_KEYS = ['print.base', 'print.printed', 'print.footer'];
+const PRINT_KEYS = ['print.base', 'print.printed', 'print.page_x_of_y'];
 
 const dir = path.join(__dirname, '..', 'locales');
 

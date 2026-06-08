@@ -18,6 +18,10 @@ test('filters by query prop', () => {
   expect(screen.getByText('Rent Co')).toBeInTheDocument();
   expect(screen.queryByText('Acme')).not.toBeInTheDocument();
 });
+test('table is tagged rd-postings so print CSS can set per-column widths', () => {
+  const { container } = render(<PostingsView rows={rows} query="" typeFilter="all" cur="USD" />);
+  expect(container.querySelector('table.rd-postings')).not.toBeNull();
+});
 test('clicking a column header re-sorts', async () => {
   render(<PostingsView rows={rows} query="" typeFilter="all" cur="USD" />);
   await userEvent.click(screen.getByText(/Payee/i));

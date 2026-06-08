@@ -1,0 +1,50 @@
+name: Release
+
+# Baut bei jedem Versions-Tag (z. B. v2.0.0) auf allen drei Betriebssystemen
+# die fertigen Installer und hängt sie automatisch an das GitHub-Release an.
+#
+#   git tag v2.0.0
+#   git push origin v2.0.0
+#
+# electron-builder erkennt das jeweilige Runner-Betriebssystem selbst und baut
+# dessen Targets (macOS -> .dmg, Windows -> .exe/NSIS + .zip, Linux -> .AppImage).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Wird benötigt, damit electron-builder das Release erstellen und Assets
+# hochladen darf (nutzt den automatisch bereitgestellten GITHUB_TOKEN).
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      # Schlägt ein OS fehl, sollen die anderen trotzdem fertig bauen.
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build renderer & publish installers
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Wir signieren bewusst NICHT (kein Apple-/Windows-Zertifikat).
+          # Verhindert, dass electron-builder auf dem Mac-Runner nach einer
+          # Signatur-Identität sucht und fehlschlägt.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run bundle && npx electron-builder --publish always

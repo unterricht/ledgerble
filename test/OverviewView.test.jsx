@@ -22,6 +22,12 @@ test('big stat values carry the rd-stat-val class so print CSS can size them dow
   const { container } = render(<OverviewView vm={vm} cur="USD" netColor="#7A47C2" catRule="top5" />);
   expect(container.querySelectorAll('.rd-stat-val').length).toBe(4);
 });
+test('the "show N more" link is marked chrome-print-hide so it is dropped from print', () => {
+  const { container } = render(<OverviewView vm={vm} cur="USD" netColor="#7A47C2" catRule="top5" />);
+  const hidden = container.querySelector('.chrome-print-hide');
+  expect(hidden).not.toBeNull();
+  expect(hidden.textContent).toMatch(/more/i);
+});
 test('top5 collapses the 6th category into an Other row that expands', async () => {
   render(<OverviewView vm={vm} cur="USD" netColor="#7A47C2" catRule="top5" />);
   expect(screen.getByText(/Other/)).toBeInTheDocument();
