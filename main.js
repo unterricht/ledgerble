@@ -11,6 +11,9 @@ const moment = require('moment');
 const { parseHLedgerVal } = require('./hledger')
 const settings = require('settings-store')
 const { KNOWN_KEYS } = require('./knownKeys')
+const os = require('os')
+const { resolveBinaries } = require('./binaryResolver')
+const { classifyParseError } = require('./parseError')
 
 class Posting {
   constructor(date, accounts, amount, currency, merchant, type, note) {
@@ -30,6 +33,30 @@ settings.init({
   publisherName: "sgb",
   reverseDNS: "com.github.sbridges"
 })
+
+// Resolve ledger/hledger binaries once at startup. GUI apps launched from the
+// Dock/Finder/Start menu don't inherit the shell PATH, so the bare "ledger"
+// default often fails even when the binary is installed (e.g. Homebrew in
+// /opt/homebrew/bin). Probe well-known locations and persist what we find so
+// the renderer and the Options UI see the real path.
+try {
+  resolveBinaries({
+    platform: process.platform,
+    homedir: os.homedir(),
+    canRun: (cmd) => {
+      try {
+        execSync('"' + cmd + '" --version', { stdio: 'ignore' });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    getSetting: (k, d) => settings.value(k, d),
+    setSetting: (k, v) => settings.setValue(k, v),
+  });
+} catch (e) {
+  console.log('binary resolution failed', e);
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -150,11 +177,8 @@ async function parse(event, command, hledger, file) {
       null);
   } catch (t) {
     console.log('couldnt parse', file, t)
-    event.reply(
-      'parsed',
-      file,
-      null,
-      "error:" + t);
+    const tool = hledger ? 'hledger' : 'ledger';
+    event.reply('parsed', file, null, classifyParseError(t, tool));
   }
 }
 
