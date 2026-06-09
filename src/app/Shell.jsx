@@ -30,6 +30,7 @@ import { OptionsView } from '../views/OptionsView';
 const SETTINGS_DEFAULTS = {
   'options.ledger.command':  'ledger',
   'options.hledger':         false,
+  'options.hledger.command': 'hledger',
   'options.expenses.regex':  '^expenses?(:|$)',
   'options.income.regex':    '^(income|revenue)s?(:|$)',
   'options.assets.regex':    '^assets?(:|$)',
@@ -372,6 +373,7 @@ function Shell() {
 
   // ── Settings cache ───────────────────────────────────────────────────────
   const [settingsCache, setSettingsCache] = useState({});
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   useEffect(() => {
     if (window.api && window.api.settings && window.api.settings.getAll) {
       window.api.settings.getAll().then(cache => {
@@ -381,7 +383,10 @@ function Shell() {
           loadLocale(effective);
           setSettingsCache(cache);
         }
-      }).catch(() => {});
+        setSettingsLoaded(true);
+      }).catch(() => { setSettingsLoaded(true); });
+    } else {
+      setSettingsLoaded(true);
     }
   }, []);
 
@@ -441,22 +446,26 @@ function Shell() {
     [activeFiles, s.currency, s.period, s.deselectedAccounts, s.dateRange, typeExtractor]
   );
 
-  // ── Load persisted file list on mount ────────────────────────────────────
+  // ledger vs hledger binary, chosen by the hledger mode flag.
+  const ledgerCommand = () =>
+    getSetting('options.hledger')
+      ? getSetting('options.hledger.command')
+      : getSetting('options.ledger.command');
+
+  // ── Load persisted file list on mount (after settings are loaded) ─────────
   useEffect(() => {
+    if (!settingsLoaded) return;
     if (!window.api || !window.api.settings || !window.api.settings.get) return;
     window.api.settings.get('files.list', []).then(filesList => {
       if (!Array.isArray(filesList)) return;
       for (const path of filesList) {
         if (window.api.parse) {
-          const cmd = getSetting('options.ledger.command');
-          const hledger = getSetting('options.hledger');
-          window.api.parse(cmd, hledger, path);
+          window.api.parse(ledgerCommand(), getSetting('options.hledger'), path);
         }
       }
     }).catch(() => {});
-  // Run once on mount — getSetting ref will be stable on first render
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [settingsLoaded]);
 
   // ── Journal file actions (footer menu) ───────────────────────────────────
   const persistFileList = (paths) => {
@@ -466,7 +475,7 @@ function Shell() {
   };
   const parseFile = (path) => {
     if (window.api && window.api.parse) {
-      window.api.parse(getSetting('options.ledger.command'), getSetting('options.hledger'), path);
+      window.api.parse(ledgerCommand(), getSetting('options.hledger'), path);
     }
   };
   const handleOpenJournal = async () => {
