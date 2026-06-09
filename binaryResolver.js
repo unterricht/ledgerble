@@ -61,4 +61,21 @@ function findBinary(binary, configuredCmd, { platform, homedir, canRun }) {
   return { command: null, changed: false };
 }
 
-module.exports = { candidatesFor, findBinary };
+// Resolves both binaries against settings and persists any path that changed.
+// `getSetting(key, default)` / `setSetting(key, value)` wrap the settings store.
+function resolveBinaries({ platform, homedir, canRun, getSetting, setSetting }) {
+  const jobs = [
+    { binary: 'ledger',  key: 'options.ledger.command',  def: 'ledger' },
+    { binary: 'hledger', key: 'options.hledger.command', def: 'hledger' },
+  ];
+  const summary = {};
+  for (const { binary, key, def } of jobs) {
+    const configured = getSetting(key, def);
+    const res = findBinary(binary, configured, { platform, homedir, canRun });
+    if (res.changed && res.command) setSetting(key, res.command);
+    summary[binary] = res;
+  }
+  return summary;
+}
+
+module.exports = { candidatesFor, findBinary, resolveBinaries };
