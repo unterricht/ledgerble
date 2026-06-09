@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "Alle transacties · {first} – {last}",
   "options.ledger_path": "ledger-cli pad",
   "options.ledger_path_hint": "Uitvoerbaar bestand voor het lezen van journalen",
+  "error.binary_not_found.title": "{tool} niet gevonden",
+  "error.binary_not_found.body": "Ledgerble kon \"{tool}\" niet vinden. Installeer het of stel het pad in bij Opties.",
+  "error.binary_not_found.action": "Opties openen",
+  "error.parse_error.body": "Kon dit journaal niet lezen: {message}",
   "about.credits": "Gemaakt door Sean Bridges\nonderhouden door Johannes Wilke"
 }

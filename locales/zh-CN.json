@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "所有交易 · {first} – {last}",
   "options.ledger_path": "ledger-cli 路径",
   "options.ledger_path_hint": "用于读取日记账文件的可执行程序",
+  "error.binary_not_found.title": "未找到 {tool}",
+  "error.binary_not_found.body": "Ledgerble 找不到\"{tool}\"。请安装它，或在选项中设置其路径。",
+  "error.binary_not_found.action": "打开选项",
+  "error.parse_error.body": "无法读取此日记账：{message}",
   "about.credits": "由 Sean Bridges 创建\n由 Johannes Wilke 维护"
 }

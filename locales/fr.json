@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "Toutes les transactions · {first} – {last}",
   "options.ledger_path": "Chemin de ledger-cli",
   "options.ledger_path_hint": "Exécutable pour lire les journaux",
+  "error.binary_not_found.title": "{tool} est introuvable",
+  "error.binary_not_found.body": "Ledgerble n'a pas trouvé « {tool} ». Installez-le ou définissez son chemin dans les Options.",
+  "error.binary_not_found.action": "Ouvrir les Options",
+  "error.parse_error.body": "Impossible de lire ce journal : {message}",
   "about.credits": "Créé par Sean Bridges\nmaintenu par Johannes Wilke"
 }

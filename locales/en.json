@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "All transactions · {first} – {last}",
   "options.ledger_path": "ledger-cli path",
   "options.ledger_path_hint": "Executable used to read journals",
+  "error.binary_not_found.title": "{tool} was not found",
+  "error.binary_not_found.body": "Ledgerble couldn't find \"{tool}\". Install it, or set its path under Options.",
+  "error.binary_not_found.action": "Open Options",
+  "error.parse_error.body": "Couldn't read this journal: {message}",
   "about.credits": "Created by Sean Bridges\nmaintained by Johannes Wilke"
 }

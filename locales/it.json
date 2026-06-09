@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "Tutte le transazioni · {first} – {last}",
   "options.ledger_path": "Percorso di ledger-cli",
   "options.ledger_path_hint": "Eseguibile per leggere i diari",
+  "error.binary_not_found.title": "{tool} non è stato trovato",
+  "error.binary_not_found.body": "Ledgerble non ha trovato «{tool}». Installalo oppure imposta il percorso nelle Opzioni.",
+  "error.binary_not_found.action": "Apri Opzioni",
+  "error.parse_error.body": "Impossibile leggere questo diario: {message}",
   "about.credits": "Creato da Sean Bridges\ngestito da Johannes Wilke"
 }

@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "Все транзакции · {first} – {last}",
   "options.ledger_path": "Путь к ledger-cli",
   "options.ledger_path_hint": "Исполняемый файл для чтения журналов",
+  "error.binary_not_found.title": "{tool} не найден",
+  "error.binary_not_found.body": "Ledgerble не удалось найти «{tool}». Установите его или укажите путь в Параметрах.",
+  "error.binary_not_found.action": "Открыть параметры",
+  "error.parse_error.body": "Не удалось прочитать этот журнал: {message}",
   "about.credits": "Создано Sean Bridges\nподдерживается Johannes Wilke"
 }

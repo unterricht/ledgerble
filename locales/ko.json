@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "모든 거래 · {first} – {last}",
   "options.ledger_path": "ledger-cli 경로",
   "options.ledger_path_hint": "저널을 읽는 데 사용하는 실행 파일",
+  "error.binary_not_found.title": "{tool}을(를) 찾을 수 없습니다",
+  "error.binary_not_found.body": "Ledgerble이 \"{tool}\"을(를) 찾지 못했습니다. 설치하거나 옵션에서 경로를 설정하세요.",
+  "error.binary_not_found.action": "옵션 열기",
+  "error.parse_error.body": "이 저널을 읽을 수 없습니다: {message}",
   "about.credits": "Sean Bridges 제작\nJohannes Wilke 유지관리"
 }

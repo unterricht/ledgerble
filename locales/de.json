@@ -189,5 +189,9 @@
   "subtitle.all_transactions_range": "Alle Buchungen · {first} – {last}",
   "options.ledger_path": "ledger-Programm-Pfad",
   "options.ledger_path_hint": "Programm zum Lesen der Journal-Dateien",
+  "error.binary_not_found.title": "{tool} wurde nicht gefunden",
+  "error.binary_not_found.body": "Ledgerble konnte \"{tool}\" nicht finden. Installiere es oder lege den Pfad unter Optionen fest.",
+  "error.binary_not_found.action": "Optionen öffnen",
+  "error.parse_error.body": "Dieses Journal konnte nicht gelesen werden: {message}",
   "about.credits": "Erstellt von Sean Bridges\ngepflegt von Johannes Wilke"
 }
