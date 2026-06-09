@@ -284,6 +284,42 @@ function IncludeRows({ nodes, depth, onReveal }) {
   ));
 }
 
+function ErrorBanner({ errors, onOpenOptions }) {
+  if (!errors || errors.length === 0) return null;
+  return (
+    <div className="chrome-print-hide" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 22px', flexShrink: 0 }}>
+      {errors.map(({ path, error }) => {
+        const isMissing = error.type === 'binary-not-found';
+        const title = isMissing
+          ? t('error.binary_not_found.title').replace('{tool}', error.tool)
+          : baseName(path);
+        const body = isMissing
+          ? t('error.binary_not_found.body').replace('{tool}', error.tool)
+          : t('error.parse_error.body').replace('{message}', error.message || '');
+        return (
+          <div key={path} role="alert" style={{
+            border: `1px solid ${T.line2}`, borderLeft: `3px solid ${T.rust || '#b3541e'}`,
+            background: T.surface, borderRadius: 8, padding: '10px 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, fontFamily: T.sans }}>{title}</div>
+              <div style={{ fontSize: 12.5, color: T.ink2, fontFamily: T.sans, marginTop: 2 }}>{body}</div>
+            </div>
+            {isMissing && (
+              <button onClick={onOpenOptions} style={{
+                flexShrink: 0, fontFamily: T.sans, fontSize: 12.5, fontWeight: 500,
+                padding: '5px 11px', borderRadius: 7, cursor: 'pointer',
+                border: `1px solid ${T.pine}`, background: T.pineSoft, color: T.pineStrong,
+              }}>{t('error.binary_not_found.action')}</button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function JournalFooter({ files, includesByFile, redundantPaths, onOpen, onReload, onReveal, onRemove }) {
   const [open, setOpen] = useState(false);
   const includes = includesByFile || {};
@@ -420,6 +456,13 @@ function Shell() {
     if (redundantPaths.size === 0) return s.files;
     return new Map(Array.from(s.files).filter(([p]) => !redundantPaths.has(p)));
   }, [s.files, redundantPaths]);
+
+  const fileErrors = useMemo(
+    () => Array.from(s.files.entries())
+      .filter(([, st]) => st && st.error)
+      .map(([path, st]) => ({ path, error: st.error })),
+    [s.files]
+  );
 
   // setSetting: persists to main process AND updates React cache so all views re-render.
   const setSetting = (key, value) => {
@@ -714,6 +757,8 @@ function Shell() {
                   </div>
                 )}
               </div>
+
+              <ErrorBanner errors={fileErrors} onOpenOptions={() => setView('options')} />
 
               {/* content + inspector */}
               <div className="pane-region" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
