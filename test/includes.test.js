@@ -1,6 +1,7 @@
 /**
  * Tests for include-directive parsing (ledger/hledger `include`).
  */
+const path = require('path');
 const { parseIncludeLines, collectIncludes, findRedundantFiles } = require('../includes');
 
 describe('parseIncludeLines', () => {
@@ -32,39 +33,50 @@ describe('parseIncludeLines', () => {
 
 describe('collectIncludes', () => {
   it('resolves relative include paths against the parent directory', () => {
+    // collectIncludes resolves paths with the OS-native `path` module, so build
+    // the in-memory fixture/expectation the same way (raw POSIX strings would
+    // not match path.resolve()'s output on Windows). Mirrors main.handlers.test.js.
+    const main = path.resolve('/journals/main.ledger');
+    const accounts = path.resolve(path.dirname(main), 'sub/accounts.ledger');
     const fs = {
-      '/journals/main.ledger': 'include sub/accounts.ledger',
-      '/journals/sub/accounts.ledger': '',
+      [main]: 'include sub/accounts.ledger',
+      [accounts]: '',
     };
     const read = (p) => fs[p];
     expect(collectIncludes('/journals/main.ledger', read)).toEqual([
-      { path: '/journals/sub/accounts.ledger', includes: [] },
+      { path: accounts, includes: [] },
     ]);
   });
 
   it('recurses into nested includes', () => {
+    const main = path.resolve('/j/main.ledger');
+    const dir = path.dirname(main);
+    const a = path.resolve(dir, 'a.ledger');
+    const b = path.resolve(dir, 'b.ledger');
     const fs = {
-      '/j/main.ledger': 'include a.ledger',
-      '/j/a.ledger': 'include b.ledger',
-      '/j/b.ledger': '',
+      [main]: 'include a.ledger',
+      [a]: 'include b.ledger',
+      [b]: '',
     };
     const read = (p) => fs[p];
     expect(collectIncludes('/j/main.ledger', read)).toEqual([
-      { path: '/j/a.ledger', includes: [
-        { path: '/j/b.ledger', includes: [] },
+      { path: a, includes: [
+        { path: b, includes: [] },
       ] },
     ]);
   });
 
   it('guards against include cycles', () => {
+    const main = path.resolve('/j/main.ledger');
+    const loop = path.resolve(path.dirname(main), 'loop.ledger');
     const fs = {
-      '/j/main.ledger': 'include loop.ledger',
-      '/j/loop.ledger': 'include main.ledger',
+      [main]: 'include loop.ledger',
+      [loop]: 'include main.ledger',
     };
     const read = (p) => fs[p];
     // main -> loop -> (main already seen, stops)
     expect(collectIncludes('/j/main.ledger', read)).toEqual([
-      { path: '/j/loop.ledger', includes: [] },
+      { path: loop, includes: [] },
     ]);
   });
 
