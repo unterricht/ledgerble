@@ -10,6 +10,7 @@ const papaparse = require('papaparse')
 const moment = require('moment');
 const { parseHLedgerVal } = require('./hledger')
 const { ledgerArgs, hledgerArgs } = require('./ledgerExec')
+const { stripVirtual } = require('./stripVirtual')
 const settings = require('settings-store')
 const { KNOWN_KEYS } = require('./knownKeys')
 const os = require('os')
@@ -237,7 +238,7 @@ async function parseLedgerAsync(command, file) {
       postings.push(
         new Posting(
           isoDate,
-          r[3].split(":"),
+          stripVirtual(r[3]).split(":"),
           parseFloat(r[5]),
           r[4] === '' ? "??" : r[4].replace(/^"|"$/g, ''),
           r[2],
@@ -253,7 +254,7 @@ async function parseLedgerAsync(command, file) {
     if (r.length != 1 && !isAdjustmentRow(r)) {
       postingsCost.push({
         date: moment.utc(r[0], "YYYY/MM/DD").format("YYYY-MM-DD"),
-        account: r[3],
+        account: stripVirtual(r[3]),
         quantity: parseFloat(r[5]),
         commodity: r[4] === '' ? "??" : r[4].replace(/^"|"$/g, '')
       });
@@ -320,7 +321,7 @@ function parseHLedger(command, file) {
       postings.push(
         new Posting(
           new Date(moment(r['date'], "YYYY/MM/DD").format()),
-          r['account'].split(":"),
+          stripVirtual(r['account']).split(":"),
           currVal,
           curr,
           r['description']

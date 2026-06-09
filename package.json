@@ -82,6 +82,7 @@
       "windowSecurity.js",
       "hledger.js",
       "ledgerExec.js",
+      "stripVirtual.js",
       "menu.js",
       "i18n.js",
       "includes.js",
