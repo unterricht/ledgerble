@@ -8,5 +8,5 @@ node_modules/
 dist
 dist/
 
-# Private design handoff (chats/mockups) — keep local, never push
-Entwicklung/redesign/
+# Private scratch/experiment files (notes, plans, design handoff) — keep local, never push
+Entwicklung/
