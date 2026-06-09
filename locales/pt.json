@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "O comando para analisar seus arquivos de diário<br>Deve ser um caminho absoluto ou estar no PATH",
   "settings.hledger": "Comando Ledger é HLedger",
   "settings.hledger.help": "HLedger ou ledger",
+  "settings.hledger_command": "HLedger command",
+  "settings.hledger_command.help": "The command to use to parse your journal files with HLedger<br>This must be an absolute path, or on the PATH",
   "settings.expenses_regex": "Regex de Despesas",
   "settings.expenses_regex.help": "Regex para corresponder contas consideradas despesas",
   "settings.income_regex": "Regex de Receitas",

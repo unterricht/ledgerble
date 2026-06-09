@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "Команда для парсинга ваших файлов журналов<br>Должна быть абсолютным путем или находиться в PATH",
   "settings.hledger": "Команда Ledger — это HLedger",
   "settings.hledger.help": "HLedger или ledger",
+  "settings.hledger_command": "HLedger command",
+  "settings.hledger_command.help": "The command to use to parse your journal files with HLedger<br>This must be an absolute path, or on the PATH",
   "settings.expenses_regex": "Регулярное выражение расходов",
   "settings.expenses_regex.help": "Регулярное выражение для счетов, которые считаются расходами",
   "settings.income_regex": "Регулярное выражение доходов",

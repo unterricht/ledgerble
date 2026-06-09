@@ -7,6 +7,7 @@
 const KNOWN_KEYS = [
   'options.ledger.command',
   'options.hledger',
+  'options.hledger.command',
   'options.expenses.regex',
   'options.income.regex',
   'options.assets.regex',

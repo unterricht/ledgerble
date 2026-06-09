@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "저널 파일을 구문 분석하는 데 사용할 명령어<br>절대 경로이거나 PATH에 있어야 합니다.",
   "settings.hledger": "Ledger 명령어는 HLedger입니다",
   "settings.hledger.help": "HLedger 또는 ledger",
+  "settings.hledger_command": "HLedger command",
+  "settings.hledger_command.help": "The command to use to parse your journal files with HLedger<br>This must be an absolute path, or on the PATH",
   "settings.expenses_regex": "지출 정규식",
   "settings.expenses_regex.help": "지출로 간주되는 계정과 일치하는 정규식",
   "settings.income_regex": "수입 정규식",

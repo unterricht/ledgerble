@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "Der Befehl zum Parsen der Journal-Dateien.<br>Muss ein absoluter Pfad oder im PATH sein.",
   "settings.hledger": "Ledger-Befehl ist HLedger",
   "settings.hledger.help": "HLedger oder Ledger",
+  "settings.hledger_command": "HLedger-Befehl",
+  "settings.hledger_command.help": "Der Befehl zum Parsen der Journal-Dateien mit HLedger.<br>Muss ein absoluter Pfad oder im PATH sein.",
   "settings.expenses_regex": "Ausgaben-Regex",
   "settings.expenses_regex.help": "Regex für Konten, die als Ausgaben gelten",
   "settings.income_regex": "Einnahmen-Regex",

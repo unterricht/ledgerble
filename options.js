@@ -71,6 +71,14 @@ const allSettings = [
         null,
         null),
     new Setting(
+        "options.hledger.command",
+        "hledger",
+        () => t('settings.hledger_command.help'),
+        () => t('settings.hledger_command'),
+        FILE,
+        null,
+        null),
+    new Setting(
         "options.expenses.regex",
         "^expenses?(:|$)",
         () => t('settings.expenses_regex.help'),

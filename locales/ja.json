@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "ジャーナルファイルの解析に使用するコマンド<br>絶対パス、またはPATHにある必要があります",
   "settings.hledger": "LedgerコマンドはHLedgerです",
   "settings.hledger.help": "HLedgerまたはledger",
+  "settings.hledger_command": "HLedger command",
+  "settings.hledger_command.help": "The command to use to parse your journal files with HLedger<br>This must be an absolute path, or on the PATH",
   "settings.expenses_regex": "支出の正規表現",
   "settings.expenses_regex.help": "支出とみなされる口座に一致する正規表現",
   "settings.income_regex": "収入の正規表現",

@@ -51,6 +51,8 @@
   "settings.ledger_command.help": "Het commando om uw journaalbestanden te ontleden<br>Dit moet een absoluut pad zijn, of in de PATH staan",
   "settings.hledger": "Ledger commando is HLedger",
   "settings.hledger.help": "HLedger of ledger",
+  "settings.hledger_command": "HLedger command",
+  "settings.hledger_command.help": "The command to use to parse your journal files with HLedger<br>This must be an absolute path, or on the PATH",
   "settings.expenses_regex": "Uitgaven Regex",
   "settings.expenses_regex.help": "Regex om rekeningen die als uitgaven worden beschouwd te matchen",
   "settings.income_regex": "Inkomsten Regex",
