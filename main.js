@@ -15,6 +15,7 @@ const { KNOWN_KEYS } = require('./knownKeys')
 const os = require('os')
 const { resolveBinaries } = require('./binaryResolver')
 const { classifyParseError } = require('./parseError')
+const { hardenWindowSecurity } = require('./windowSecurity')
 
 class Posting {
   constructor(date, accounts, amount, currency, merchant, type, note) {
@@ -85,6 +86,10 @@ function createWindow() {
 
   // and load the index.html of the app.
   win.loadFile('index.html')
+
+  // Defense-in-depth: deny new windows and block in-frame navigation away from
+  // the local document (genuine http(s) links go to the user's real browser).
+  hardenWindowSecurity(win.webContents, shell)
 
   // Initialize the native application menu
   const { setupAppMenu } = require('./menu')
