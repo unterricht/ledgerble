@@ -1,0 +1,688 @@
+; =====================================================================
+;  Ledgerble Demo Journal — "The Burrow Books of Gerald T. Gerbil"
+; =====================================================================
+;
+;  A full year (2024) of made-up finances for a financially-savvy
+;  gerbil. It exercises every part of Ledgerble:
+;
+;    * Income      — salary, freelance burrow design, dividends
+;    * Expenses    — many categories for the treemap / category views
+;    * Assets      — checking, savings, a little foreign cash
+;    * Liabilities — credit card + a student loan
+;    * Equity      — opening balances
+;    * Portfolio   — shares & crypto with evolving market prices,
+;                    showing unrealized gains AND a loser
+;    * Currencies  — a EUR pocket for a trip abroad
+;
+;  Base currency is USD ($). Open it in Ledgerble and click through the
+;  Overview, Categories, Balance, Assets, Portfolio and Postings tabs.
+;
+;  (Yes, the gerbil invests in vegetables. No, we will not explain.)
+; =====================================================================
+
+
+; ---------------------------------------------------------------------
+;  Opening balances — where Gerald stood on New Year's Day
+; ---------------------------------------------------------------------
+
+2024/01/01 * Opening Balances
+    Assets:Checking                          $4,500.00
+    Assets:Savings                          $12,000.00
+    Liabilities:CreditCard                    $-820.00
+    Liabilities:StudentLoan                $-14,000.00
+    Equity:OpeningBalances
+
+
+; ---------------------------------------------------------------------
+;  Market prices for Gerald's holdings.
+;  Declared at the start of each month so the valuation charts breathe.
+;
+;    CARROT  Carrot Corp ............ a steady climber 🥕
+;    WHEEL   Hamster Wheel Inc. ...... a sad, slow decline
+;    BURROW  Burrow REIT ............. real estate, pays dividends
+;    BTC     a famous internet coin .. wildly volatile, as ever
+; ---------------------------------------------------------------------
+
+P 2024/01/01 CARROT   $40.00
+P 2024/02/01 CARROT   $41.50
+P 2024/03/01 CARROT   $44.00
+P 2024/04/01 CARROT   $43.25
+P 2024/05/01 CARROT   $47.00
+P 2024/06/01 CARROT   $52.10
+P 2024/07/01 CARROT   $50.40
+P 2024/08/01 CARROT   $55.30
+P 2024/09/01 CARROT   $58.75
+P 2024/10/01 CARROT   $56.20
+P 2024/11/01 CARROT   $60.90
+P 2024/12/01 CARROT   $63.40
+
+P 2024/01/01 WHEEL   $120.00
+P 2024/02/01 WHEEL   $117.50
+P 2024/03/01 WHEEL   $114.00
+P 2024/04/01 WHEEL   $110.25
+P 2024/05/01 WHEEL   $112.00
+P 2024/06/01 WHEEL   $104.80
+P 2024/07/01 WHEEL    $99.50
+P 2024/08/01 WHEEL    $96.10
+P 2024/09/01 WHEEL    $93.40
+P 2024/10/01 WHEEL    $90.00
+P 2024/11/01 WHEEL    $88.75
+P 2024/12/01 WHEEL    $91.20
+
+P 2024/01/01 BURROW   $25.00
+P 2024/02/01 BURROW   $25.80
+P 2024/03/01 BURROW   $26.40
+P 2024/04/01 BURROW   $26.10
+P 2024/05/01 BURROW   $27.90
+P 2024/06/01 BURROW   $28.60
+P 2024/07/01 BURROW   $29.30
+P 2024/08/01 BURROW   $30.75
+P 2024/09/01 BURROW   $30.20
+P 2024/10/01 BURROW   $31.80
+P 2024/11/01 BURROW   $32.90
+P 2024/12/01 BURROW   $34.10
+
+P 2024/01/01 BTC   $42,000.00
+P 2024/02/01 BTC   $45,500.00
+P 2024/03/01 BTC   $52,800.00
+P 2024/04/01 BTC   $44,300.00
+P 2024/05/01 BTC   $48,900.00
+P 2024/06/01 BTC   $55,200.00
+P 2024/07/01 BTC   $50,100.00
+P 2024/08/01 BTC   $58,400.00
+P 2024/09/01 BTC   $60,700.00
+P 2024/10/01 BTC   $56,300.00
+P 2024/11/01 BTC   $64,800.00
+P 2024/12/01 BTC   $68,150.00
+
+; The euro, for the late-summer trip to the old country.
+P 2024/06/01 EUR   $1.08
+P 2024/07/01 EUR   $1.09
+P 2024/08/01 EUR   $1.10
+
+
+; =====================================================================
+;  JANUARY
+; =====================================================================
+
+2024/01/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/01/03 * Burrow Lofts LLC — January rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/01/05 Bedding & Beyond
+    Expenses:Pets:CageBedding                   $24.99
+    Assets:Checking
+
+2024/01/08 * Carrot Corp — opening a vegetable position 🥕
+    Assets:Brokerage                  30 CARROT @ $40.00
+    Assets:Checking
+
+2024/01/09 The Sunflower Pantry
+    Expenses:Food:SunflowerSeeds                $38.50
+    Liabilities:CreditCard
+
+2024/01/12 Whiskers Grocery
+    Expenses:Groceries                         $186.40
+    Assets:Checking
+
+2024/01/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $74.20
+    Assets:Checking
+
+2024/01/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/01/18 Tunnel Transit Authority
+    Expenses:Transport                          $62.00
+    Assets:Checking
+
+2024/01/22 Nibbles Bistro
+    Expenses:Dining                             $41.75
+    Liabilities:CreditCard
+
+2024/01/27 * Credit card payment
+    Liabilities:CreditCard                     $300.00
+    Assets:Checking
+
+2024/01/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $58.00
+    Assets:Checking
+
+
+; =====================================================================
+;  FEBRUARY
+; =====================================================================
+
+2024/02/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/02/03 * Burrow Lofts LLC — February rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/02/06 Whiskers Grocery
+    Expenses:Groceries                         $172.10
+    Assets:Checking
+
+2024/02/12 * Hamster Wheel Inc. — 5 shares (it goes round and round)
+    Assets:Brokerage                   5 WHEEL @ $117.50
+    Assets:Checking
+
+2024/02/14 Pawsome Florist — Valentine's tulips for Mrs. Gerbil
+    Expenses:Gifts                              $54.00
+    Assets:Checking
+
+2024/02/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $81.30
+    Assets:Checking
+
+2024/02/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/02/17 Streamio + Burrow Music — subscriptions
+    Expenses:Subscriptions                      $27.98
+    Liabilities:CreditCard
+
+2024/02/19 The Sunflower Pantry
+    Expenses:Food:SunflowerSeeds                $42.20
+    Assets:Checking
+
+2024/02/24 * Freelance: designed a luxury 3-chamber burrow
+    Assets:Checking                            $850.00
+    Income:Freelance
+
+2024/02/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/02/29 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $57.10
+    Assets:Checking
+
+
+; =====================================================================
+;  MARCH
+; =====================================================================
+
+2024/03/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/03/04 * Burrow Lofts LLC — March rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/03/10 Whiskers Grocery
+    Expenses:Groceries                         $198.65
+    Assets:Checking
+
+2024/03/14 * Burrow REIT — 60 shares of real estate
+    Assets:Brokerage                  60 BURROW @ $26.40
+    Assets:Checking
+
+2024/03/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $69.40
+    Assets:Checking
+
+2024/03/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/03/16 Dr. Paws Veterinary — annual check-up & nail trim
+    Expenses:Healthcare:Vet                    $145.00
+    Assets:Checking
+
+2024/03/20 * Burrow REIT — Q1 dividend
+    Assets:Checking                             $24.00
+    Income:Dividends
+
+2024/03/23 Bedding & Beyond
+    Expenses:Pets:CageBedding                   $26.49
+    Assets:Checking
+
+2024/03/27 * Credit card payment
+    Liabilities:CreditCard                     $200.00
+    Assets:Checking
+
+2024/03/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $56.20
+    Assets:Checking
+
+
+; =====================================================================
+;  APRIL
+; =====================================================================
+
+2024/04/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/04/03 * Burrow Lofts LLC — April rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/04/09 Whiskers Grocery
+    Expenses:Groceries                         $164.30
+    Assets:Checking
+
+2024/04/15 * The Internet — dipping a paw into crypto
+    Assets:Brokerage                 0.05 BTC @ $44,300.00
+    Assets:Savings
+
+2024/04/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $66.10
+    Assets:Checking
+
+2024/04/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/04/18 Burrow County — annual nest insurance
+    Expenses:Insurance                         $210.00
+    Assets:Checking
+
+2024/04/20 Nibbles Bistro
+    Expenses:Dining                             $52.40
+    Liabilities:CreditCard
+
+2024/04/22 The Sunflower Pantry — bulk spring order
+    Expenses:Food:SunflowerSeeds                $61.75
+    Assets:Checking
+
+2024/04/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/04/30 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $55.30
+    Assets:Checking
+
+
+; =====================================================================
+;  MAY
+; =====================================================================
+
+2024/05/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/05/03 * Burrow Lofts LLC — May rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/05/08 Whiskers Grocery
+    Expenses:Groceries                         $179.90
+    Assets:Checking
+
+2024/05/12 * Carrot Corp — averaging up on vegetables 🥕
+    Assets:Brokerage                  20 CARROT @ $47.00
+    Assets:Checking
+
+2024/05/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $58.70
+    Assets:Checking
+
+2024/05/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/05/19 Bedding & Beyond
+    Expenses:Pets:CageBedding                   $25.99
+    Assets:Checking
+
+2024/05/24 * Freelance: emergency tunnel re-routing
+    Assets:Checking                            $620.00
+    Income:Freelance
+
+2024/05/26 Cinema du Fromage
+    Expenses:Entertainment                      $34.50
+    Liabilities:CreditCard
+
+2024/05/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/05/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $54.40
+    Assets:Checking
+
+
+; =====================================================================
+;  JUNE
+; =====================================================================
+
+2024/06/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/06/03 * Burrow Lofts LLC — June rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/06/07 Whiskers Grocery
+    Expenses:Groceries                         $191.20
+    Assets:Checking
+
+2024/06/10 * Foreign exchange — euros for the trip to the old country
+    Assets:Cash:Euros                  500 EUR @ $1.08
+    Assets:Checking
+
+2024/06/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $63.80
+    Assets:Checking
+
+2024/06/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/06/20 * Burrow REIT — Q2 dividend
+    Assets:Checking                             $26.40
+    Income:Dividends
+
+2024/06/27 * Credit card payment
+    Liabilities:CreditCard                     $150.00
+    Assets:Checking
+
+2024/06/30 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $53.50
+    Assets:Checking
+
+
+; =====================================================================
+;  JULY — Gerald goes abroad (expenses paid in EUR)
+; =====================================================================
+
+2024/07/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/07/03 * Burrow Lofts LLC — July rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/07/06 Aerolínea Topo — flight to the homeland
+    Expenses:Travel                            $480.00
+    Liabilities:CreditCard
+
+2024/07/09 Pensión El Túnel (Madrid)
+    Expenses:Travel:Lodging               180 EUR
+    Assets:Cash:Euros
+
+2024/07/11 Café Semilla — tapas & a tiny espresso
+    Expenses:Dining                        46 EUR
+    Assets:Cash:Euros
+
+2024/07/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $61.10
+    Assets:Checking
+
+2024/07/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/07/18 Mercado de las Semillas — souvenir seeds
+    Expenses:Travel                        72 EUR
+    Assets:Cash:Euros
+
+2024/07/24 Whiskers Grocery
+    Expenses:Groceries                         $158.75
+    Assets:Checking
+
+2024/07/27 * Credit card payment
+    Liabilities:CreditCard                     $500.00
+    Assets:Checking
+
+2024/07/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $52.60
+    Assets:Checking
+
+
+; =====================================================================
+;  AUGUST
+; =====================================================================
+
+2024/08/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/08/03 * Burrow Lofts LLC — August rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/08/09 Whiskers Grocery
+    Expenses:Groceries                         $183.45
+    Assets:Checking
+
+2024/08/13 Dr. Paws Veterinary — a worrying sniffle (it was nothing)
+    Expenses:Healthcare:Vet                     $96.00
+    Assets:Checking
+
+2024/08/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $88.90
+    Assets:Checking
+
+2024/08/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/08/20 The Sunflower Pantry
+    Expenses:Food:SunflowerSeeds                $44.10
+    Liabilities:CreditCard
+
+2024/08/22 Bedding & Beyond
+    Expenses:Pets:CageBedding                   $27.49
+    Assets:Checking
+
+2024/08/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/08/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $51.70
+    Assets:Checking
+
+
+; =====================================================================
+;  SEPTEMBER — trimming a losing position
+; =====================================================================
+
+2024/09/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/09/03 * Burrow Lofts LLC — September rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/09/06 Whiskers Grocery
+    Expenses:Groceries                         $176.30
+    Assets:Checking
+
+2024/09/13 * Hamster Wheel Inc. — cutting losses (it just kept spinning)
+    Assets:Brokerage                  -5 WHEEL {$117.50} @ $93.40
+    Assets:Checking                            $467.00
+    Income:CapitalGains
+
+2024/09/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $59.20
+    Assets:Checking
+
+2024/09/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/09/20 * Burrow REIT — Q3 dividend
+    Assets:Checking                             $26.40
+    Income:Dividends
+
+2024/09/25 Cinema du Fromage
+    Expenses:Entertainment                      $29.00
+    Liabilities:CreditCard
+
+2024/09/27 * Credit card payment
+    Liabilities:CreditCard                     $200.00
+    Assets:Checking
+
+2024/09/30 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $50.80
+    Assets:Checking
+
+
+; =====================================================================
+;  OCTOBER
+; =====================================================================
+
+2024/10/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/10/03 * Burrow Lofts LLC — October rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/10/08 Whiskers Grocery
+    Expenses:Groceries                         $201.55
+    Assets:Checking
+
+2024/10/14 * Carrot Corp — one more nibble of vegetables 🥕
+    Assets:Brokerage                  15 CARROT @ $56.20
+    Assets:Checking
+
+2024/10/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $71.40
+    Assets:Checking
+
+2024/10/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/10/19 The Sunflower Pantry — winter stockpile
+    Expenses:Food:SunflowerSeeds                $78.30
+    Assets:Checking
+
+2024/10/26 Nibbles Bistro
+    Expenses:Dining                             $48.90
+    Liabilities:CreditCard
+
+2024/10/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/10/31 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $49.90
+    Assets:Checking
+
+
+; =====================================================================
+;  NOVEMBER
+; =====================================================================
+
+2024/11/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/11/03 * Burrow Lofts LLC — November rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/11/09 Whiskers Grocery
+    Expenses:Groceries                         $188.20
+    Assets:Checking
+
+2024/11/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $84.60
+    Assets:Checking
+
+2024/11/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/11/18 Bedding & Beyond — extra-fluffy winter edition
+    Expenses:Pets:CageBedding                   $33.99
+    Assets:Checking
+
+2024/11/22 * Freelance: designed a heated multi-family warren
+    Assets:Checking                          $1,100.00
+    Income:Freelance
+
+2024/11/27 * Credit card payment
+    Liabilities:CreditCard                     $250.00
+    Assets:Checking
+
+2024/11/29 Burrow Friday — a new exercise wheel
+    Expenses:Entertainment                     $119.00
+    Liabilities:CreditCard
+
+2024/11/30 * Student loan — monthly payment
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $49.00
+    Assets:Checking
+
+
+; =====================================================================
+;  DECEMBER — year-end bonus, gifts, and a transfer to savings
+; =====================================================================
+
+2024/12/01 * Acme Seed & Burrow Co. — payroll
+    Assets:Checking                          $5,200.00
+    Income:Salary
+
+2024/12/03 * Burrow Lofts LLC — December rent
+    Expenses:Housing:Rent                    $1,650.00
+    Assets:Checking
+
+2024/12/05 * Acme Seed & Burrow Co. — year-end bonus 🎉
+    Assets:Checking                          $2,500.00
+    Income:Bonus
+
+2024/12/12 Whiskers Grocery — holiday feast
+    Expenses:Groceries                         $264.80
+    Assets:Checking
+
+2024/12/15 Volt Electric Utility
+    Expenses:Utilities:Electric                 $92.10
+    Assets:Checking
+
+2024/12/15 FiberHole Internet
+    Expenses:Utilities:Internet                 $59.99
+    Assets:Checking
+
+2024/12/18 Pawsome Florist & Gifts — presents for the colony
+    Expenses:Gifts                             $185.00
+    Liabilities:CreditCard
+
+2024/12/20 * Burrow REIT — Q4 dividend
+    Assets:Checking                             $30.00
+    Income:Dividends
+
+2024/12/23 * Transfer to savings — building the winter hoard
+    Assets:Savings                           $2,000.00
+    Assets:Checking
+
+2024/12/27 * Credit card payment — clearing the year
+    Liabilities:CreditCard                     $400.00
+    Assets:Checking
+
+2024/12/31 * Student loan — final payment of the year
+    Liabilities:StudentLoan                    $250.00
+    Expenses:Interest                           $48.10
+    Assets:Checking
+
+; end of year — happy hoarding 🐹
