@@ -3,12 +3,13 @@ const path = require('path')
 const fs = require('fs')
 const { collectIncludes } = require('./includes')
 const { windowOptionsFor } = require('./windowChrome')
-const { execSync } = require('child_process');
+const { execFile, execFileSync } = require('child_process');
 const util = require('util');
-const execPromise = util.promisify(require('child_process').exec);
+const execFilePromise = util.promisify(execFile);
 const papaparse = require('papaparse')
 const moment = require('moment');
 const { parseHLedgerVal } = require('./hledger')
+const { ledgerArgs, hledgerArgs } = require('./ledgerExec')
 const settings = require('settings-store')
 const { KNOWN_KEYS } = require('./knownKeys')
 const os = require('os')
@@ -45,7 +46,7 @@ try {
     homedir: os.homedir(),
     canRun: (cmd) => {
       try {
-        execSync('"' + cmd + '" --version', { stdio: 'ignore' });
+        execFileSync(cmd, ['--version'], { stdio: 'ignore' });
         return true;
       } catch {
         return false;
@@ -84,7 +85,7 @@ function createWindow() {
 
   // and load the index.html of the app.
   win.loadFile('index.html')
-  
+
   // Initialize the native application menu
   const { setupAppMenu } = require('./menu')
   const { loadLocale, detectLocale } = require('./i18n')
@@ -193,12 +194,14 @@ function isAdjustmentRow(row) {
 }
 
 async function parseLedgerAsync(command, file) {
-  const baseCmd = '"' + command + '" -f "' + file + '"';
-  
+  // execFile (no shell): command + file are passed as literal argv, so shell
+  // metacharacters in the journal path or binary path can't inject commands.
+  const opts = { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 };
+
   const [outCsv, outCsvCost, outPrices] = await Promise.all([
-    execPromise(`${baseCmd} csv --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }),
-    execPromise(`${baseCmd} csv -B --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }),
-    execPromise(`${baseCmd} prices --no-pager --no-color`, { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 }).catch(e => ({ stdout: '' }))
+    execFilePromise(command, ledgerArgs(file, 'csv'), opts),
+    execFilePromise(command, ledgerArgs(file, 'csv-B'), opts),
+    execFilePromise(command, ledgerArgs(file, 'prices'), opts).catch(() => ({ stdout: '' }))
   ]);
 
   const resCsv = papaparse.parse(outCsv.stdout, {
@@ -276,7 +279,7 @@ async function parseLedgerAsync(command, file) {
 
 function parseHLedger(command, file) {
 
-  out = execSync('"' + command + '" -f "' + file + '" register -O csv', { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 })
+  out = execFileSync(command, hledgerArgs(file), { encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024 })
   res = papaparse.parse(out, {
     delimiter: ',',
     header: true,
