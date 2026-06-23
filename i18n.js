@@ -122,28 +122,6 @@ function getAvailableLocales() {
     return Array.from(codes).sort();
 }
 
-/**
- * Translate all DOM elements that have a [data-i18n] attribute.
- * Call this once after the DOM is ready and after loadLocale().
- *
- * Elements with data-i18n        → textContent
- * Elements with data-i18n-html   → innerHTML  (use with care)
- * Elements with data-i18n-placeholder → placeholder attribute
- */
-function translatePage() {
-    if (typeof document === 'undefined') return;
-
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        el.textContent = t(el.getAttribute('data-i18n'));
-    });
-    document.querySelectorAll('[data-i18n-html]').forEach(el => {
-        el.innerHTML = t(el.getAttribute('data-i18n-html'));
-    });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
-    });
-}
-
 // ── Test / IPC helper ─────────────────────────────────────────
 
 /**
@@ -200,7 +178,6 @@ module.exports = {
     detectLocale,
     getCurrentLocale,
     getAvailableLocales,
-    translatePage,
     formatIntervalLabel,
     _injectLocale,
 };
