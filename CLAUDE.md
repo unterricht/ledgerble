@@ -46,10 +46,8 @@ This is a security-hardened Electron app: `nodeIntegration: false`,
   capability, add it here AND add the matching `ipcMain` handler in `main.js`.
 - **Renderer** — a **React app** under `src/` (entry `src/app/index.jsx`,
   bundled by esbuild into `dist/bundle.js`, loaded by `index.html`). Uses
-  `window.api` exclusively. The old jQuery renderer (`ui.js`, `files.js`,
-  `treeMap.js`, `balance.js`, `assets.js`, `portfolio.js`, …) and the
-  jQuery/Bootstrap/DataTables stack are **legacy dead code**, no longer in the
-  bundle — do not edit them expecting changes to show up.
+  `window.api` exclusively. The old jQuery/Bootstrap/DataTables renderer has
+  been fully removed; the React app under `src/` is the only renderer.
 
 `index.html` loads `dist/bundle.js`, so **renderer code changes require a
 re-bundle** (`npm run bundle`, or just use `npm start`). Editing `src/` and
@@ -122,8 +120,8 @@ or it won't survive a restart.
 `i18n.js` works in both processes (no fs/path — locales are `require`d so
 esbuild inlines them). Locale JSON lives in `locales/` (12 languages). In the
 React renderer, translate by calling `t('key')` inline (the old attribute-driven
-`data-i18n` / `translatePage()` path belongs to the legacy jQuery renderer).
-When adding UI text, add a key to **all** `locales/*.json` and reference it via
+`data-i18n` / `translatePage()` path has been removed along with the jQuery
+renderer). When adding UI text, add a key to **all** `locales/*.json` and reference it via
 `t('key')`, never hardcode user-facing strings. `update_translations.js` helps
 sync keys across locale files.
 
@@ -156,6 +154,6 @@ sync keys across locale files.
   logic free of Node built-ins.
 - Loose root-level `test-*.js` / `test-*.ledger` files and the `Entwicklung/`
   folder are ad-hoc scratch/experiment files, not part of the Jest suite.
-- The renderer is React 18 + ECharts (charts only). It is **not** the legacy
-  jQuery/Bootstrap/DataTables stack — those root-level `*.js` modules are dead
-  code kept around but not bundled.
+- The renderer is React 18 + ECharts (charts only). The legacy
+  jQuery/Bootstrap/DataTables renderer modules have been removed; root-level
+  `*.js` files are now main-process / shared logic, not dead renderer code.
