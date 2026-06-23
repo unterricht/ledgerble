@@ -103,6 +103,9 @@
     "react-dom": "^18.3.1",
     "settings-store": "^1.4.1"
   },
+  "overrides": {
+    "js-yaml": "^4.2.0"
+  },
   "devDependencies": {
     "@babel/preset-env": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
