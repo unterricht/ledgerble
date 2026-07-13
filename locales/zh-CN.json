@@ -131,7 +131,6 @@
   "breakdown.hint": "点击带有 ▸ 的分类可按子账户展开。",
   "filter.date_range": "日期范围",
   "filter.accounts": "账户",
-  "filter.accounts_search": "搜索账户…",
   "filter.all": "全部",
   "filter.none": "无",
   "filter.showing_x_of_y": "显示 {active} / {total} 个账户",

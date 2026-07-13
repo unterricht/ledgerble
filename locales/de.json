@@ -131,7 +131,6 @@
   "breakdown.hint": "Eine Kategorie mit ▸ anklicken, um sie nach Unterkonto aufzuschlüsseln.",
   "filter.date_range": "Zeitraum",
   "filter.accounts": "Konten",
-  "filter.accounts_search": "Konten durchsuchen…",
   "filter.all": "Alle",
   "filter.none": "Keine",
   "filter.showing_x_of_y": "{active} von {total} Konten angezeigt",

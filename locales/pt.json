@@ -131,7 +131,6 @@
   "breakdown.hint": "Clique numa categoria com ▸ para detalhar por subconta.",
   "filter.date_range": "Intervalo de datas",
   "filter.accounts": "Contas",
-  "filter.accounts_search": "Pesquisar contas…",
   "filter.all": "Todas",
   "filter.none": "Nenhuma",
   "filter.showing_x_of_y": "{active} de {total} contas apresentadas",

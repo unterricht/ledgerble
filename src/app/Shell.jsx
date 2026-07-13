@@ -128,30 +128,10 @@ function flattenAccountTree(tree, prefix, out) {
   }
 }
 
-// Prunes an account tree down to branches whose own path (or a descendant's
-// path) contains the (already-lowercased) query. A node whose own path matches
-// is kept in full; a node kept only because a descendant matches is pruned to
-// just that descendant.
-function filterAccountTree(tree, prefix, q) {
-  if (!tree || typeof tree !== 'object') return null;
-  const out = {};
-  for (const key of Object.keys(tree)) {
-    const fullPath = prefix ? prefix + ':' + key : key;
-    if (fullPath.toLowerCase().includes(q)) {
-      out[key] = tree[key];
-      continue;
-    }
-    const childMatch = filterAccountTree(tree[key], fullPath, q);
-    if (childMatch) out[key] = childMatch;
-  }
-  return Object.keys(out).length ? out : null;
-}
-
 // ── collapsible account tree node ────────────────────────────
-function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth, forceExpanded }) {
+function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth }) {
   const hasChildren = children && Object.keys(children).length > 0;
   const [expanded, setExpanded] = useState(depth === 0);
-  const isExpanded = forceExpanded || expanded;
 
   // True if visible (neither self nor any ancestor is in desel)
   const visible = !isDeselectedDeep(fullPath, desel);
@@ -172,7 +152,7 @@ function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth, for
         {hasChildren ? (
           <button onClick={() => setExpanded(e => !e)}
             style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, color: T.ink3, display: 'flex', width: 14, flexShrink: 0 }}>
-            <svg width="10" height="10" viewBox="0 0 10 10" style={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }}>
+            <svg width="10" height="10" viewBox="0 0 10 10" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }}>
               <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -187,7 +167,7 @@ function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth, for
           </span>
         </label>
       </div>
-      {hasChildren && isExpanded && (
+      {hasChildren && expanded && (
         <div>
           {Object.keys(children).sort().map(child => (
             <AccountTreeNode
@@ -198,7 +178,6 @@ function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth, for
               desel={desel}
               onToggle={onToggle}
               depth={depth + 1}
-              forceExpanded={forceExpanded}
             />
           ))}
         </div>
@@ -209,7 +188,6 @@ function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth, for
 
 // ── account filter tree (inspector) ──────────────────────────
 function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, intervals, sliderValues, onRangeChange }) {
-  const [acctQuery, setAcctQuery] = React.useState('');
   const flat = [];
   if (accountTree && typeof accountTree === 'object' && !Array.isArray(accountTree)) {
     flattenAccountTree(accountTree, '', flat);
@@ -218,13 +196,8 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, inter
   const active = flat.filter(p => !isDeselectedDeep(p, desel)).length;
   const ghost = { fontFamily: T.sans, fontSize: 11.5, fontWeight: 500, padding: '4px 10px', borderRadius: 6, border: `1px solid ${T.line2}`, background: T.surface, color: T.ink2, cursor: 'pointer' };
 
-  const trimmedQuery = acctQuery.trim().toLowerCase();
-  const filteredTree = trimmedQuery
-    ? (filterAccountTree(accountTree, '', trimmedQuery) || {})
-    : accountTree;
-
-  const rootKeys = filteredTree && typeof filteredTree === 'object'
-    ? Object.keys(filteredTree).sort()
+  const rootKeys = accountTree && typeof accountTree === 'object'
+    ? Object.keys(accountTree).sort()
     : [];
 
   return (
@@ -236,9 +209,6 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, inter
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
         <Eyebrow style={{ marginBottom: 9 }}>{t('filter.date_range')}</Eyebrow>
         <DateRangeSlider intervals={intervals || []} value={sliderValues || [0, 0]} onChange={onRangeChange} />
-        <div style={{ marginBottom: 14 }}>
-          <SearchField query={acctQuery} onChange={setAcctQuery} width="100%" placeholder={t('filter.accounts_search')} />
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
           <Eyebrow>{t('filter.accounts')}</Eyebrow>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -251,11 +221,10 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, inter
             key={key}
             name={key}
             fullPath={key}
-            children={filteredTree[key]}
+            children={accountTree[key]}
             desel={desel}
             onToggle={onToggle}
             depth={0}
-            forceExpanded={!!trimmedQuery}
           />
         ))}
       </div>

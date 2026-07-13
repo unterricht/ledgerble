@@ -131,7 +131,6 @@
   "breakdown.hint": "Click a category with a ▸ to break it down by sub-account.",
   "filter.date_range": "Date range",
   "filter.accounts": "Accounts",
-  "filter.accounts_search": "Search accounts…",
   "filter.all": "All",
   "filter.none": "None",
   "filter.showing_x_of_y": "Showing {active} of {total} accounts",

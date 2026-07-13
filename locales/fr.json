@@ -131,7 +131,6 @@
   "breakdown.hint": "Cliquez sur une catégorie avec ▸ pour la décomposer par sous-compte.",
   "filter.date_range": "Période",
   "filter.accounts": "Comptes",
-  "filter.accounts_search": "Rechercher des comptes…",
   "filter.all": "Tous",
   "filter.none": "Aucun",
   "filter.showing_x_of_y": "{active} sur {total} comptes affichés",

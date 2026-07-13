@@ -131,7 +131,6 @@
   "breakdown.hint": "▸のあるカテゴリをクリックするとサブ口座に展開します。",
   "filter.date_range": "期間",
   "filter.accounts": "口座",
-  "filter.accounts_search": "口座を検索…",
   "filter.all": "すべて",
   "filter.none": "なし",
   "filter.showing_x_of_y": "{total}件中{active}件表示",

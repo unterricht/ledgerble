@@ -179,12 +179,12 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
 // ─────────────────────────────────────────────────────────────
 // SEARCH FIELD — ported from rd-shell.jsx
 // ─────────────────────────────────────────────────────────────
-export function SearchField({ query, onChange, width = 172, placeholder }) {
+export function SearchField({ query, onChange, width = 172 }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <span style={{ position: 'absolute', left: 9, color: T.ink4, display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={14} /></span>
-      <input value={query} onChange={e => onChange(e.target.value)} placeholder={placeholder || t('search.placeholder')}
-        style={{ width, fontFamily: T.sans, fontSize: 12.5, padding: '5px 10px 5px 28px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none', boxSizing: 'border-box' }} />
+      <input value={query} onChange={e => onChange(e.target.value)} placeholder={t('search.placeholder')}
+        style={{ width, fontFamily: T.sans, fontSize: 12.5, padding: '5px 10px 5px 28px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none' }} />
     </div>
   );
 }
