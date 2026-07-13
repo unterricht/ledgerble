@@ -50,6 +50,13 @@ function postAmt(p, cur) {
   return money(p.amount, { sign: true, cur });
 }
 
+// Numeric equivalent of what postAmt() displays per row (income positive, expense negative).
+function postSignedAmount(p) {
+  if (p.type === 'income') return Math.abs(p.amount);
+  if (p.type === 'expense' || p.type === 'expenses') return -Math.abs(p.amount);
+  return p.amount;
+}
+
 const { filterPostings, sortPostings } = require('../data/postingsFilter');
 
 const COLUMNS = [
@@ -80,6 +87,7 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
 
   const filtered = filterPostings(rows, query, typeFilter);
   const visible  = sortPostings(filtered, sortKey, sortDir);
+  const total = visible.reduce((s, p) => s + postSignedAmount(p), 0);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: T.surface }}>
@@ -145,6 +153,21 @@ function PostingsView({ rows = [], query = '', typeFilter = 'all', cur = 'USD' }
             );
           })}
         </tbody>
+        {visible.length > 0 && (
+          <tfoot>
+            <tr style={{ background: T.surface2 }}>
+              <td colSpan={3} style={{ padding: '12px 16px', fontSize: 12.5, fontWeight: 600, color: T.ink, fontFamily: T.sans, borderTop: `1.5px solid ${T.line2}` }}>
+                {t('table.total')}
+              </td>
+              <td data-testid="postings-total" style={{ ...tdStyle('right'), borderTop: `1.5px solid ${T.line2}` }}>
+                <Num color={total >= 0 ? T.pos : T.neg} size={12.5} weight={600}>
+                  {money(total, { sign: true, cur })}
+                </Num>
+              </td>
+              <td style={{ borderTop: `1.5px solid ${T.line2}` }} />
+            </tr>
+          </tfoot>
+        )}
       </table>
       {visible.length === 0 && (
         <div style={{ padding: 40, textAlign: 'center', color: T.ink4, fontSize: 13, fontFamily: T.sans }}>

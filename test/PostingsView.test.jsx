@@ -78,3 +78,29 @@ test('typeFilter="all" shows expenses and income but hides asset counter-posting
   expect(screen.getByText('Employer')).toBeInTheDocument();
   expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
+
+// ── Gesamt-Zeile (total row of visible/filtered postings) ────────────────────
+test('shows a total row summing the visible postings (income positive, expense negative)', () => {
+  render(<PostingsView rows={rows} query="" typeFilter="all" cur="USD" />);
+  // rows: expense 700 (-> -700) + income -1000 (-> +1000) = +300
+  expect(screen.getByText('Total')).toBeInTheDocument();
+  expect(screen.getByTestId('postings-total')).toHaveTextContent('+$300.00');
+});
+
+test('total row recomputes from the text-filtered subset, not all rows', () => {
+  render(<PostingsView rows={rows} query="rent" typeFilter="all" cur="USD" />);
+  // only the Rent Co expense row (700) is visible -> -700
+  expect(screen.getByTestId('postings-total')).toHaveTextContent('−$700.00');
+});
+
+test('total row recomputes from the type-filtered subset', () => {
+  render(<PostingsView rows={prodRows} query="" typeFilter="expenses" cur="USD" />);
+  // only the Supermarket expenses row (50) is visible -> -50
+  expect(screen.getByTestId('postings-total')).toHaveTextContent('−$50.00');
+});
+
+test('no total row is shown when the filtered result is empty', () => {
+  render(<PostingsView rows={rows} query="nonexistent-payee" typeFilter="all" cur="USD" />);
+  expect(screen.queryByText('Total')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('postings-total')).not.toBeInTheDocument();
+});
