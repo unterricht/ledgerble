@@ -136,8 +136,8 @@ function AccountTreeNode({ name, fullPath, children, desel, onToggle, depth }) {
   // True if visible (neither self nor any ancestor is in desel)
   const visible = !isDeselectedDeep(fullPath, desel);
   // Indeterminate: visible itself but at least one child is hidden
-  const someChildHidden = hasChildren && Object.keys(children).some(
-    child => isDeselectedDeep(fullPath + ':' + child, desel)
+  const someChildHidden = hasChildren && Array.from(desel).some(
+    d => typeof d === 'string' && d.startsWith(fullPath + ':')
   );
   const indeterminate = visible && someChildHidden;
 

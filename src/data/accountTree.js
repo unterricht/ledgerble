@@ -59,49 +59,65 @@ function getNodeAtPath(tree, path) {
 /**
  * toggleAccountInDesel(path, desel, accountTree) → new Set
  *
- * Smart toggle that respects ancestor cascade:
+ * Tri-state checkbox toggle: a click does what the checkbox's visual state
+ * promises.
  *
- * - If `path` is currently VISIBLE (not blocked by self or ancestor):
- *     → Add it to desel (hide it, cascade hides children too).
+ * - Fully checked (visible, no hidden descendant) → click hides the WHOLE
+ *   subtree (self + any stray descendant entries are cleared first, then
+ *   `path` itself is added).
  *
- * - If `path` is currently HIDDEN (explicitly or via ancestor):
- *     → Remove it from desel, remove all blocking ancestors from desel,
- *       and add sibling branches of those ancestors to desel so only the
- *       chosen path remains visible within each ancestor's scope.
- *
- * This means: after clicking a hidden node it becomes visible while its
- * siblings stay hidden — exactly like a tree-select "isolate this branch".
+ * - Empty or indeterminate/mixed (self hidden via itself/an ancestor, OR at
+ *   least one descendant hidden) → click shows the WHOLE subtree: `path`
+ *   and all its descendant entries are removed from desel, and if an
+ *   ancestor is still blocking visibility, that ancestor (and every
+ *   intermediate node down to `path`'s parent) is isolated by removing it
+ *   from desel and hiding its sibling branches at each level — recursively,
+ *   not just at the top level.
  */
 function toggleAccountInDesel(path, desel, accountTree) {
     const n = new Set(desel);
 
-    if (!isDeselectedDeep(path, n)) {
-        // Currently visible → hide it
+    const off = isDeselectedDeep(path, n); // self or an ancestor hides it
+    let hasHiddenDescendant = false;
+    for (const d of n) {
+        if (d.startsWith(path + ':')) { hasHiddenDescendant = true; break; }
+    }
+
+    // Fully checked → hide the whole subtree.
+    if (!off && !hasHiddenDescendant) {
+        for (const d of Array.from(n)) {
+            if (d.startsWith(path + ':')) n.delete(d);
+        }
         n.add(path);
         return n;
     }
 
-    // Currently hidden → make it visible
+    // Empty or mixed → show the whole subtree.
     n.delete(path);
+    for (const d of Array.from(n)) {
+        if (d.startsWith(path + ':')) n.delete(d);
+    }
 
-    // Walk up the ancestor chain and for each blocking ancestor:
-    // remove the ancestor from desel, add all its OTHER direct children to desel.
     const parts = path.split(':');
+
+    // Find the topmost real ancestor still blocking visibility.
+    let blockDepth = -1;
     for (let depth = 1; depth < parts.length; depth++) {
         const ancestor = parts.slice(0, depth).join(':');
-        if (!n.has(ancestor)) continue;
+        if (n.has(ancestor)) { blockDepth = depth; break; }
+    }
+    if (blockDepth === -1) return n;
 
+    // Isolate `path` from blockDepth down to its parent: at each level,
+    // remove the ancestor from desel and hide its sibling branches instead.
+    for (let depth = blockDepth; depth < parts.length; depth++) {
+        const ancestor = parts.slice(0, depth).join(':');
         n.delete(ancestor);
 
-        // Find the direct child of `ancestor` that is ON the path to `path`
         const nextSegment = parts[depth];
-
-        // Get all direct children of `ancestor` in the tree
         const ancestorNode = getNodeAtPath(accountTree, ancestor);
         for (const sibling of Object.keys(ancestorNode)) {
-            if (sibling !== nextSegment) {
-                n.add(ancestor ? ancestor + ':' + sibling : sibling);
-            }
+            if (sibling !== nextSegment) n.add(ancestor + ':' + sibling);
         }
     }
 

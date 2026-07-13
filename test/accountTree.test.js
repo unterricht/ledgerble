@@ -97,6 +97,7 @@ describe('accountTree', () => {
             'Income',
             'Income:Gehalt',
             'Income:Gehalt:Elterngeld',
+            'Income:Gehalt:Bonus',
             'Income:Rente',
             'Expenses:Food',
         ]);
@@ -138,7 +139,71 @@ describe('accountTree', () => {
             expect(result.has('Income:Gehalt:Elterngeld')).toBe(false);
             // Geschwisterzweig "Income:Rente" wird deselektiert
             expect(result.has('Income:Rente')).toBe(true);
-            // "Income:Gehalt:*" Geschwister — es gibt keine anderen Kinder im Testbaum
+            // "Income:Gehalt:*" Geschwister ("Income:Gehalt:Bonus") wird ebenfalls
+            // deselektiert — die Isolierung muss rekursiv auf JEDER Ebene des
+            // Pfades greifen, nicht nur auf der obersten.
+            expect(result.has('Income:Gehalt:Bonus')).toBe(true);
+        });
+
+        it('toggling a fully-visible parent with no hidden descendants just hides the parent', () => {
+            // Voll angehakt (nichts versteckt) → Klick blendet den gesamten Teilbaum aus.
+            // Da keine Nachfahren aktuell versteckt sind, reicht der Root-Eintrag.
+            const desel = new Set();
+            const result = toggleAccountInDesel('Income', desel, tree);
+
+            expect(result.has('Income')).toBe(true);
+            expect(result.size).toBe(1);
+        });
+
+        it('toggling a mixed/off parent whose own entry AND a descendant are both hidden switches everything on (bug report)', () => {
+            // Reproduziert den gemeldeten Fehler: 'Income' selbst UND ein Kind
+            // ('Income:Rente') stehen in desel (Zustand nach fehlerhaftem "aus"-Klick,
+            // der die Nachfahren nicht geräumt hat). Erneuter Klick auf 'Income' MUSS
+            // den gesamten Teilbaum wieder sichtbar machen — weder 'Income' noch
+            // 'Income:Rente' dürfen im Ergebnis übrig bleiben.
+            const desel = new Set(['Income', 'Income:Rente']);
+            const result = toggleAccountInDesel('Income', desel, tree);
+
+            expect(result.has('Income')).toBe(false);
+            expect(result.has('Income:Rente')).toBe(false);
+        });
+
+        it('toggling a mixed (indeterminate) parent with one hidden child switches the whole subtree on', () => {
+            // 'Income' selbst ist sichtbar, aber 'Income:Rente' ist versteckt →
+            // Checkbox zeigt "gemischt" (indeterminate). Klick MUSS den gesamten
+            // Income-Teilbaum einschalten, nicht 'Income' zusätzlich ausblenden.
+            const desel = new Set(['Income:Rente']);
+            const result = toggleAccountInDesel('Income', desel, tree);
+
+            expect(result.has('Income')).toBe(false);
+            expect(result.has('Income:Rente')).toBe(false);
+        });
+
+        it('toggling a parent that looks mixed only because of a hidden grandchild switches the whole subtree on', () => {
+            // Nur ein tiefer Enkel ist versteckt ('Income:Gehalt:Elterngeld') →
+            // 'Income' erscheint gemischt. Klick auf 'Income' muss auch diesen
+            // tiefen Nachfahren wieder einschalten.
+            const desel = new Set(['Income:Gehalt:Elterngeld']);
+            const result = toggleAccountInDesel('Income', desel, tree);
+
+            expect(result.has('Income')).toBe(false);
+            expect(result.has('Income:Gehalt:Elterngeld')).toBe(false);
+        });
+
+        it('isolating a level-3 leaf hides its level-1 AND level-2 sibling branches (recursive isolate)', () => {
+            // Ausgangszustand: gesamter 'Income'-Zweig aus. Klick auf den tiefen
+            // Blattknoten 'Income:Gehalt:Elterngeld' muss ihn isolieren: alle
+            // blockierenden Vorfahren räumen UND auf JEDER Ebene die jeweiligen
+            // Geschwister ausblenden — sowohl Ebene 1 ('Income:Rente') als auch
+            // Ebene 2 ('Income:Gehalt:Bonus').
+            const desel = new Set(['Income']);
+            const result = toggleAccountInDesel('Income:Gehalt:Elterngeld', desel, tree);
+
+            expect(result.has('Income')).toBe(false);
+            expect(result.has('Income:Gehalt')).toBe(false);
+            expect(result.has('Income:Gehalt:Elterngeld')).toBe(false);
+            expect(result.has('Income:Rente')).toBe(true);
+            expect(result.has('Income:Gehalt:Bonus')).toBe(true);
         });
     });
 });
