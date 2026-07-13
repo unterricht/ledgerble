@@ -131,6 +131,7 @@
   "breakdown.hint": "Kliknij kategorię z ▸, aby rozwinąć według podkonta.",
   "filter.date_range": "Zakres dat",
   "filter.accounts": "Konta",
+  "filter.accounts_search": "Szukaj kont…",
   "filter.all": "Wszystkie",
   "filter.none": "Żadne",
   "filter.showing_x_of_y": "Wyświetlono {active} z {total} kont",

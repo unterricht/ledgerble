@@ -143,7 +143,7 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
             if (e.key === 'Enter') commitFrom(draftFrom !== null ? draftFrom : fromLabel);
             if (e.key === 'Escape') setDraftFrom(null);
           }}
-          onBlur={() => setDraftFrom(null)}
+          onBlur={() => { if (draftFrom !== null) commitFrom(draftFrom); }}
         />
         <span style={{ color: T.ink4, fontSize: 12 }}>—</span>
         <input
@@ -155,7 +155,7 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
             if (e.key === 'Enter') commitTo(draftTo !== null ? draftTo : toLabel);
             if (e.key === 'Escape') setDraftTo(null);
           }}
-          onBlur={() => setDraftTo(null)}
+          onBlur={() => { if (draftTo !== null) commitTo(draftTo); }}
         />
       </div>
       <div className="rd-daterange" style={{ position: 'relative', height: 18, margin: '0 4px 18px' }}>
@@ -179,12 +179,12 @@ export function DateRangeSlider({ intervals = [], value = [0, 0], onChange = () 
 // ─────────────────────────────────────────────────────────────
 // SEARCH FIELD — ported from rd-shell.jsx
 // ─────────────────────────────────────────────────────────────
-export function SearchField({ query, onChange, width = 172 }) {
+export function SearchField({ query, onChange, width = 172, placeholder }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <span style={{ position: 'absolute', left: 9, color: T.ink4, display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={14} /></span>
-      <input value={query} onChange={e => onChange(e.target.value)} placeholder={t('search.placeholder')}
-        style={{ width, fontFamily: T.sans, fontSize: 12.5, padding: '5px 10px 5px 28px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none' }} />
+      <input value={query} onChange={e => onChange(e.target.value)} placeholder={placeholder || t('search.placeholder')}
+        style={{ width, fontFamily: T.sans, fontSize: 12.5, padding: '5px 10px 5px 28px', border: `1px solid ${T.line2}`, borderRadius: 7, background: T.surface, color: T.ink, outline: 'none', boxSizing: 'border-box' }} />
     </div>
   );
 }

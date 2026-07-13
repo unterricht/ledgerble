@@ -131,6 +131,7 @@
   "breakdown.hint": "▸가 있는 카테고리를 클릭하면 하위 계정별로 분류됩니다.",
   "filter.date_range": "날짜 범위",
   "filter.accounts": "계정",
+  "filter.accounts_search": "계정 검색…",
   "filter.all": "전체",
   "filter.none": "없음",
   "filter.showing_x_of_y": "전체 {total}개 중 {active}개 표시",

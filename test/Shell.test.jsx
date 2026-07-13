@@ -73,7 +73,7 @@ test('Windows renders custom window controls', async () => {
 
 test('typing in search switches to postings view', async () => {
   await act(async () => { render(<Shell />); });
-  await userEvent.type(screen.getByPlaceholderText(/search/i), 'rent');
+  await userEvent.type(screen.getByPlaceholderText('Search…'), 'rent');
   expect(document.querySelector('[data-view="postings"]')).toBeInTheDocument();
 });
 
@@ -245,6 +245,41 @@ test('switching to Portfolio tab writes the clamped from-index into global slide
   // written through to global state when Portfolio was active.
   const rangeFrom = screen.getByTestId('range-from');
   expect(Number(rangeFrom.value)).toBeGreaterThan(0);
+});
+
+// ── Account filter free-text search ─────────────────────────────────────────
+
+test('typing in the account filter search narrows the visible account tree live', async () => {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  render(<Shell />);
+
+  const result = {
+    postings: [
+      { date: '2024-01-01', accounts: ['Expenses', 'Groceries'], amount: 50, currency: 'EUR' },
+      { date: '2024-01-01', accounts: ['Expenses', 'Rent'], amount: 800, currency: 'EUR' },
+      { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: -850, currency: 'EUR' },
+    ],
+    postingsCost: [
+      { date: '2024-01-01', accounts: ['Expenses', 'Groceries'], amount: 50, currency: 'EUR' },
+      { date: '2024-01-01', accounts: ['Expenses', 'Rent'], amount: 800, currency: 'EUR' },
+      { date: '2024-01-01', accounts: ['Assets', 'Bank'], amount: -850, currency: 'EUR' },
+    ],
+    prices: [],
+  };
+  await act(async () => { parsedCb('x.ledger', result, null); });
+
+  // Inspector is open by default on the Overview tab; both leaf accounts are visible.
+  expect(screen.getByText('Groceries')).toBeInTheDocument();
+  expect(screen.getByText('Rent')).toBeInTheDocument();
+
+  const search = screen.getByPlaceholderText(/search accounts/i);
+  await userEvent.type(search, 'rent');
+
+  // Only the matching account (and its ancestor chain) should remain visible.
+  expect(screen.queryByText('Groceries')).not.toBeInTheDocument();
+  expect(screen.getByText('Rent')).toBeInTheDocument();
+  expect(screen.queryByText('Bank')).not.toBeInTheDocument();
 });
 
 // ── Journal file management (footer menu) ───────────────────────────────────

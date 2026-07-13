@@ -131,6 +131,7 @@
   "breakdown.hint": "Klik op een categorie met ▸ om op subrekening uit te splitsen.",
   "filter.date_range": "Datumbereik",
   "filter.accounts": "Rekeningen",
+  "filter.accounts_search": "Rekeningen zoeken…",
   "filter.all": "Alle",
   "filter.none": "Geen",
   "filter.showing_x_of_y": "{active} van {total} rekeningen weergegeven",

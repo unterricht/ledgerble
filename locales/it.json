@@ -131,6 +131,7 @@
   "breakdown.hint": "Clicca una categoria con ▸ per suddividerla per sottoconto.",
   "filter.date_range": "Intervallo date",
   "filter.accounts": "Conti",
+  "filter.accounts_search": "Cerca conti…",
   "filter.all": "Tutti",
   "filter.none": "Nessuno",
   "filter.showing_x_of_y": "{active} di {total} conti visualizzati",

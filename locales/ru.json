@@ -131,6 +131,7 @@
   "breakdown.hint": "Нажмите на категорию с ▸, чтобы разбить по субсчёту.",
   "filter.date_range": "Диапазон дат",
   "filter.accounts": "Счета",
+  "filter.accounts_search": "Поиск счетов…",
   "filter.all": "Все",
   "filter.none": "Ничего",
   "filter.showing_x_of_y": "Показано {active} из {total} счетов",
