@@ -67,3 +67,15 @@ test('falls back to a flat list when no sections are given', () => {
   expect(screen.getByText('Assets')).toBeInTheDocument();
   expect(screen.queryByText('Balances')).not.toBeInTheDocument();
 });
+
+// The print stylesheet zebra-stripes `tbody tr:nth-child(even)` and avoids
+// breaking inside a `tr`. Section headings are plain rows in that tbody, so they
+// count towards nth-child and can be shaded like data — and a heading can be
+// orphaned at the foot of a page. Both rules key off this class.
+test('section heading rows carry the rd-section-head hook for print styling', () => {
+  const { container } = render(
+    <BalanceView sections={sections} netWorth={450} cur="USD" rangeLabel="x" />);
+  const heads = container.querySelectorAll('tbody tr.rd-section-head');
+  expect(heads).toHaveLength(3);
+  expect(heads[0].querySelector('td').getAttribute('colspan')).toBe('2');
+});

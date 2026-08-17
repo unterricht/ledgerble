@@ -121,6 +121,10 @@
       thead { break-after: avoid; }
       /* zebra helps scan dense tables on paper */
       .pane-content tbody tr:nth-child(even) td { background: #FBFBFC !important; }
+      /* section headings are ordinary tbody rows, so they land in the zebra count
+         and can be shaded like data — and may be orphaned at the foot of a page */
+      .pane-content tbody tr.rd-section-head td { background: transparent !important; }
+      .rd-section-head { break-after: avoid; page-break-after: avoid; }
 
       .pane-content [class] { box-shadow: none !important; }
 

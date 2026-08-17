@@ -91,7 +91,9 @@ function BalRow({ node, depth, expanded, onToggle, cur }) {
 // sit side by side with nothing saying they answer different questions.
 function SectionHeading({ label, note }) {
   return (
-    <tr>
+    // rd-section-head: hook for the print stylesheet — keeps the heading out of
+    // the zebra striping and glued to the rows below it.
+    <tr className="rd-section-head">
       <td colSpan={2} style={{
         padding: '16px 16px 6px', borderBottom: `1px solid ${T.line}`,
         background: T.surface, fontFamily: T.sans,
