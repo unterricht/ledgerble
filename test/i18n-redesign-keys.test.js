@@ -16,6 +16,9 @@ const NEW_KEYS = [
   'options.account_matching','options.general','options.locale_auto',
   'subtitle.preferences','subtitle.all_transactions','subtitle.period_range',
   'subtitle.as_of_empty','subtitle.as_of_last','subtitle.all_transactions_range',
+  // Balance view section headings (stock vs. flow vs. unclassified)
+  'balance.section.stocks','balance.section.flows','balance.section.unclassified',
+  'balance.section.range',
 ];
 const dir = path.join(__dirname, '..', 'locales');
 for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {

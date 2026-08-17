@@ -143,7 +143,7 @@ function dateFmtd() {
  *
  * @returns {{
  *   currency, currencies, postings, rawPostings,
- *   intervals, intervalDates, balances, valResult,
+ *   intervals, intervalDates, balances, openingBalances, valResult,
  *   accountTree, sliderValues
  * }}
  */
@@ -365,6 +365,18 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
   const displayBalances = new Map();
   for (const [k, arr] of balances) displayBalances.set(k, arr.slice(lo, hi + 1));
 
+  // ── 14. Opening balances — the total each account carried INTO the window ──
+  // balances[] are cumulative, so the value at the interval BEFORE `lo` is what
+  // existed before the reporting period began. Stock accounts (assets,
+  // liabilities, equity) legitimately report that carried-over total as part of
+  // their as-of balance; flow accounts (income, expenses) must not — the Balance
+  // view subtracts this to report in-period movement only.
+  // A window starting at interval 0 has nothing carried in, hence 0.
+  const openingBalances = new Map();
+  for (const [k, arr] of balances) {
+    openingBalances.set(k, lo > 0 ? arr[lo - 1] : 0);
+  }
+
   return {
     currency: currentCurrency,
     currencies: Array.from(currenciesSet),
@@ -376,6 +388,7 @@ function compute({ files, currency, period, deselectedAccounts, dateRange, typeE
     intervals: displayIntervals,
     intervalDates: displayIntervalDates,
     balances: displayBalances,
+    openingBalances,
     // full series (consumed by the date-range slider)
     fullIntervals: intervals,
     fullIntervalDates: intervalDates,

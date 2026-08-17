@@ -260,3 +260,61 @@ test('compute multi-file merge: postings from both files combined, balances corr
   expect(bankAmounts[0]).toBe(1000);
   expect(bankAmounts[1]).toBe(800);
 });
+
+// ── openingBalances ─────────────────────────────────────────────────────────
+// The value each account carried INTO the selected window (cumulative total at
+// the interval right before it). buildBalanceTree subtracts it from flow
+// accounts so the balance sheet reports in-period movement, not all-time.
+
+const openingPostings = [
+  p('2018-01-15', ['Income','Salary'], -1000),
+  p('2018-01-15', ['Assets','Bank'], 1000),
+  p('2018-02-10', ['Expenses','Food'], 200),   // before the window
+  p('2018-02-10', ['Assets','Bank'], -200),
+  p('2018-04-05', ['Expenses','Food'], 50),    // inside the window
+  p('2018-04-05', ['Assets','Bank'], -50),
+];
+
+function findOpening(m, account) {
+  for (const [key, value] of m.openingBalances) {
+    if (key.account === account) return value;
+  }
+  return undefined;
+}
+
+test('openingBalances holds the cumulative total carried into the window', () => {
+  const files = new Map([['j', { postings: openingPostings, postingsCost: [], prices: [] }]]);
+  const from = Date.UTC(2018, 2, 1);  // March — after Food's 200, before its 50
+  const to = Date.UTC(2018, 3, 30);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
+  expect(m.sliderValues[0]).toBeGreaterThan(0);
+  expect(findOpening(m, 'Expenses:Food')).toBe(200);
+  expect(findOpening(m, 'Income:Salary')).toBe(-1000);
+  expect(findOpening(m, 'Assets:Bank')).toBe(800);
+});
+
+test('openingBalances is zero for every account when the window starts at interval 0', () => {
+  const files = new Map([['j', { postings: openingPostings, postingsCost: [], prices: [] }]]);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.sliderValues[0]).toBe(0);
+  expect(m.openingBalances.size).toBeGreaterThan(0);
+  for (const value of m.openingBalances.values()) {
+    expect(value).toBe(0);
+  }
+});
+
+test('openingBalances is keyed by the same objects as balances', () => {
+  const files = new Map([['j', { postings: openingPostings, postingsCost: [], prices: [] }]]);
+  const from = Date.UTC(2018, 2, 1);
+  const to = Date.UTC(2018, 3, 30);
+  const m = compute({ files, currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: [from, to], typeExtractor: te });
+  for (const key of m.balances.keys()) {
+    expect(m.openingBalances.has(key)).toBe(true);
+  }
+});
+
+test('openingBalances is an empty Map when there are no postings', () => {
+  const m = compute({ files: new Map(), currency: 'USD', period: 'Monthly', deselectedAccounts: new Set(), dateRange: null, typeExtractor: te });
+  expect(m.openingBalances instanceof Map).toBe(true);
+  expect(m.openingBalances.size).toBe(0);
+});

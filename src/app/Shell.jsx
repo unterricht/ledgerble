@@ -636,6 +636,17 @@ function Shell() {
     return t('subtitle.period_range').replace('{period}', periodLabel).replace('{first}', first).replace('{last}', last);
   })();
 
+  // Range shown on the Balance view's income/expenses heading. The stock rows are
+  // as-of the window end (already stated by the subtitle); only the flow rows span
+  // a period, so only they need the range spelled out. Same labels as the subtitle.
+  const balanceRangeLabel = (() => {
+    const ivs = model.intervals || [];
+    if (ivs.length === 0) return null;
+    return t('balance.section.range')
+      .replace('{first}', formatIntervalLabel(ivs[0], period))
+      .replace('{last}', formatIntervalLabel(ivs[ivs.length - 1], period));
+  })();
+
   const fonts = FONT_STACK[plat];
 
   const brand = (
@@ -767,9 +778,14 @@ function Shell() {
                     ? <OverviewView vm={buildOverview(model)} cur={model.currency || cur} netColor={netColor} catRule={getSetting('options.overview.catRule') || 'top5'} />
                     : view === 'balance' && s.files.size > 0
                     ? (() => {
-                        const idx = model.sliderValues ? model.sliderValues[1] : 0;
-                        const { roots, netWorth } = buildBalanceTree(model.balances, idx);
-                        return <BalanceView roots={roots} netWorth={netWorth} cur={model.currency || cur} />;
+                        // model.balances is already windowed to the slider selection, so the
+                        // snapshot index is the LAST index of that window — not the absolute
+                        // slider index, which only lands right because buildBalanceTree clamps.
+                        const idx = (model.intervals || []).length - 1;
+                        const { roots, netWorth, sections } =
+                          buildBalanceTree(model.balances, idx, { openingBalances: model.openingBalances });
+                        return <BalanceView roots={roots} netWorth={netWorth} sections={sections}
+                          rangeLabel={balanceRangeLabel} cur={model.currency || cur} />;
                       })()
                     : view === 'expenses' && s.files.size > 0
                     ? (() => { const tree = buildBreakdownTree(model.postings, 'expenses');

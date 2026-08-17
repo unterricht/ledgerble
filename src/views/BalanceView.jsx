@@ -85,14 +85,63 @@ function BalRow({ node, depth, expanded, onToggle, cur }) {
   );
 }
 
+// ── SectionHeading ───────────────────────────────────────────────────────────
+// A full-width heading row separating stock figures (as-of the window end) from
+// flow figures (movement across the window). Without it the two kinds of number
+// sit side by side with nothing saying they answer different questions.
+function SectionHeading({ label, note }) {
+  return (
+    <tr>
+      <td colSpan={2} style={{
+        padding: '16px 16px 6px', borderBottom: `1px solid ${T.line}`,
+        background: T.surface, fontFamily: T.sans,
+      }}>
+        <span style={{
+          fontSize: 10.5, fontWeight: 600, letterSpacing: '0.05em',
+          textTransform: 'uppercase', color: T.ink2,
+        }}>{label}</span>
+        {note ? (
+          <span style={{ fontSize: 10.5, fontWeight: 450, color: T.ink3, marginLeft: 8 }}>
+            {note}
+          </span>
+        ) : null}
+      </td>
+    </tr>
+  );
+}
+
+const SECTION_LABEL_KEY = {
+  stocks: 'balance.section.stocks',
+  flows: 'balance.section.flows',
+  unclassified: 'balance.section.unclassified',
+};
+
 // ── BalanceView ──────────────────────────────────────────────────────────────
-function BalanceView({ roots = [], netWorth = 0, cur }) {
+// `sections` is the grouped form from buildBalanceTree(); `roots` is the flat
+// fallback kept for callers that do not group (and for the plain tree tests).
+function BalanceView({ roots = [], netWorth = 0, cur, sections, rangeLabel }) {
   const [expanded, setExpanded] = useState(() => new Set());
   const toggle = id => setExpanded(p => {
     const n = new Set(p);
     n.has(id) ? n.delete(id) : n.add(id);
     return n;
   });
+
+  const renderRows = (nodes) => nodes.map(n => (
+    <BalRow key={n.id} node={n} depth={0} expanded={expanded} onToggle={toggle} cur={cur} />
+  ));
+
+  const body = sections && sections.length > 0
+    ? sections.map(sec => (
+        <React.Fragment key={sec.id}>
+          <SectionHeading
+            label={t(SECTION_LABEL_KEY[sec.id] || sec.id)}
+            note={sec.id === 'flows' ? rangeLabel : null}
+          />
+          {renderRows(sec.roots)}
+        </React.Fragment>
+      ))
+    : renderRows(roots);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: T.surface }}>
@@ -103,18 +152,7 @@ function BalanceView({ roots = [], netWorth = 0, cur }) {
             <th style={thStyle('right')}>{t('tab.balance')}</th>
           </tr>
         </thead>
-        <tbody>
-          {roots.map(n => (
-            <BalRow
-              key={n.id}
-              node={n}
-              depth={0}
-              expanded={expanded}
-              onToggle={toggle}
-              cur={cur}
-            />
-          ))}
-        </tbody>
+        <tbody>{body}</tbody>
         <tfoot>
           <tr style={{ background: T.surface2 }}>
             <td style={{

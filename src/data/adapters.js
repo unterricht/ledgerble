@@ -419,9 +419,26 @@ function buildBreakdownTree(postings, kind) {
  *     - type:     account type string (from BalanceKey.type)
  *     - children: Node[] (empty for leaves)
  */
-function buildBalanceTree(balances, intervalIdx) {
+// Flow (temporary / P&L) account types. Everything else is a stock (permanent /
+// balance-sheet) type whose figure is an as-of balance rather than a movement.
+const FLOW_TYPES = new Set(['income', 'expenses']);
+
+// Section a root node belongs to, and the order roots appear in within it.
+// Types absent from this map are unclassified — never silently dropped.
+const TYPE_SECTION = {
+  assets:      { section: 'stocks', rank: 0 },
+  liabilities: { section: 'stocks', rank: 1 },
+  equity:      { section: 'stocks', rank: 2 },
+  income:      { section: 'flows',  rank: 0 },
+  expenses:    { section: 'flows',  rank: 1 },
+};
+const SECTION_ORDER = ['stocks', 'unclassified', 'flows'];
+
+function buildBalanceTree(balances, intervalIdx, options) {
+  const openingBalances = options && options.openingBalances;
+
   if (!balances || balances.size === 0) {
-    return { roots: [], netWorth: 0 };
+    return { roots: [], netWorth: 0, sections: [] };
   }
 
   // nodeMap: full account path → node object
@@ -446,7 +463,14 @@ function buildBalanceTree(balances, intervalIdx) {
     if (!arr || arr.length === 0) continue;
     // Clamp intervalIdx to valid range
     const idx = Math.min(Math.max(0, intervalIdx), arr.length - 1);
-    const value = arr[idx];
+    // Flow accounts report the movement inside the window, so the total carried
+    // in from before it is deducted. The delta cannot be taken from the windowed
+    // array itself: arr[0] already contains the first interval's own flow.
+    // Stock accounts keep the full cumulative total — that IS their as-of balance.
+    let value = arr[idx];
+    if (openingBalances && FLOW_TYPES.has(key.type)) {
+      value -= openingBalances.get(key) || 0;
+    }
     if (value === 0) continue;
 
     const segments = key.account.split(':');
@@ -472,23 +496,45 @@ function buildBalanceTree(balances, intervalIdx) {
     }
   }
 
-  // Collect root nodes (no parent in the map)
+  // Collect root nodes (no parent in the map), ordered by section then by the
+  // conventional balance-sheet sequence (assets, liabilities, equity) so the
+  // grouping below is deterministic rather than dependent on Map insertion order.
   const roots = [];
   for (const [, node] of nodeMap) {
     if (node._parentKey === null) {
       roots.push(node);
     }
   }
+  const placementOf = (node) => TYPE_SECTION[node.type] || { section: 'unclassified', rank: 0 };
+  roots.sort((a, b) => {
+    const pa = placementOf(a);
+    const pb = placementOf(b);
+    const sa = SECTION_ORDER.indexOf(pa.section);
+    const sb = SECTION_ORDER.indexOf(pb.section);
+    if (sa !== sb) return sa - sb;
+    if (pa.rank !== pb.rank) return pa.rank - pb.rank;
+    return a.account.localeCompare(b.account);
+  });
 
-  // Compute net worth: assets + liabilities only (see balance.js convention)
+  // Group into sections; empty ones are omitted so the view renders no stray heading.
+  const sections = SECTION_ORDER
+    .map((id) => ({ id, roots: roots.filter((n) => placementOf(n).section === id) }))
+    .filter((s) => s.roots.length > 0);
+
+  // Net worth = what you own minus what you owe. Unclassified accounts are
+  // included: an account whose name misses every type regex is far more often a
+  // real asset than a flow, and leaving it out made net worth silently too low.
+  // Its own section keeps that assumption visible instead of burying it.
+  // Equity is excluded — it is the balancing counterpart, not owned value.
   let netWorth = 0;
   for (const node of roots) {
-    if (node.type === 'assets' || node.type === 'liabilities') {
+    const { section } = placementOf(node);
+    if (section === 'unclassified' || node.type === 'assets' || node.type === 'liabilities') {
       netWorth += node.balance;
     }
   }
 
-  return { roots, netWorth };
+  return { roots, netWorth, sections };
 }
 
 /**
