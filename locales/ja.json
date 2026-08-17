@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "含み損益",
   "portfolio.series_value": "ポートフォリオ価値",
   "assets.total_assets": "総資産",
+  "assets.total_liabilities": "総負債",
   "balance.net_worth": "純資産",
   "balance.section.stocks": "残高",
   "balance.section.flows": "収入と支出",

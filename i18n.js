@@ -170,6 +170,23 @@ function formatIntervalLabel(label, period) {
     return label;
 }
 
+/**
+ * Format a calendar date in the current locale's short date format, i.e. in the
+ * convention the user's platform uses ("17.1.2026" in de-DE, "1/17/2026" in
+ * en-US).
+ *
+ * Dates travel through this app as UTC midnight (see the UTC convention in
+ * CLAUDE.md), so the formatter is pinned to UTC — formatting in local time would
+ * report the previous day everywhere west of Greenwich.
+ *
+ * @param {Date} date
+ * @returns {string}  formatted date, or '' if no date was given
+ */
+function formatDate(date) {
+    if (!date) return '';
+    return date.toLocaleDateString(currentLocale, { timeZone: 'UTC' });
+}
+
 // ── Exports ───────────────────────────────────────────────────
 
 module.exports = {
@@ -179,5 +196,6 @@ module.exports = {
     getCurrentLocale,
     getAvailableLocales,
     formatIntervalLabel,
+    formatDate,
     _injectLocale,
 };

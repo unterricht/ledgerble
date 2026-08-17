@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "未实现盈亏",
   "portfolio.series_value": "投资组合价值",
   "assets.total_assets": "总资产",
+  "assets.total_liabilities": "总负债",
   "balance.net_worth": "净资产",
   "balance.section.stocks": "余额",
   "balance.section.flows": "收入与支出",

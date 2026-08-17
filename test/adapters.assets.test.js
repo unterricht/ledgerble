@@ -1,5 +1,5 @@
 'use strict';
-const { buildAssets, buildAssetAccountList } = require('../src/data/adapters');
+const { buildAssets, buildAssetAccountTree } = require('../src/data/adapters');
 
 // Minimal model with a few asset/liability accounts across 3 intervals
 function makeModel(overrides = {}) {
@@ -52,11 +52,14 @@ test('only includes assets and liabilities series, not expenses/income', () => {
   expect(keys.every(k => !k.startsWith('Expenses') && !k.startsWith('Income'))).toBe(true);
 });
 
+// Account series only — the synthetic net-worth series is excluded.
+const accountSeries = (vm) => vm.series.filter(s => s.type !== 'net');
+
 test('series count equals number of distinct second-level asset/liability accounts', () => {
   const model = makeModel();
   const vm = buildAssets(model);
   // Assets:Savings, Assets:Shares, Liabilities:Loan (Assets:Savings:Sub rolls up)
-  expect(vm.series.length).toBe(3);
+  expect(accountSeries(vm).length).toBe(3);
 });
 
 test('aggregates sub-accounts into the second-level account series per interval', () => {
@@ -92,7 +95,7 @@ test('series entries have key, color, and label', () => {
 test('asset series use green palette colors, liability series use red palette colors', () => {
   const { T } = require('../src/ui/tokens');
   const vm = buildAssets(makeModel());
-  for (const s of vm.series) {
+  for (const s of accountSeries(vm)) {
     if (s.type === 'assets') {
       expect(T.chartAssets).toContain(s.color);
     } else {
@@ -151,7 +154,7 @@ test('interval label uses MMM format for monthly intervals', () => {
   expect(vm.data[2].m).toBe('Mar');
 });
 
-test('each series entry has a type field matching assets or liabilities', () => {
+test('each account series entry has a type field matching assets or liabilities', () => {
   const model = makeModel();
   const vm = buildAssets(model);
   const assetsSeries = vm.series.find(s => s.key === 'Assets:Savings');
@@ -164,7 +167,7 @@ test('each series entry has a type field matching assets or liabilities', () => 
 
 test('creates one series per second-level account segment', () => {
   const vm = buildAssets(makeModel());
-  const keys = vm.series.map(s => s.key).sort();
+  const keys = accountSeries(vm).map(s => s.key).sort();
   // Assets:Savings, Assets:Shares, Liabilities:Loan  (Assets:Savings:Sub rolls up)
   expect(keys).toEqual(['Assets:Savings', 'Assets:Shares', 'Liabilities:Loan']);
 });
@@ -213,41 +216,162 @@ test('deselected account does not appear in data entries', () => {
 
 test('empty deselectedAssetAccounts shows all second-level series', () => {
   const vm = buildAssets(makeModel(), new Set());
-  expect(vm.series).toHaveLength(3);
+  expect(accountSeries(vm)).toHaveLength(3);
 });
 
-// ── NEW: buildAssetAccountList ────────────────────────────────────────────────
+// ── deep (sub-account) deselection ───────────────────────────────────────────
 
-test('buildAssetAccountList returns one entry per second-level asset/liability account', () => {
+test('deselecting a deeper sub-account removes it from its second-level parent sum', () => {
+  const vm = buildAssets(makeModel(), new Set(['Assets:Savings:Sub']));
+  const keys = vm.series.map(s => s.key);
+  expect(keys).toContain('Assets:Savings');
+  // Savings(10000) alone — Savings:Sub(1000) is deselected
+  expect(vm.data[0]['Assets:Savings']).toBe(10000);
+});
+
+// ── net-worth series ─────────────────────────────────────────────────────────
+
+test('adds a net-worth series that sums assets and liabilities', () => {
+  const vm = buildAssets(makeModel());
+  const net = vm.series.find(s => s.type === 'net');
+  expect(net).toBeDefined();
+  // Savings(11000) + Shares(50000) + Loan(-5000) = 56000
+  expect(vm.data[0][net.key]).toBe(56000);
+  expect(vm.data[2][net.key]).toBe(11500 + 49000 - 4600);
+});
+
+test('net-worth series is flagged as emphasised and rendered last (on top)', () => {
+  const vm = buildAssets(makeModel());
+  const net = vm.series[vm.series.length - 1];
+  expect(net.type).toBe('net');
+  expect(net.emphasis).toBe(true);
+});
+
+test('net-worth series honours the account filter', () => {
+  const vm = buildAssets(makeModel(), new Set(['Assets:Shares']));
+  const net = vm.series.find(s => s.type === 'net');
+  // Savings(11000) + Loan(-5000) = 6000 — Shares excluded
+  expect(vm.data[0][net.key]).toBe(6000);
+});
+
+test('maxY covers the net-worth line, not just the largest account series', () => {
+  const k = (account, type) => ({ account, type });
+  const model = {
+    intervals: ['2018-01'],
+    balances: new Map([
+      [k('Assets:A', 'assets'), [10000]],
+      [k('Assets:B', 'assets'), [10000]],
+    ]),
+    currency: 'USD',
+  };
+  const vm = buildAssets(model);
+  // net = 20000 — an axis scaled to the 10000 account maximum would clip it flat
+  expect(vm.maxY).toBeGreaterThanOrEqual(20000);
+});
+
+test('minY covers a net worth more negative than any single account', () => {
+  const k = (account, type) => ({ account, type });
+  const model = {
+    intervals: ['2018-01'],
+    balances: new Map([
+      [k('Liabilities:A', 'liabilities'), [-6000]],
+      [k('Liabilities:B', 'liabilities'), [-6000]],
+    ]),
+    currency: 'USD',
+  };
+  const vm = buildAssets(model);
+  expect(vm.minY).toBeLessThanOrEqual(-12000);
+});
+
+test('no net-worth series when there are no account series', () => {
+  const vm = buildAssets({ intervals: [], balances: new Map(), currency: 'USD' });
+  expect(vm.series).toEqual([]);
+});
+
+// ── asOf (as-of date of the totals) ──────────────────────────────────────────
+
+const utc = (iso) => new Date(iso + 'T00:00:00Z');
+
+test('asOf is the last posting date when the window ends at the last interval', () => {
+  const vm = buildAssets(makeModel({
+    period: 'Monthly',
+    sliderValues: [0, 2],
+    fullIntervalDates: [utc('2018-01-01'), utc('2018-02-01'), utc('2018-03-01')],
+    rawPostings: [{ date: utc('2018-01-05') }, { date: utc('2018-03-17') }],
+  }));
+  expect(vm.asOf).toEqual(utc('2018-03-17'));
+});
+
+test('asOf is the day before the next interval when the window is truncated', () => {
+  const vm = buildAssets(makeModel({
+    intervals: ['2018-01', '2018-02'],
+    period: 'Monthly',
+    sliderValues: [0, 1],
+    fullIntervalDates: [utc('2018-01-01'), utc('2018-02-01'), utc('2018-03-01')],
+    rawPostings: [{ date: utc('2018-03-17') }],
+  }));
+  expect(vm.asOf).toEqual(utc('2018-02-28'));
+});
+
+test('asOf is null when the model carries no postings', () => {
+  expect(buildAssets(makeModel()).asOf).toBeNull();
+});
+
+// ── stable colours ───────────────────────────────────────────────────────────
+
+test('an account keeps its colour when a different account is deselected', () => {
+  const colorOf = (vm, key) => vm.series.find(s => s.key === key).color;
+  const full = buildAssets(makeModel());
+  const filtered = buildAssets(makeModel(), new Set(['Assets:Savings']));
+  // Hiding Savings must not repaint Shares — colour follows the account, not its rank
+  expect(colorOf(filtered, 'Assets:Shares')).toBe(colorOf(full, 'Assets:Shares'));
+});
+
+// ── totals (summary strip) ───────────────────────────────────────────────────
+
+test('returns totals of the last interval split into assets, liabilities and net', () => {
+  const vm = buildAssets(makeModel());
+  // last interval: Savings 10400 + Sub 1100 = 11500, Shares 49000, Loan -4600
+  expect(vm.totals.assets).toBe(60500);
+  expect(vm.totals.liabilities).toBe(-4600);
+  expect(vm.totals.net).toBe(55900);
+});
+
+test('totals.net equals the last value of the net-worth series', () => {
+  const vm = buildAssets(makeModel());
+  const net = vm.series.find(s => s.type === 'net');
+  expect(vm.totals.net).toBe(vm.data[vm.data.length - 1][net.key]);
+});
+
+test('totals follow the account filter', () => {
+  const vm = buildAssets(makeModel(), new Set(['Assets:Shares', 'Assets:Savings:Sub']));
+  expect(vm.totals.assets).toBe(10400);
+  expect(vm.totals.liabilities).toBe(-4600);
+  expect(vm.totals.net).toBe(5800);
+});
+
+test('totals are zero for empty balances', () => {
+  const vm = buildAssets({ intervals: [], balances: new Map(), currency: 'USD' });
+  expect(vm.totals).toEqual({ assets: 0, liabilities: 0, net: 0 });
+});
+
+// ── buildAssetAccountTree ─────────────────────────────────────────────────────
+
+test('buildAssetAccountTree nests every level of the asset/liability accounts', () => {
   const { balances } = makeModel();
-  const list = buildAssetAccountList(balances);
-  const keys = list.map(a => a.key).sort();
-  expect(keys).toEqual(['Assets:Savings', 'Assets:Shares', 'Liabilities:Loan']);
+  const tree = buildAssetAccountTree(balances);
+  expect(Object.keys(tree).sort()).toEqual(['Assets', 'Liabilities']);
+  expect(Object.keys(tree.Assets).sort()).toEqual(['Savings', 'Shares']);
+  expect(Object.keys(tree.Assets.Savings)).toEqual(['Sub']);
 });
 
-test('buildAssetAccountList each entry has key, type, and label', () => {
+test('buildAssetAccountTree excludes income/expense accounts', () => {
   const { balances } = makeModel();
-  const list = buildAssetAccountList(balances);
-  for (const a of list) {
-    expect(typeof a.key).toBe('string');
-    expect(['assets', 'liabilities']).toContain(a.type);
-    expect(a.label).toBe(a.key.split(':').pop());
-  }
+  const tree = buildAssetAccountTree(balances);
+  expect(tree.Expenses).toBeUndefined();
+  expect(tree.Income).toBeUndefined();
 });
 
-test('buildAssetAccountList excludes income/expense accounts', () => {
-  const { balances } = makeModel();
-  const list = buildAssetAccountList(balances);
-  expect(list.every(a => a.type === 'assets' || a.type === 'liabilities')).toBe(true);
-});
-
-test('buildAssetAccountList deduplicates (Assets:Savings:Sub rolls up to Assets:Savings)', () => {
-  const { balances } = makeModel();
-  const list = buildAssetAccountList(balances);
-  const savingsCount = list.filter(a => a.key === 'Assets:Savings').length;
-  expect(savingsCount).toBe(1);
-});
-
-test('buildAssetAccountList returns empty array for empty balances', () => {
-  expect(buildAssetAccountList(new Map())).toEqual([]);
+test('buildAssetAccountTree returns an empty object for empty balances', () => {
+  expect(buildAssetAccountTree(new Map())).toEqual({});
 });

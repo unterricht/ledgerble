@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "Plus-value latente",
   "portfolio.series_value": "Valeur du portefeuille",
   "assets.total_assets": "Total des actifs",
+  "assets.total_liabilities": "Total des passifs",
   "balance.net_worth": "Valeur nette",
   "balance.section.stocks": "Soldes",
   "balance.section.flows": "Revenus et dépenses",

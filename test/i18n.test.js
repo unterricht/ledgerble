@@ -126,6 +126,29 @@ test('formatIntervalLabel formats Daily YYYY-MM-DD locale-aware in German', () =
     expect(result).toContain('2015');
 });
 
+// ── formatDate ────────────────────────────────────────────────
+
+test('formatDate renders a UTC date in the German date format', () => {
+    i18n.loadLocale('de');
+    expect(i18n.formatDate(new Date('2026-01-17T00:00:00Z'))).toBe('17.1.2026');
+});
+
+test('formatDate renders the same instant in the US date format', () => {
+    i18n.loadLocale('en');
+    expect(i18n.formatDate(new Date('2026-01-17T00:00:00Z'))).toBe('1/17/2026');
+});
+
+test('formatDate does not shift the day in negative-offset timezones', () => {
+    // A UTC midnight date formatted in local time would fall back to Jan 16 west
+    // of Greenwich — the interval date must survive verbatim.
+    i18n.loadLocale('de');
+    expect(i18n.formatDate(new Date('2026-01-17T00:00:00Z'))).toContain('17');
+});
+
+test('formatDate returns an empty string for a missing date', () => {
+    expect(i18n.formatDate(null)).toBe('');
+});
+
 test('en.json has no empty string values', () => {
     const enPath = path.join(__dirname, '..', 'locales', 'en.json');
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));

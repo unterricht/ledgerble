@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "Ganancia latente",
   "portfolio.series_value": "Valor del portfolio",
   "assets.total_assets": "Total activos",
+  "assets.total_liabilities": "Total pasivos",
   "balance.net_worth": "Patrimonio neto",
   "balance.section.stocks": "Saldos",
   "balance.section.flows": "Ingresos y gastos",

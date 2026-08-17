@@ -17,7 +17,7 @@ import { compute } from '../data/compute';
 const { isDeselectedDeep, toggleAccountInDesel } = require('../data/accountTree');
 const { findRedundantFiles } = require('../data/redundancy');
 const { buildPdfFilename } = require('../data/pdfFilename');
-import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings } from '../data/adapters';
+import { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountTree, buildPortfolio, buildPostings } from '../data/adapters';
 import { OverviewView } from '../views/OverviewView';
 import { ExpensesIncomeView } from '../views/ExpensesIncomeView';
 import { BalanceView } from '../views/BalanceView';
@@ -201,7 +201,7 @@ function Inspector({ desel, onToggle, onAll, onNone, onClose, accountTree, inter
     : [];
 
   return (
-    <div style={{ width: 248, flexShrink: 0, borderLeft: `1px solid ${T.line}`, background: T.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div data-testid="inspector" style={{ width: 248, flexShrink: 0, borderLeft: `1px solid ${T.line}`, background: T.surface, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: `1px solid ${T.line}` }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, fontFamily: T.sans }}>{t('filter.filters')}</span>
         <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: T.ink3, padding: 2, display: 'flex' }}><Icon name="sliders" size={15} /></button>
@@ -804,22 +804,21 @@ function Shell() {
                     : <div data-view={view} />}
                 </div>
                 {showInsp && (() => {
+                  // The Assets tab filters its own tree (asset/liability accounts, every
+                  // level) with the same tri-state cascade as the category filter, so a
+                  // single sub-account can be taken out of its group's chart line.
                   const isAssetsTab = view === 'assets';
-                  const assetAccounts = isAssetsTab ? buildAssetAccountList(model.balances) : [];
-                  const assetTree = Object.fromEntries(assetAccounts.map(a => [a.key, {}]));
+                  const assetTree = isAssetsTab ? buildAssetAccountTree(model.balances) : {};
+                  const inspTree = isAssetsTab ? assetTree : model.accountTree;
                   const inspDesel = isAssetsTab ? deselAssets : desel;
                   const inspOnToggle = isAssetsTab
-                    ? (path) => setDeselectedAssets(prev => {
-                        const n = new Set(prev);
-                        n.has(path) ? n.delete(path) : n.add(path);
-                        return n;
-                      })
+                    ? (path) => setDeselectedAssets(prev => toggleAccountInDesel(path, prev, assetTree))
                     : (path) => setDeselected(prev => toggleAccountInDesel(path, prev, model.accountTree));
                   const inspOnAll = isAssetsTab
                     ? () => setDeselectedAssets(new Set())
                     : () => setDeselected(new Set());
                   const inspOnNone = isAssetsTab
-                    ? () => setDeselectedAssets(new Set(assetAccounts.map(a => a.key)))
+                    ? () => setDeselectedAssets(new Set(Object.keys(assetTree)))
                     : () => setDeselected(new Set(Object.keys(model.accountTree || {})));
                   return (
                     <div className="chrome-print-hide" style={{ display: 'flex' }}>
@@ -829,7 +828,7 @@ function Shell() {
                         onAll={inspOnAll}
                         onNone={inspOnNone}
                         onClose={() => setInsp(false)}
-                        accountTree={isAssetsTab ? assetTree : model.accountTree}
+                        accountTree={inspTree}
                         intervals={model.fullIntervals}
                         sliderValues={inspectorSliderValues}
                         onRangeChange={(from, to) => {

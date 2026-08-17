@@ -45,9 +45,21 @@ const T = {
 const T_CHART = ['#3E7E6C', '#5B82A6', '#8A8FA0', '#B5806C', '#7E9B72', '#9080A8', '#C2A86A', '#6E94A0'];
 T.chart = T_CHART;
 
-// semantic palettes for Assets & Liabilities chart
-T.chartAssets = ['#2E7D62', '#3E9E7E', '#57B897', '#74CEAE', '#9ADCC5'];
-T.chartLiabs  = ['#AE5645', '#C4705E', '#D98B7A', '#8B3D2E', '#E5A898'];
+// Semantic palettes for the Assets & Liabilities chart: assets read cool/neutral,
+// liabilities warm. Each step varies in BOTH hue and lightness — the previous
+// single-hue green ramp put two steps 6.3 ΔE apart, which is indistinguishable
+// even with full colour vision. Steps are assigned in this fixed order and the
+// legend labels every line with its value, so identity never rests on colour alone.
+//
+// Validated (dataviz palette validator, light surface, all pairs) up to five
+// concurrent lines — net worth + the first three asset steps + both liability
+// steps: lightness band, CVD separation and normal-vision separation all pass.
+// The two trailing asset steps are the least-bad remainder: with six or more
+// groups this deliberately low-chroma palette runs out of separable hues, and the
+// labelled legend carries identity instead. The chroma floor is a documented,
+// accepted failure — Quiet Ledger is muted on purpose.
+T.chartAssets = ['#2E7D62', '#7FA8CC', '#A9862E', '#584F8F', '#6E7A8A'];
+T.chartLiabs  = ['#8A3324', '#E0A091'];
 
 // ─────────────────────────────────────────────────────────────
 // NUMBER FORMATTING

@@ -438,3 +438,50 @@ test('buildPortfolio is not called on non-portfolio tabs (portfolioVm is memoize
 
   spy.mockRestore();
 });
+
+// ── Assets tab: sub-account filter tree ──────────────────────────────────────
+
+// A journal whose asset accounts are nested deeper than the chart's second level,
+// like the real-world "Assets:Banking:Tagesgeld:Comdirect".
+const deepAssetsResult = {
+  postings: [
+    { date: '2024-01-15', accounts: ['Assets', 'Banking', 'Tagesgeld', 'Comdirect'], amount: 500, currency: 'EUR' },
+    { date: '2024-01-15', accounts: ['Assets', 'Banking', 'Tagesgeld', 'Volkswagen'], amount: 300, currency: 'EUR' },
+    { date: '2024-01-15', accounts: ['Income', 'Salary'], amount: -800, currency: 'EUR' },
+  ],
+  postingsCost: [],
+  prices: [],
+};
+
+async function openAssetsTab() {
+  let parsedCb;
+  window.api.onParsed = (cb) => { parsedCb = cb; };
+  render(<Shell />);
+  await act(async () => { parsedCb('deep.ledger', deepAssetsResult, null); });
+  await userEvent.click(within(screen.getByRole('navigation')).getByText('Assets & Liabilities'));
+  // Account names also appear in the chart legend — scope to the filter sidebar.
+  return within(screen.getByTestId('inspector'));
+}
+
+test('assets filter tree exposes sub-accounts below the second level', async () => {
+  const insp = await openAssetsTab();
+  // 'Assets' is expanded at depth 0; drill down to the leaf accounts
+  await userEvent.click(insp.getByText('Banking').closest('div').querySelector('button'));
+  await userEvent.click(insp.getByText('Tagesgeld').closest('div').querySelector('button'));
+  expect(insp.getByText('Comdirect')).toBeInTheDocument();
+  expect(insp.getByText('Volkswagen')).toBeInTheDocument();
+});
+
+test('deselecting a sub-account leaves its parents checked (tri-state)', async () => {
+  const insp = await openAssetsTab();
+  await userEvent.click(insp.getByText('Banking').closest('div').querySelector('button'));
+  await userEvent.click(insp.getByText('Tagesgeld').closest('div').querySelector('button'));
+
+  const checkboxOf = (label) => insp.getByText(label).closest('label').querySelector('input');
+  await userEvent.click(checkboxOf('Comdirect'));
+
+  expect(checkboxOf('Comdirect').checked).toBe(false);
+  expect(checkboxOf('Volkswagen').checked).toBe(true);
+  expect(checkboxOf('Banking').checked).toBe(true);
+  expect(checkboxOf('Banking').indeterminate).toBe(true);
+});

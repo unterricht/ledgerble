@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "Unrealised gain",
   "portfolio.series_value": "Portfolio value",
   "assets.total_assets": "Total assets",
+  "assets.total_liabilities": "Total liabilities",
   "balance.net_worth": "Net Worth",
   "balance.section.stocks": "Balances",
   "balance.section.flows": "Income & expenses",

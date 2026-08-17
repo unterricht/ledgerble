@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "Нереализованная прибыль",
   "portfolio.series_value": "Стоимость портфеля",
   "assets.total_assets": "Суммарные активы",
+  "assets.total_liabilities": "Суммарные обязательства",
   "balance.net_worth": "Чистые активы",
   "balance.section.stocks": "Остатки",
   "balance.section.flows": "Доходы и расходы",

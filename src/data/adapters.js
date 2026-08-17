@@ -2,6 +2,12 @@
 
 const moment = require('moment');
 const { T } = require('../ui/tokens');
+const { isDeselectedDeep, buildAccountTree } = require('./accountTree');
+const { t } = require('../../i18n');
+
+// Data key of the synthetic net-worth series in the Assets view-model. The
+// double underscore keeps it clear of any real (colon-separated) account path.
+const NET_SERIES_KEY = '__net';
 
 // Produce a readable label from an interval key.
 // Monthly 'YYYY-MM' → 'Jan'; other formats fall back to the raw key.
@@ -538,6 +544,32 @@ function buildBalanceTree(balances, intervalIdx, options) {
 }
 
 /**
+ * assetSeriesColors(balances) → Map<secondLevelKey, color>
+ *
+ * Palette assignment for the Assets chart, computed from ALL asset/liability
+ * accounts in `balances` — deliberately independent of the account filter, so a
+ * series keeps its colour no matter which other accounts are hidden.
+ */
+function assetSeriesColors(balances) {
+  const types = new Map();
+  for (const [balKey] of balances) {
+    if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
+    const segKey = balKey.account.split(':').slice(0, 2).join(':');
+    if (!types.has(segKey)) types.set(segKey, balKey.type);
+  }
+  const colors = new Map();
+  let assetIdx = 0;
+  let liabIdx = 0;
+  for (const key of Array.from(types.keys()).sort()) {
+    const color = types.get(key) === 'liabilities'
+      ? T.chartLiabs[liabIdx++ % T.chartLiabs.length]
+      : T.chartAssets[assetIdx++ % T.chartAssets.length];
+    colors.set(key, color);
+  }
+  return colors;
+}
+
+/**
  * buildAssets(model, deselectedAssetAccounts?) → AssetsViewModel
  *
  * Transforms the compute() `balances` Map into a multi-series time-series view-model
@@ -547,23 +579,31 @@ function buildBalanceTree(balances, intervalIdx, options) {
  * parts, e.g. 'assets:Girokonto') for accounts of type 'assets' or 'liabilities'.
  * Deeper sub-accounts roll up into their second-level parent series.
  *
- * deselectedAssetAccounts (optional Set<string>): second-level keys to exclude from
- * the chart. Keys must match the full second-level path (e.g. 'Assets:Savings').
+ * deselectedAssetAccounts (optional Set<string>): account paths to exclude from the
+ * chart, at ANY depth. The check cascades (isDeselectedDeep), so deselecting
+ * 'Assets:Banking' hides its whole subtree while deselecting
+ * 'Assets:Banking:Tagesgeld:Comdirect' only removes that leaf from the
+ * 'Assets:Banking' sum.
  *
  * Returns:
  *   {
- *     data:   [{ m, <secondLevelKey>: value, … }]  — one entry per interval
- *     series: [{ key, color, label, type }]         — one per visible second-level account
+ *     data:   [{ m, <secondLevelKey>: value, __net: value, … }] — one per interval
+ *     series: [{ key, color, label, type }]         — account series + net worth last
  *     maxY:   number                                — max abs value across data (for chart scale)
  *     grid:   number[]                              — suggested y-axis gridlines
+ *     totals: { assets, liabilities, net }          — as-of totals of the last interval
  *   }
+ *
+ * `totals` is the ONLY place the summary figures are computed: the view strip and
+ * the chart tooltip both read it (or the net series), so they cannot disagree.
  */
 function buildAssets(model, deselectedAssetAccounts) {
   const { balances, intervals, intervalDates } = model;
   const desel = deselectedAssetAccounts instanceof Set ? deselectedAssetAccounts : new Set();
+  const emptyTotals = { assets: 0, liabilities: 0, net: 0 };
 
   if (!balances || balances.size === 0 || !intervals || intervals.length === 0) {
-    return { data: [], series: [], maxY: 0, grid: [0] };
+    return { data: [], series: [], maxY: 0, grid: [0], totals: emptyTotals };
   }
 
   // ── 1. Collect second-level accounts of type assets/liabilities ───────────
@@ -576,7 +616,9 @@ function buildAssets(model, deselectedAssetAccounts) {
     const parts = balKey.account.split(':');
     const segKey = parts.slice(0, 2).join(':');
 
-    if (desel.has(segKey)) continue;
+    // Cascading check on the FULL account path: deselecting either the
+    // second-level group or any deeper sub-account removes it from the sum.
+    if (isDeselectedDeep(balKey.account, desel)) continue;
 
     if (!topMap.has(segKey)) {
       topMap.set(segKey, { type: balKey.type, sums: new Array(intervals.length).fill(0) });
@@ -589,23 +631,31 @@ function buildAssets(model, deselectedAssetAccounts) {
   }
 
   if (topMap.size === 0) {
-    return { data: [], series: [], maxY: 0, grid: [0] };
+    return { data: [], series: [], maxY: 0, grid: [0], totals: emptyTotals };
   }
 
   // ── 2. Build series array (one per second-level account) ─────────────────
-  // Assets use the green palette, liabilities the red palette.
+  // Assets use the green palette, liabilities the red palette. Colours are keyed
+  // off the UNFILTERED account list so a colour follows its account rather than
+  // its rank — deselecting one account must not repaint the survivors.
   const topKeys = Array.from(topMap.keys()).sort();
-  const assetIdx = { n: 0 };
-  const liabIdx  = { n: 0 };
-  const series = topKeys.map((key) => {
-    const { type } = topMap.get(key);
-    let color;
-    if (type === 'liabilities') {
-      color = T.chartLiabs[liabIdx.n++ % T.chartLiabs.length];
-    } else {
-      color = T.chartAssets[assetIdx.n++ % T.chartAssets.length];
-    }
-    return { key, color, label: key.split(':').pop(), type };
+  const colorByKey = assetSeriesColors(balances);
+  const series = topKeys.map((key) => ({
+    key,
+    color: colorByKey.get(key),
+    label: key.split(':').pop(),
+    type: topMap.get(key).type,
+  }));
+
+  // The net-worth line: assets + liabilities (ledger keeps liabilities negative,
+  // so a plain sum IS the balance-sheet net worth). Drawn last = on top of the
+  // account lines, and flagged so the chart can render it as the lead series.
+  series.push({
+    key: NET_SERIES_KEY,
+    color: T.net,
+    label: t('balance.net_worth'),
+    type: 'net',
+    emphasis: true,
   });
 
   // ── 3. Build data array ────────────────────────────────────────────────────
@@ -613,17 +663,23 @@ function buildAssets(model, deselectedAssetAccounts) {
   const ticks = buildTicks(intervals, intervalDates, model.period, labels);
   const data = intervals.map((interval, i) => {
     const entry = { key: interval, m: labels[i], tick: ticks[i] };
+    let net = 0;
     for (const key of topKeys) {
       entry[key] = topMap.get(key).sums[i];
+      net += entry[key];
     }
+    entry[NET_SERIES_KEY] = net;
     return entry;
   });
 
   // ── 4. Compute maxY/minY (for chart scale) ────────────────────────────────
+  // The net-worth line is included: it is the sum of the account series and thus
+  // usually the largest value on the chart — scaling to the accounts alone would
+  // clip it flat along the top (or bottom) gridline.
   let absMax = 0;
   let minVal = 0;
   for (const entry of data) {
-    for (const key of topKeys) {
+    for (const key of [...topKeys, NET_SERIES_KEY]) {
       const v = entry[key];
       absMax = Math.max(absMax, Math.abs(v));
       if (v < 0) minVal = Math.min(minVal, v);
@@ -650,29 +706,68 @@ function buildAssets(model, deselectedAssetAccounts) {
     niceMin = -Math.ceil(absMin / niceStepMin) * niceStepMin;
   }
 
-  return { data, series, maxY: niceMax, minY: niceMin, grid };
+  // ── 6. As-of totals of the last interval ──────────────────────────────────
+  // Balance-sheet convention: liabilities are carried negative by ledger, so the
+  // plain sum of both sides is the net worth (equity). No sign flipping.
+  const lastEntry = data[data.length - 1];
+  const totals = { assets: 0, liabilities: 0, net: lastEntry[NET_SERIES_KEY] };
+  for (const key of topKeys) {
+    if (topMap.get(key).type === 'liabilities') totals.liabilities += lastEntry[key];
+    else totals.assets += lastEntry[key];
+  }
+
+  return { data, series, maxY: niceMax, minY: niceMin, grid, totals, asOf: assetsAsOf(model) };
 }
 
 /**
- * buildAssetAccountList(balances) → Array<{ key, type, label }>
+ * assetsAsOf(model) → Date | null
  *
- * Returns a sorted list of all second-level asset/liability accounts present in
- * the balances Map. Used to populate the inspector filter for the Assets tab.
+ * The date the last data point (and hence `totals`) actually refers to.
  *
- * Each entry: { key: 'Assets:Savings', type: 'assets', label: 'Savings' }
+ * The balances are cumulative per interval, so the value of the last interval
+ * holds until the end of that interval. If the selected window reaches the end of
+ * the journal, nothing changes after the final posting — that posting's date is
+ * the honest as-of date. If the window was cut short by the date-range slider, the
+ * last interval ends the day before the next one begins.
+ *
+ * All dates stay UTC (see the UTC convention in CLAUDE.md).
  */
-function buildAssetAccountList(balances) {
-  if (!balances || balances.size === 0) return [];
-  const seen = new Map();
-  for (const [balKey] of balances) {
-    if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
-    const parts = balKey.account.split(':');
-    const segKey = parts.slice(0, 2).join(':');
-    if (!seen.has(segKey)) {
-      seen.set(segKey, { key: segKey, type: balKey.type, label: segKey.split(':').pop() });
+function assetsAsOf(model) {
+  const { rawPostings, sliderValues, fullIntervalDates } = model;
+  if (!Array.isArray(rawPostings) || rawPostings.length === 0) return null;
+  if (!Array.isArray(sliderValues) || !Array.isArray(fullIntervalDates)) return null;
+
+  const hi = sliderValues[1];
+  const next = fullIntervalDates[hi + 1];
+  if (next) return new Date(next.getTime() - 24 * 60 * 60 * 1000);
+
+  let lastPosting = null;
+  for (const p of rawPostings) {
+    if (p.date && (lastPosting === null || p.date.getTime() > lastPosting.getTime())) {
+      lastPosting = p.date;
     }
   }
-  return Array.from(seen.values()).sort((a, b) => a.key.localeCompare(b.key));
+  return lastPosting;
+}
+
+/**
+ * buildAssetAccountTree(balances) → nested tree object
+ *
+ * Returns the FULL nested account tree (every level, not just the second) of all
+ * asset/liability accounts present in the balances Map. Used by the inspector
+ * filter on the Assets tab, which lets the user include/exclude sub-accounts at
+ * any depth — the chart still aggregates per second level (see buildAssets).
+ *
+ * Shape matches buildAccountTree(): { Assets: { Savings: { Sub: {} } }, … }
+ */
+function buildAssetAccountTree(balances) {
+  if (!balances || balances.size === 0) return {};
+  const accounts = [];
+  for (const [balKey] of balances) {
+    if (balKey.type !== 'assets' && balKey.type !== 'liabilities') continue;
+    accounts.push(balKey.account);
+  }
+  return buildAccountTree(accounts);
 }
 
 /**
@@ -877,4 +972,4 @@ function buildPostings(model) {
   });
 }
 
-module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountList, buildPortfolio, buildPostings };
+module.exports = { buildOverview, buildBreakdownTree, buildBalanceTree, buildAssets, buildAssetAccountTree, buildPortfolio, buildPostings };

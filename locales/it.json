@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "Plusvalenza latente",
   "portfolio.series_value": "Valore del portafoglio",
   "assets.total_assets": "Totale attività",
+  "assets.total_liabilities": "Totale passività",
   "balance.net_worth": "Patrimonio netto",
   "balance.section.stocks": "Saldi",
   "balance.section.flows": "Entrate e uscite",

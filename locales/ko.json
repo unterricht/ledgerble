@@ -152,6 +152,7 @@
   "portfolio.unrealised_gain": "미실현 손익",
   "portfolio.series_value": "포트폴리오 가치",
   "assets.total_assets": "총 자산",
+  "assets.total_liabilities": "총 부채",
   "balance.net_worth": "순자산",
   "balance.section.stocks": "잔액",
   "balance.section.flows": "수입 및 지출",
